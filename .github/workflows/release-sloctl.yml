@@ -6,8 +6,20 @@ on:
       - '[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
+  determine-version:
+    name: Decide on sloctl release version by parsing the tag name
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set VERSION using the tag
+        id: get_version
+        run: |
+          echo ::set-output name=SLOCTL_VERSION::${GITHUB_REF##*/}
+    outputs:
+      sloctl-version: ${{ steps.get_version.outputs.SLOCTL_VERSION }}
+
   build:
     name: Create Release
+    needs: determine-version
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -18,8 +30,26 @@ jobs:
           for asset in ./*.zip; do
             assets+=("-a" "$asset")
           done
-          tag_name="${GITHUB_REF##*/}"
-          hub release create "${assets[@]}" -m "$tag_name" "$tag_name"
+          hub release create "${assets[@]}" -m "${{ needs.determine-version.outputs.sloctl-version }}" "${{ needs.determine-version.outputs.sloctl-version }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
+
+      - name: Fill brew formula
+        run: |
+          SLOCTL_VERSION="${{ needs.determine-version.outputs.sloctl-version }}"
+          SHA_MACOS=$(sha256sum "sloctl-macos-${SLOCTL_VERSION}.zip")
+          SHA_LINUX=$(sha256sum "sloctl-linux-${SLOCTL_VERSION}.zip")
+          mkdir brew brew/Formula
+          envsubst < .github/sloctl.rb.tpl > brew/Formula/sloctl.rb
+
+      - name: Pushes to homebrew-sloctl repository
+        uses: greg-agacinski/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.SLOCTL_API_TOKEN }}
+        with:
+          source-directory: "brew"
+          destination-github-username: nobl9
+          destination-repository-name: homebrew-sloctl
+          user-email: greg@nobl9.com
+          commit-tag: ${{ needs.determine-version.outputs.sloctl-version }}
+          commit-message: "Version ${{ needs.determine-version.outputs.sloctl-version }}"
