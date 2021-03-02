@@ -37,8 +37,8 @@ jobs:
       - name: Fill brew formula
         run: |
           export SLOCTL_VERSION="${{ needs.determine-version.outputs.sloctl-version }}"
-          export SHA_MACOS=$(sha256sum "sloctl-macos-${SLOCTL_VERSION}.zip" | cut -f1 -d' ')
-          export SHA_LINUX=$(sha256sum "sloctl-linux-${SLOCTL_VERSION}.zip" | cut -f1 -d' ')
+          export SHA_MACOS=$(sha256sum "sloctl-macos.zip" | cut -f1 -d' ')
+          export SHA_LINUX=$(sha256sum "sloctl-linux.zip" | cut -f1 -d' ')
           mkdir brew brew/Formula
           envsubst < .github/sloctl.rb.tpl > brew/Formula/sloctl.rb
 
