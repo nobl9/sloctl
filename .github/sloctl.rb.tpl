@@ -5,10 +5,10 @@ class Sloctl < Formula
     bottle :unneeded
   
     if OS.mac?
-      url "https://github.com/nobl9/sloctl/releases/download/${SLOCTL_VERSION}/sloctl-macos-${SLOCTL_VERSION}.zip"
+      url "https://github.com/nobl9/sloctl/releases/download/${SLOCTL_VERSION}/sloctl-macos.zip"
       sha256 "${SHA_MACOS}"
     elsif OS.linux?
-      url "https://github.com/nobl9/sloctl/releases/download/${SLOCTL_VERSION}/sloctl-linux-${SLOCTL_VERSION}.zip"
+      url "https://github.com/nobl9/sloctl/releases/download/${SLOCTL_VERSION}/sloctl-linux.zip"
       sha256 "${SHA_LINUX}"
     end
   
