@@ -1,4 +1,3 @@
 FROM scratch
-WORKDIR .
-COPY sloctl /
-ENTRYPOINT ["/sloctl/sloctl"]
+COPY ./sloctl /
+ENTRYPOINT ["/sloctl"]
