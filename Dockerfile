@@ -1,3 +1,3 @@
-FROM --platform=linux/amd64 scratch
+FROM scratch
 COPY ./sloctl /
 ENTRYPOINT ["/sloctl"]
