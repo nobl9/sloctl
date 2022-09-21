@@ -8,5 +8,8 @@ RUN set -ex && \
     apk add --allow-untrusted /tmp/*.apk && \
     rm -v /tmp/*.apk && \
     /usr/glibc-compat/sbin/ldconfig /lib /usr/glibc-compat/lib
+RUN adduser -S appuser
+RUN mkdir -p /.config/nobl9 && chown appuser /.config/nobl9
+USER appuser
 COPY ./sloctl /usr/local/bin/sloctl
 ENTRYPOINT ["sloctl"]
