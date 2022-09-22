@@ -1,0 +1,50 @@
+version: "1.0"
+
+stages:
+  - "clone"
+  - "build"
+  - "push"
+
+steps:
+  clone:
+    title: "Cloning repository"
+    type: "git-clone"
+    repo: "nobl9/sloctl"
+    # CF_BRANCH value is auto set when pipeline is triggered
+    # Learn more at codefresh.io/docs/docs/codefresh-yaml/variables/
+    revision: "${{CF_BRANCH}}"
+    git: "github"
+    stage: "clone"
+
+  install:
+    title: "Install sloctl"
+    type: "freestyle" # Run any command
+    image: "ubuntu:latest" # The image in which command will be executed
+    working_directory: "${{clone}}" # Running command where code cloned
+    commands:
+      - "ls"
+      - "apt-get update"
+      - "apt-get install zip unzip"
+      - "unzip sloctl-linux-*.zip"
+      - "rm sloctl-*.zip"
+    stage: "build"
+
+  build:
+    title: "Building docker image"
+    type: "build"
+    working_directory: "${{clone}}"
+    arguments:
+      image_name: "nobl9/sloctl"
+      dockerfile: 'Dockerfile'
+      disable_push: true
+      tag: "${{CF_BRANCH_TAG_NORMALIZED}}"
+    stage: "build"
+
+  Push:
+    title: "Push to registry"
+    type: "push"
+    arguments:
+      candidate: '${{build}}'
+      tag: "latest"
+      registry: "nobl9"
+    stage: "push"
