@@ -3,7 +3,6 @@ version: "1.0"
 stages:
   - "clone"
   - "build"
-  - "push"
 
 steps:
   clone:
@@ -22,11 +21,12 @@ steps:
     image: "ubuntu:latest" # The image in which command will be executed
     working_directory: "${{clone}}" # Running command where code cloned
     commands:
-      - "ls"
       - "apt-get update"
+      - "apt-get install -y git"
       - "apt-get install zip unzip"
       - "unzip sloctl-linux-*.zip"
       - "rm sloctl-*.zip"
+      - "cf_export VERSION=$(git describe --tags --abbrev=0)"
     stage: "build"
 
   build:
@@ -36,15 +36,9 @@ steps:
     arguments:
       image_name: "nobl9/sloctl"
       dockerfile: 'Dockerfile'
-      disable_push: true
-      tag: "${{CF_BRANCH_TAG_NORMALIZED}}"
-    stage: "build"
-
-  Push:
-    title: "Push to registry"
-    type: "push"
-    arguments:
-      candidate: '${{build}}'
-      tag: "latest"
       registry: "nobl9"
-    stage: "push"
+      tags: 
+        - "latest"
+        - "v${{VERSION}}"
+    stage: "build"
+    
