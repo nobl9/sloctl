@@ -8,7 +8,7 @@ RUN set -ex && \
     apk add --force-overwrite --allow-untrusted /tmp/*.apk && \
     rm -v /tmp/*.apk && \
     /usr/glibc-compat/sbin/ldconfig /lib /usr/glibc-compat/lib
-COPY ./sloctl /usr/local/bin/sloctl
+COPY ./sloctl-linux-* /usr/local/bin/sloctl
 RUN adduser -D appuser
 RUN mkdir -p /home/appuser/.config/nobl9
 RUN chown -R appuser:appuser /home/appuser/.config/nobl9
