@@ -23,8 +23,6 @@ steps:
     commands:
       - "apt-get update"
       - "apt-get install -y wget git curl"
-      - "apt-get install -y git"
-      - "apt-get install curl"
       - 'curl -s https://api.github.com/repos/nobl9/sloctl/releases/latest | grep "browser_download_url.*linux*" | cut -d : -f 2,3 | tr -d \" |  wget -qi -'
       - "cf_export VERSION=$(git describe --tags --abbrev=0)"
     stage: "build"
