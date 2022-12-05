@@ -24,7 +24,7 @@ steps:
       - "apt-get update"
       - "apt-get install -y wget git curl jq"
       - curl -s https://api.github.com/repos/nobl9/sloctl/releases/latest | jq -r '.assets[] | select(.name | startswith("sloctl-linux-")) | .browser_download_url' | wget -qi -
-      - 'cf_export VERSION=$(curl -s https://api.github.com/repos/nobl9/sloctl/releases/latest | jq -r '.tag_name')'
+      - 'cf_export VERSION=$(curl -s https://api.github.com/repos/nobl9/sloctl/releases/latest | jq -r ".tag_name")'
     stage: "build"
 
   build:
