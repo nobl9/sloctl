@@ -8,6 +8,7 @@ RUN set -ex && \
     apk add --force-overwrite --allow-untrusted /tmp/*.apk && \
     rm -v /tmp/*.apk && \
     /usr/glibc-compat/sbin/ldconfig /lib /usr/glibc-compat/lib
+RUN apk add git
 COPY ./sloctl-linux-* /usr/local/bin/sloctl
 RUN chmod +x /usr/local/bin/sloctl
 RUN adduser -D appuser
