@@ -1,6 +1,6 @@
 FROM curlimages/curl:latest AS builder
 ARG VERSION
-RUN curl -sL https://github.com/nobl9/sloctl/releases/download/v$VERSION/sloctl-linux-$VERSION -o /tmp/sloctl
+RUN curl -sL https://github.com/nobl9/sloctl/releases/download/$VERSION/sloctl-linux-${VERSION/v/} -o /tmp/sloctl
 RUN chmod +x /tmp/sloctl
 
 FROM scratch
