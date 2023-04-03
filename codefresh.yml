@@ -15,16 +15,13 @@ steps:
     git: "github"
     stage: "clone"
 
-  install:
-    title: "Install sloctl"
-    type: "freestyle" # Run any command
-    image: "ubuntu:latest" # The image in which command will be executed
-    working_directory: "${{clone}}" # Running command where code cloned
+  version:
+    title: "Get sloctl version"
+    type: "freestyle"
+    image: 'alpine:3.17.2'
     commands:
-      - "apt-get update"
-      - "apt-get install -y wget git curl jq"
-      - curl -s https://api.github.com/repos/nobl9/sloctl/releases/latest | jq -r '.assets[] | select(.name | startswith("sloctl-linux-")) | .browser_download_url' | wget -qi -
-      - 'cf_export VERSION=$(curl -s https://api.github.com/repos/nobl9/sloctl/releases/latest | jq -r ".tag_name")'
+      - apk add wget jq
+      - cf_export VERSION=$(wget -qO- https://api.github.com/repos/nobl9/sloctl/releases/latest | jq -r '.tag_name')
     stage: "build"
 
   build:
@@ -36,6 +33,8 @@ steps:
       dockerfile: 'Dockerfile'
       registry: "nobl9"
       tag: "${{VERSION}}"
+      build_arguments:
+        - VERSION=${{VERSION}}
       tags: 
         - "latest"
     stage: "build"
