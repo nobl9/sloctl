@@ -13,5 +13,5 @@ The binaries are available at [Releases](https://github.com/nobl9/sloctl/release
 docker run  
 -e SLOCTL_CLIENT_ID=$SLOCTL_CLIENT_ID \
 -e SLOCTL_CLIENT_SECRET=$SLOCTL_CLIENT_SECRET \
-<YOUR_IMAGE_NAME> get slos
+<YOUR_IMAGE_NAME> get slos --no-config-file
 ``` 
