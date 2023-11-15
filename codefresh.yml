@@ -31,7 +31,7 @@ steps:
     arguments:
       image_name: "nobl9/sloctl"
       dockerfile: 'Dockerfile'
-      registry: "nobl9"
+      registry: "nobl9-n9release"
       tag: "${{VERSION}}"
       build_arguments:
         - VERSION=${{VERSION}}
