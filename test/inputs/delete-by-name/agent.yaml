@@ -1,0 +1,10 @@
+apiVersion: n9/v1alpha
+kind: Agent
+metadata:
+  displayName: cloudwatch-agent
+  name: cloudwatch-agent
+  project: death-star
+spec:
+  cloudwatch: {}
+  sourceOf:
+    - Metrics

@@ -1,0 +1,24 @@
+- apiVersion: n9/v1alpha
+  kind: AlertSilence
+  metadata:
+    name: 5661613e-0e3d-11ed-861d-randomx1
+    project: death-star
+  spec:
+    description: Dummy AlertSilence for 'sloctl get' e2e tests
+    slo: tokyo-server-6-latency
+    alertPolicy:
+      name: trigger-alert-immediately
+    period:
+      duration: 1h
+- apiVersion: n9/v1alpha
+  kind: AlertSilence
+  metadata:
+    name: 5661613e-0e3d-11ed-861d-randomx2
+    project: death-star
+  spec:
+    description: Dummy AlertSilence for 'sloctl get' e2e tests
+    slo: newrelic-rolling-timeslices-threshold
+    alertPolicy:
+      name: budget-will-be-burn-in-3days
+    period:
+      duration: 1h

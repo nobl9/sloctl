@@ -1,0 +1,14 @@
+apiVersion: n9/v1alpha
+kind: Direct
+metadata:
+  name: newrelic-direct
+  displayName: Newrelic direct
+  project: death-star
+spec:
+  description: This Direct is just for the e2e 'sloctl get' tests, it's not supposed to work!
+  sourceOf:
+    - Metrics
+    - Services
+  newRelic:
+    accountId: 1437038
+    insightsQueryKey: NRIQ-123

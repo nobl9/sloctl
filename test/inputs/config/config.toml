@@ -1,0 +1,17 @@
+defaultContext = "minimal"
+filesPromptThreshold = 40
+filesPromptEnabled = false
+
+[Contexts]
+  [Contexts.minimal]
+    clientId = "minimal_client_id"
+    clientSecret = "minimal_client_secret"
+  [Contexts.full]
+    clientId = "full_client_id"
+    clientSecret = "full_client_secret"
+    project = "default"
+    url = "https://apps.nobl9.com/api"
+    oktaOrgURL = "https://accounts.nobl9.com"
+    oktaAuthServer = "auseg9kiegWKEtJZC416"
+    disableOkta = true
+    timeout = "1m"
