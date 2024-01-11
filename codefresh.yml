@@ -35,6 +35,6 @@ steps:
       tag: "${{VERSION}}"
       build_arguments:
         - VERSION=${{VERSION}}
-      tags: 
+      tags:
         - "latest"
     stage: "build"
