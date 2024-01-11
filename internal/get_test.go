@@ -1,24 +1,26 @@
 //go:build unit_test
 
-package sloctl
+package internal
 
 import (
 	"bytes"
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	authDataV1 "github.com/nobl9/nobl9-go/sdk/endpoints/authdata/v1"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/nobl9/nobl9-go/manifest"
-	v1alphaParser "github.com/nobl9/nobl9-go/manifest/v1alpha/parser"
-	"github.com/nobl9/nobl9-go/sdk"
+	authDataV1 "github.com/nobl9/nobl9-go/sdk/endpoints/authdata/v1"
+
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/nobl9/nobl9-go/manifest"
+	v1alphaParser "github.com/nobl9/nobl9-go/manifest/v1alpha/parser"
+	"github.com/nobl9/nobl9-go/sdk"
 
 	"github.com/nobl9/nobl9-go/manifest/v1alpha"
 )

@@ -1,11 +1,12 @@
-package sloctl
+package internal
 
 import (
-	"github.com/nobl9/nobl9-go/sdk"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/nobl9/n9/internal/sloctl/printer"
+	"github.com/nobl9/nobl9-go/sdk"
+
+	"github.com/nobl9/sloctl/internal/printer"
 )
 
 type AwsIamIdsCmd struct {

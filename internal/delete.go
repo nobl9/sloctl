@@ -1,4 +1,4 @@
-package sloctl
+package internal
 
 import (
 	"context"
@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/spf13/cobra"
+
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/sdk"
-	"github.com/spf13/cobra"
 )
 
 type DeleteCmd struct {

@@ -1,4 +1,4 @@
-package sloctl
+package internal
 
 import (
 	"fmt"

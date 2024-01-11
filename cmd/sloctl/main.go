@@ -8,5 +8,5 @@ package main
 import "github.com/nobl9/sloctl/internal"
 
 func main() {
-	sloctl.Execute()
+	internal.Execute()
 }

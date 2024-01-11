@@ -1,13 +1,14 @@
-package sloctl
+package internal
 
 import (
 	_ "embed"
 	"fmt"
 
+	"github.com/spf13/cobra"
+
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/manifest/v1alpha"
 	"github.com/nobl9/nobl9-go/sdk"
-	"github.com/spf13/cobra"
 )
 
 type ApplyCmd struct {

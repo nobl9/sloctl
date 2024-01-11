@@ -8,7 +8,7 @@ import (
 
 	"sigs.k8s.io/yaml"
 
-	"github.com/nobl9/n9/internal/sloctl/csv"
+	"github.com/nobl9/sloctl/internal/csv"
 )
 
 // Format represents supported printing outputs

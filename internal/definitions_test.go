@@ -1,6 +1,6 @@
 //go:build unit_test
 
-package sloctl
+package internal
 
 import (
 	"bytes"
@@ -10,10 +10,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nobl9/nobl9-go/sdk"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/nobl9/nobl9-go/sdk"
 )
 
 //go:embed test_data/definitions_test/project.yaml

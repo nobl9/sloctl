@@ -1,4 +1,4 @@
-package sloctl
+package internal
 
 import (
 	"bufio"
@@ -9,9 +9,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nobl9/nobl9-go/sdk"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	"github.com/nobl9/nobl9-go/sdk"
 )
 
 const defaultProject = "default"

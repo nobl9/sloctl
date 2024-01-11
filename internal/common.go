@@ -1,4 +1,4 @@
-package sloctl
+package internal
 
 import (
 	_ "embed"
@@ -7,9 +7,10 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/spf13/cobra"
+
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/sdk"
-	"github.com/spf13/cobra"
 )
 
 // ref: https://github.com/spf13/cobra/issues/1466

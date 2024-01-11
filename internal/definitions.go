@@ -1,4 +1,4 @@
-package sloctl
+package internal
 
 import (
 	"fmt"
@@ -6,10 +6,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/nobl9/nobl9-go/manifest"
-	"github.com/nobl9/nobl9-go/sdk"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	"github.com/nobl9/nobl9-go/manifest"
+	"github.com/nobl9/nobl9-go/sdk"
 )
 
 const filesPromptPattern = "You're applying more than %d files (%d). Do you want to continue? (y/n): "

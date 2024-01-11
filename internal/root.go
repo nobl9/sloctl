@@ -1,14 +1,15 @@
 // Package sloctl implements user facing commands for sloctl.
-package sloctl
+package internal
 
 import (
 	"fmt"
 	"os"
 	"runtime"
 
+	"github.com/spf13/cobra"
+
 	v1alphaParser "github.com/nobl9/nobl9-go/manifest/v1alpha/parser"
 	"github.com/nobl9/nobl9-go/sdk"
-	"github.com/spf13/cobra"
 )
 
 const programName = "sloctl"

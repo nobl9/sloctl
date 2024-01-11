@@ -1,4 +1,4 @@
-package sloctl
+package internal
 
 import (
 	"bytes"
@@ -17,14 +17,15 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/mitchellh/colorstring"
-	v1alphaSLO "github.com/nobl9/nobl9-go/manifest/v1alpha/slo"
-	"github.com/nobl9/nobl9-go/sdk"
-	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
-	sdkModels "github.com/nobl9/nobl9-go/sdk/models"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/util/yaml"
+
+	v1alphaSLO "github.com/nobl9/nobl9-go/manifest/v1alpha/slo"
+	"github.com/nobl9/nobl9-go/sdk"
+	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
+	sdkModels "github.com/nobl9/nobl9-go/sdk/models"
 )
 
 type ReplayCmd struct {

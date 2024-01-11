@@ -1,4 +1,4 @@
-package sloctl
+package internal
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/nobl9/n9/internal/sloctl/csv"
+	"github.com/nobl9/sloctl/internal/csv"
 )
 
 const (

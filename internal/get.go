@@ -1,4 +1,4 @@
-package sloctl
+package internal
 
 import (
 	"context"
@@ -13,16 +13,17 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/nobl9/nobl9-go/manifest"
-	"github.com/nobl9/nobl9-go/manifest/v1alpha"
-	"github.com/nobl9/nobl9-go/sdk"
-	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/nobl9/n9/internal/sloctl/csv"
-	"github.com/nobl9/n9/internal/sloctl/printer"
+	"github.com/nobl9/nobl9-go/manifest"
+	"github.com/nobl9/nobl9-go/manifest/v1alpha"
+	"github.com/nobl9/nobl9-go/sdk"
+	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
+
+	"github.com/nobl9/sloctl/internal/csv"
+	"github.com/nobl9/sloctl/internal/printer"
 )
 
 //go:embed get_alert_example.sh
