@@ -1,4 +1,4 @@
-// Package sloctl implements user facing commands for sloctl.
+// Package internal implements user facing commands for sloctl.
 package internal
 
 import (

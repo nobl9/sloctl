@@ -24,7 +24,10 @@ ignorePaths:
   - cspell.json
   - CODEOWNERS
   - bin/**
+  - test/**
+  - "**/test_data/**"
 words:
+  - dynatrace
   - endef
   - gobin
   - goimports
@@ -34,6 +37,10 @@ words:
   - ldflags
   - nobl
   - plantuml
+  - sloctl
+  - slos
+  - svcs
   - tpng
   - vuln
   - vulns
+  - wrapf

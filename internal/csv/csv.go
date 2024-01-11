@@ -68,7 +68,7 @@ func Marshal(input interface{}, fieldSeparator, recordSeparator string) ([]byte,
 		return nil, err
 	}
 
-	// Check if json is array, if not convert to array because unmarshall requires array
+	// Check if json is array, if not convert to array because unmarshal requires array
 	if jsonRawInput[0] != '[' {
 		jsonRawInput = append([]byte{'['}, jsonRawInput...)
 		jsonRawInput = append(jsonRawInput, ']')
