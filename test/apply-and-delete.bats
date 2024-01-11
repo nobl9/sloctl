@@ -3,8 +3,8 @@
 
 # setup is run before each test.
 setup() {
-	load "test_helper/bats-assert/load"
-	load "test_helper/sloctl-utils/load"
+	load "test_helper/load"
+	load_lib "bats-assert"
 
 	generate_inputs "$BATS_TEST_TMPDIR"
 }

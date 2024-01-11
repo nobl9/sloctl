@@ -80,7 +80,7 @@ assert_deleted() {
 # - apply: assert that the output contains the expected object.
 # - delete: assert that the output contains 'No resources found'.
 _assert_objects_existence() {
-  load "test_helper/bats-support/load"
+  load_lib "bats-support"
 
   assert [ -n "$2" ]
   assert [ "$(yq -r 'type' <<<"$2")" = "array" ]
@@ -137,7 +137,7 @@ _assert_objects_existence() {
 # them in parallel or a cleanup after the test fails for whatever reason.
 # It works for both YAML and JSON files.
 generate_inputs() {
-  load "test_helper/bats-support/load"
+  load_lib "bats-support"
 
   directory="$1"
   test_filename=$(basename "$BATS_TEST_FILENAME" .bats)
@@ -208,7 +208,7 @@ select_object() {
 #
 # If 'yq' is provided as one of the dependencies, ensure it is coming from https://github.com/kislyuk/yq.
 ensure_installed() {
-  load "test_helper/bats-support/load"
+  load_lib "bats-support"
 
   for dep in "$@"; do
     if ! command -v "$dep" >/dev/null 2>&1; then
@@ -218,4 +218,18 @@ ensure_installed() {
       fail "ERROR: yq is not installed from https://github.com/kislyuk/yq!"
     fi
   done
+}
+
+# load_lib 
+# ================
+#
+# Summary: Load a given bats library.
+#
+# Usage: load_lib <name>
+#
+# Options:
+#   <name>    Name of the library to load.
+load_lib() {
+  local name="$1"
+  load "/usr/lib/bats/${name}/load.bash"
 }

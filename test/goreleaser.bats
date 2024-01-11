@@ -3,8 +3,8 @@
 
 # setup is run before each test.
 setup_file() {
-	load "test_helper/bats-assert/load"
-	load "test_helper/sloctl-utils/load"
+	load "test_helper/load"
+	load_lib "bats-assert"
 
 	ensure_installed goreleaser
 
@@ -20,7 +20,8 @@ setup_file() {
 }
 
 setup() {
-	load "test_helper/bats-assert/load"
+	load "test_helper/load"
+	load_lib "bats-assert"
 }
 
 teardown_file() {

@@ -1,15 +1,13 @@
-FROM golang:1.21-alpine3.18 AS builder
-
-WORKDIR /src
-
-COPY ./test/test_server.go ./
-RUN go mod init test_server
-
-RUN go build -o /artifacts/test_server .
-
 FROM bats/bats:v1.10.0
 
-RUN apk --no-cache --update add gettext
+WORKDIR /sloctl
+
+COPY ./go.mod ./go.sum ./
+COPY ./cmd/sloctl ./cmd/sloctl
+COPY ./internal ./internal
+
+RUN apk --no-cache --update add \
+  gettext go jq git python3 py3-pip
+RUN pip install yq
 
 COPY ./test ./test
-COPY --from=sloctl-test-bin ./sloctl /bin/sloctl

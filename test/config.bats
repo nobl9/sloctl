@@ -11,9 +11,9 @@ setup_file() {
 
 # setup is run before each test.
 setup() {
-	load "test_helper/bats-assert/load"
-	load "test_helper/bats-support/load"
-	load "test_helper/sloctl-utils/load"
+	load "test_helper/load"
+	load_lib "bats-assert"
+	load_lib "bats-support"
 }
 
 run_sloctl_config() {

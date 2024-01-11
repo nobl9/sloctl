@@ -1,9 +1,22 @@
-FROM curlimages/curl:latest AS builder
+FROM golang:1.21-alpine3.18 AS builder
+
 ARG VERSION
-RUN curl -sL https://github.com/nobl9/sloctl/releases/download/$VERSION/sloctl-linux-${VERSION/v/} -o /tmp/sloctl
-RUN chmod +x /tmp/sloctl
+
+WORKDIR /app
+
+COPY ./go.mod ./go.sum ./
+COPY ./cmd/sloctl ./cmd/sloctl
+COPY ./internal ./internal
+
+ARG LDFLAGS
+
+RUN CGO_ENABLED=0 go build \
+  -ldflags "${LDFLAGS}" \
+  -o /artifacts/sloctl \
+  "${PWD}/cmd/sloctl"
 
 FROM scratch
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=builder /tmp/sloctl /usr/bin/
+
+COPY --from=builder /artifacts/sloctl ./sloctl
+
 ENTRYPOINT ["sloctl"]

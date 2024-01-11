@@ -3,12 +3,14 @@
 
 # setup is run before each test.
 setup() {
-	load "test_helper/bats-assert/load"
+	load "test_helper/load"
+	load_lib "bats-support"
+	load_lib "bats-assert"
 }
 
 @test "sloctl version" {
 	TMP_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t "sloctl-bats") # Works on Linux and OSX.
-	PKG="github.com/nobl9/n9/pkg/version"
+	PKG="github.com/nobl9/sloctl/internal"
 	LD_FLAGS="\
     -X ${PKG}.BuildVersion=v0.0.1 \
     -X ${PKG}.BuildGitBranch=PC-123-test \
@@ -16,7 +18,7 @@ setup() {
 	go build \
 		-ldflags "$LD_FLAGS" \
 		-o "${TMP_DIR}/sloctl" \
-		"$BATS_TEST_DIRNAME/../main.go"
+		"$BATS_TEST_DIRNAME/../cmd/sloctl/main.go"
 
 	run "${TMP_DIR}/sloctl" version
 

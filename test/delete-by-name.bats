@@ -3,8 +3,8 @@
 
 # setup_file is run only once for the whole file.
 setup_file() {
-	load "test_helper/bats-assert/load"
-	load "test_helper/sloctl-utils/load"
+	load "test_helper/load"
+	load_lib "bats-assert"
 
 	generate_inputs "$BATS_FILE_TMPDIR"
 	run_sloctl apply -f "'$TEST_INPUTS/**'"
@@ -18,9 +18,9 @@ teardown_file() {
 
 # setup is run before each test.
 setup() {
-	load "test_helper/bats-support/load"
-	load "test_helper/bats-assert/load"
-	load "test_helper/sloctl-utils/load"
+	load "test_helper/load"
+	load_lib "bats-support"
+	load_lib "bats-assert"
 }
 
 # -------------------------------------------------------------

@@ -2,6 +2,7 @@
 MAKEFLAGS += --silent --no-print-directory
 
 BIN_DIR := ./bin
+TEST_DIR := ./test
 APP_NAME := sloctl
 LDFLAGS += -s -w
 
@@ -38,10 +39,20 @@ endef
 build:
 	go build -ldflags=$(LDFLAGS) -o $(BIN_DIR)/$(APP_NAME) .
 
-.PHONY: test
+.PHONY: test test/go/unit test/bats/%
 ## Run all unit tests.
-test:
+test/unit: test/go/unit test/bats/unit
+
+## Run go unit tests.
+test/go/unit:
+	$(call _print_step,Running go unit tests)
 	go test -race -cover ./...
+
+## Run all unit tests.
+test/bats/%:
+	$(call _print_step,Running bats $(*F) tests)
+	docker build -t sloctl-bats -f $(TEST_DIR)/Dockerfile .
+	docker run --rm sloctl-bats --filter-tags $(*F) $(TEST_DIR)/*
 
 .PHONY: check check/vet check/lint check/gosec check/spell check/trailing check/markdown check/format check/generate check/vulns
 ## Run all checks.
