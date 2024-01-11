@@ -13,14 +13,13 @@ func NewVersionCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   versionCmdName,
 		Short: "Print the sloctl version",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(*cobra.Command, []string) {
 			fmt.Println(getUserAgent())
 		},
 	}
 }
 
 // Set during build time.
-// nolint:gochecknoglobals
 var (
 	BuildGitRevision string
 	BuildGitBranch   string

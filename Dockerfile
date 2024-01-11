@@ -17,6 +17,6 @@ RUN CGO_ENABLED=0 go build \
 
 FROM scratch
 
-COPY --from=builder /artifacts/sloctl ./sloctl
+COPY --from=builder /artifacts/sloctl /usr/bin/sloctl
 
 ENTRYPOINT ["sloctl"]

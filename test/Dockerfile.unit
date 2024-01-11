@@ -1,0 +1,10 @@
+FROM bats/bats:v1.10.0
+
+RUN apk --no-cache --update add \
+  gettext jq git python3 py3-pip
+RUN pip install yq
+
+WORKDIR /sloctl
+
+COPY ./test ./test
+COPY --from=sloctl-test-bin /usr/bin/sloctl /usr/bin/sloctl

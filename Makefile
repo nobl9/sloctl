@@ -5,6 +5,7 @@ BIN_DIR := ./bin
 TEST_DIR := ./test
 APP_NAME := sloctl
 LDFLAGS += -s -w
+VERSION_PKG := "$(shell go list -m)/internal"
 
 # renovate datasource=github-releases depName=securego/gosec
 GOSEC_VERSION := v2.18.2
@@ -29,9 +30,9 @@ define _install_go_binary
 endef
 
 # Print Makefile target step description for check.
-# Only print 'check' steps this way, and not dependent steps, like 'install'.
+# Only print top level steps this way, and not dependent steps, like 'install'.
 # ${1} - step description
-define _print_check_step
+define _print_step
 	printf -- '------\n%s...\n' "${1}"
 endef
 
@@ -48,11 +49,14 @@ test/go/unit:
 	$(call _print_step,Running go unit tests)
 	go test -race -cover ./...
 
-## Run all unit tests.
+## Run bats unit tests.
 test/bats/%:
 	$(call _print_step,Running bats $(*F) tests)
-	docker build -t sloctl-bats -f $(TEST_DIR)/Dockerfile .
-	docker run --rm sloctl-bats --filter-tags $(*F) $(TEST_DIR)/*
+	docker build \
+		--build-arg LDFLAGS="-X $(VERSION_PKG).BuildVersion=v1.0.0 -X $(VERSION_PKG).BuildGitBranch=PC-123-test -X $(VERSION_PKG).BuildGitRevision=e2602ddc" \
+		-t sloctl-test-bin . ; \
+	docker build -t sloctl-bats-$(*F) -f $(TEST_DIR)/Dockerfile.$(*F) .
+	docker run --rm sloctl-bats-$(*F) --filter-tags $(*F) $(TEST_DIR)/*
 
 .PHONY: check check/vet check/lint check/gosec check/spell check/trailing check/markdown check/format check/generate check/vulns
 ## Run all checks.
@@ -60,53 +64,53 @@ check: check/vet check/lint check/gosec check/spell check/trailing check/markdow
 
 ## Run 'go vet' on the whole project.
 check/vet:
-	$(call _print_check_step,Running go vet)
+	$(call _print_step,Running go vet)
 	go vet ./...
 
 ## Run golangci-lint all-in-one linter with configuration defined inside .golangci.yml.
 check/lint:
-	$(call _print_check_step,Running golangci-lint)
+	$(call _print_step,Running golangci-lint)
 	$(call _ensure_installed,binary,golangci-lint)
 	$(BIN_DIR)/golangci-lint run
 
 ## Check for security problems using gosec, which inspects the Go code by scanning the AST.
 check/gosec:
-	$(call _print_check_step,Running gosec)
+	$(call _print_step,Running gosec)
 	$(call _ensure_installed,binary,gosec)
 	$(BIN_DIR)/gosec -exclude-generated -quiet ./...
 
 ## Check spelling, rules are defined in cspell.json.
 check/spell:
-	$(call _print_check_step,Verifying spelling)
+	$(call _print_step,Verifying spelling)
 	$(call _ensure_installed,yarn,cspell)
 	yarn --silent cspell --no-progress '**/**'
 
 ## Check for trailing whitespaces in any of the projects' files.
 check/trailing:
-	$(call _print_check_step,Looking for trailing whitespaces)
+	$(call _print_step,Looking for trailing whitespaces)
 	yarn --silent check-trailing-whitespaces
 
 ## Check markdown files for potential issues with markdownlint.
 check/markdown:
-	$(call _print_check_step,Verifying Markdown files)
+	$(call _print_step,Verifying Markdown files)
 	$(call _ensure_installed,yarn,markdownlint)
 	yarn --silent markdownlint '*.md' --disable MD010 # MD010 does not handle code blocks well.
 
 ## Check for potential vulnerabilities across all Go dependencies.
 check/vulns:
-	$(call _print_check_step,Running govulncheck)
+	$(call _print_step,Running govulncheck)
 	$(call _ensure_installed,binary,govulncheck)
 	$(BIN_DIR)/govulncheck ./...
 
 ## Verify if the auto generated code has been committed.
 check/generate:
-	$(call _print_check_step,Checking if generated code matches the provided definitions)
+	$(call _print_step,Checking if generated code matches the provided definitions)
 	./scripts/check-generate.sh
 
 ## Verify if the files are formatted.
 ## You must first commit the changes, otherwise it won't detect the diffs.
 check/format:
-	$(call _print_check_step,Checking if files are formatted)
+	$(call _print_step,Checking if files are formatted)
 	./scripts/check-formatting.sh
 
 .PHONY: generate generate/code

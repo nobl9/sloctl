@@ -12,7 +12,7 @@
 # The output of sloctl is sanitized, the trailing whitespaces,
 # if present, are removed for easier output validation.
 run_sloctl() {
-  run bash -c "set -o pipefail && $SLOCTL_BIN $* | sed 's/ *$//'"
+  run bash -c "set -o pipefail && sloctl $* | sed 's/ *$//'"
 }
 
 # read_files
