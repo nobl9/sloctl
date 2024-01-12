@@ -1,0 +1,53 @@
+name: Release
+on:
+  push:
+    tags:
+      - "^v[0-9]+.[0-9]+.[0-9]+$"
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: nobl9/sloctl
+          flavor: |
+            latest=true
+          tags: |
+            type=sha
+            type=semver,pattern={{version}}
+      - name: Release Binaries
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GORELEASER_TOKEN }}
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          platforms: linux/amd64, linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: GO_VERSION='-s -w -X github.com/nobl9/sloctl/internal/sloctl.BuildVersion=${{ github.ref_name }}'

@@ -1,0 +1,14 @@
+- apiVersion: n9/v1alpha
+  kind: Project
+  metadata:
+    name: death-star
+  spec:
+    description: ""
+- apiVersion: n9/v1alpha
+  kind: Service
+  metadata:
+    displayName: Destroyer
+    name: destroyer
+    project: death-star
+  spec:
+    description: ""

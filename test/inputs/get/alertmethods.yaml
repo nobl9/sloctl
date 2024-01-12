@@ -1,0 +1,30 @@
+- apiVersion: n9/v1alpha
+  kind: AlertMethod
+  metadata:
+    name: mail-notification-genius
+    project: death-star
+  spec:
+    description: Dummy AlertMethod for 'sloctl get' e2e tests
+    email:
+      body: "$alert_policy_name has triggered with the following conditions:\n$alert_policy_conditions[]\n\nTime:
+        $timestamp\nSeverity: $severity \nProject: $project_name\nService: $service_name\nOrganization:
+        $organization\nLabels:\n- SLO: $slo_labels_text\n- Service: $service_labels_text\n-
+        Alert Policy: $alert_policy_labels_text\n\nSLO details: $slo_details_link"
+      subject: Your SLO $slo_name needs attention!
+      to:
+      - custodian@nobl9.com
+- apiVersion: n9/v1alpha
+  kind: AlertMethod
+  metadata:
+    name: mail-notification-smart
+    project: death-star
+  spec:
+    description: Dummy AlertMethod for 'sloctl get' e2e tests
+    email:
+      body: "$alert_policy_name has triggered with the following conditions:\n$alert_policy_conditions[]\n\nTime:
+        $timestamp\nSeverity: $severity \nProject: $project_name\nService: $service_name\nOrganization:
+        $organization\nLabels:\n- SLO: $slo_labels_text\n- Service: $service_labels_text\n-
+        Alert Policy: $alert_policy_labels_text\n\nSLO details: $slo_details_link"
+      subject: Your SLO $slo_name needs attention!
+      to:
+      - custodian@nobl9.com

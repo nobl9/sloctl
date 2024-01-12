@@ -1,0 +1,63 @@
+- apiVersion: n9/v1alpha
+  kind: SLO
+  metadata:
+    name: tokyo-server-6-latency
+    project: death-star
+  spec:
+    description: This SLO is just for the e2e 'sloctl get' tests, it's not supposed to work!
+    service: destroyer
+    indicator:
+      metricSource:
+        kind: Direct
+        name: splunk-observability-direct
+    timeWindows:
+      - unit: Day
+        count: 1
+        calendar:
+          startTime: 2020-01-21 12:30:00
+          timeZone: America/New_York
+    budgetingMethod: Occurrences
+    objectives:
+      - displayName: Excellent
+        value: 200
+        name: objective-1
+        target: 0.8
+        op: lte
+        rawMetric:
+          query:
+            splunkObservability:
+              program: "data('demo.trans.latency', filter=filter('demo_datacenter', 'Tokyo') and filter('demo_host', 'server6')).mean().publish()"
+    alertPolicies:
+      - trigger-alert-immediately
+      - budget-will-be-burn-in-3days
+- apiVersion: n9/v1alpha
+  kind: SLO
+  metadata:
+    name: newrelic-rolling-timeslices-threshold
+    project: death-star
+  spec:
+    description: This SLO is just for the e2e 'sloctl get' tests, it's not supposed to work!
+    service: destroyer
+    indicator:
+      metricSource:
+        kind: Direct
+        name: newrelic-direct
+    timeWindows:
+      - count: 1
+        isRolling: true
+        unit: Hour
+    budgetingMethod: Timeslices
+    objectives:
+      - target: 0.99
+        op: lte
+        rawMetric:
+          query:
+            newRelic:
+              nrql: SELECT average(duration) FROM Transaction TIMESERIES
+        displayName: stretched
+        timeSliceTarget: 0.99
+        value: 1.2
+        name: objective-1
+    alertPolicies:
+      - trigger-alert-immediately
+      - budget-will-be-burn-in-3days
