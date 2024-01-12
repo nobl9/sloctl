@@ -26,6 +26,7 @@ ignorePaths:
   - bin/**
   - test/**
   - "**/test_data/**"
+  - dist/**
 words:
   - dynatrace
   - endef
