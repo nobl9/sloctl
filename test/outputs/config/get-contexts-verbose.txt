@@ -1,0 +1,14 @@
+[full, minimal]
+Context: full
+	client ID: full_client_id
+	client secret: fu***et
+	url: https://apps.nobl9.com/api
+	oktaOrgURL: https://accounts.nobl9.com
+	oktaAuthServer: auseg9kiegWKEtJZC416
+	disable okta: true
+	timeout: 1m0s
+
+Context: minimal
+	client ID: minimal_client_id
+	client secret: mi***et
+

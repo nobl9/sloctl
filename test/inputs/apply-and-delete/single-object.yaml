@@ -1,0 +1,6 @@
+apiVersion: n9/v1alpha
+kind: Project
+metadata:
+  name: <PROJECT>
+spec:
+  description: Dummy Project for 'sloctl apply/delete' e2e tests

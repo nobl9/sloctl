@@ -1,0 +1,8 @@
+apiVersion: n9/v1alpha
+kind: Service
+metadata:
+  displayName: Destroyer
+  name: destroyer
+  project: death-star
+spec:
+  description: Dummy Service for 'sloctl get' e2e tests

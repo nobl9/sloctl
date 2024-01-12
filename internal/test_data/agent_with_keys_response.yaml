@@ -1,0 +1,14 @@
+- apiVersion: n9/v1alpha
+  kind: Agent
+  metadata:
+    client_id: super-secret-luke
+    client_secret: even-more-secret-luke!
+    name: luke-skywalker
+    project: jedi-training
+- apiVersion: n9/v1alpha
+  kind: Agent
+  metadata:
+    client_id: super-secret-obi
+    client_secret: even-more-secret-obi!
+    name: obi-wan
+    project: secret-mission

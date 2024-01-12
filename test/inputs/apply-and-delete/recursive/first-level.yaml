@@ -1,0 +1,14 @@
+- apiVersion: n9/v1alpha
+  kind: Project
+  metadata:
+    name: <PROJECT>
+  spec:
+    description: Dummy Project for 'sloctl apply/delete' e2e tests
+- apiVersion: n9/v1alpha
+  kind: Service
+  metadata:
+    displayName: First Level
+    name: first-level
+    project: <PROJECT>
+  spec:
+    description: Dummy Service for 'sloctl apply/delete' e2e tests

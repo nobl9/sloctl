@@ -1,0 +1,7 @@
+apiVersion: n9/v1alpha
+kind: Service
+metadata:
+  name: service
+  project: default
+spec:
+  description: ""

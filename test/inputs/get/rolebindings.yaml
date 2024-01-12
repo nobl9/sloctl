@@ -1,0 +1,16 @@
+- apiVersion: n9/v1alpha
+  kind: RoleBinding
+  metadata:
+    name: 53792c8f-41da-4658-ac4e-random
+  spec:
+    projectRef: death-star
+    roleRef: project-viewer
+    user: 00u4d8j2imVHGmBJH4x1
+- apiVersion: n9/v1alpha
+  kind: RoleBinding
+  metadata:
+    name: 8abfed13-d997-487a-bfbd-random
+  spec:
+    projectRef: death-star
+    roleRef: project-viewer
+    user: 01u4d8j2imVHGmBJH4x1
