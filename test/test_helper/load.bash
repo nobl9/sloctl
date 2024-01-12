@@ -131,7 +131,7 @@ _assert_objects_existence() {
 #   <dir>    Directory to generate the inputs into.
 #
 # Each Project gets a hash appended to its name which contains the test number,
-# the current timestamp and the git commit hash. Each object which is part of the
+# the current timestamp and the git commit hash.
 #
 # This is done in order to avoid conflicts between tests in case we ever run
 # them in parallel or a cleanup after the test fails for whatever reason.
@@ -144,7 +144,7 @@ generate_inputs() {
   TEST_INPUTS="$directory/$test_filename"
   mkdir "$TEST_INPUTS"
 
-  test_hash="${BATS_TEST_NUMBER}-$(date +%s)-$(git rev-parse --short=8 HEAD)"
+  test_hash="${BATS_TEST_NUMBER}-$(date +%s)-$SLOCTL_GIT_REVISION"
   TEST_PROJECT="e2e-$test_hash"
 
   files=$(find "$TEST_SUITE_INPUTS/$test_filename" -type f \( -iname \*.json -o -iname \*.yaml -o -iname \*.yml \))
@@ -220,7 +220,7 @@ ensure_installed() {
   done
 }
 
-# load_lib 
+# load_lib
 # ================
 #
 # Summary: Load a given bats library.

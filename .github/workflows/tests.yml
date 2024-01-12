@@ -18,4 +18,4 @@ jobs:
           go-version-file: go.mod
           cache: false
       - name: Run unit tests
-        run: make test
+        run: make test/unit

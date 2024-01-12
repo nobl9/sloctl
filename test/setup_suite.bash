@@ -6,4 +6,6 @@ setup_suite() {
 
   export TEST_SUITE_OUTPUTS="$BATS_TEST_DIRNAME/outputs"
   export TEST_SUITE_INPUTS="$BATS_TEST_DIRNAME/inputs"
+
+  export SLOCTL_GIT_REVISION="${SLOCTL_GIT_REVISION:=undefined}"
 }

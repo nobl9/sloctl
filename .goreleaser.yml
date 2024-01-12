@@ -17,17 +17,6 @@ builds:
     - amd64
   binary: '{{ .ProjectName }}'
 
-dockers:
-  - image_templates:
-      - 'nobl9/sloctl:latest'
-      - 'nobl9/sloctl:{{.Version }}'
-    dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-      - "--context=default buildx"
-      - "--build-arg=VERSION={{ .Version }}"
-      - "--build-arg=LDFLAGS='-s -w -X github.com/nobl9/sloctl/internal/sloctl.BuildVersion={{ .Version }} -X github.com/nobl9/sloctl/internal/sloctl.BuildGitBranch={{ .Branch }} -X github.com/nobl9/sloctl/internal/sloctl.BuildGitRevision={{ .ShortCommit }}'"
-
 archives:
 - format: binary
   name_template: '{{ .ProjectName }}-{{ if eq .Os "darwin" }}macos{{ else }}{{ .Os }}{{ end }}-{{ .Version }}'

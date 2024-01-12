@@ -7,4 +7,7 @@ RUN pip install yq
 WORKDIR /sloctl
 
 COPY ./test ./test
-COPY --from=sloctl-test-bin /usr/bin/sloctl /usr/bin/sloctl
+COPY --from=sloctl-unit-test-bin /usr/bin/sloctl /usr/bin/sloctl
+
+# Required for bats pretty printing.
+ENV TERM=linux

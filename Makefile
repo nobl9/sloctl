@@ -7,6 +7,13 @@ APP_NAME := sloctl
 LDFLAGS += -s -w
 VERSION_PKG := "$(shell go list -m)/internal"
 
+ifndef BRANCH
+  BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
+endif
+ifndef REVISION
+  REVISION := $(shell git rev-parse --short=8 HEAD)
+endif
+
 # renovate datasource=github-releases depName=securego/gosec
 GOSEC_VERSION := v2.18.2
 # renovate datasource=github-releases depName=golangci/golangci-lint
@@ -40,9 +47,13 @@ endef
 build:
 	go build -ldflags=$(LDFLAGS) -o $(BIN_DIR)/$(APP_NAME) .
 
-.PHONY: test test/go/unit test/bats/%
+.PHONY: test/unit test/go/unit test/bats/%
 ## Run all unit tests.
 test/unit: test/go/unit test/bats/unit
+
+.PHONY: test/e2e
+## Run all e2e tests.
+test/e2e: test/bats/e2e
 
 ## Run go unit tests.
 test/go/unit:
@@ -50,13 +61,28 @@ test/go/unit:
 	go test -race -cover ./...
 
 ## Run bats unit tests.
-test/bats/%:
-	$(call _print_step,Running bats $(*F) tests)
+test/bats/unit:
+	$(call _print_step,Running bats unit tests)
 	docker build \
 		--build-arg LDFLAGS="-X $(VERSION_PKG).BuildVersion=v1.0.0 -X $(VERSION_PKG).BuildGitBranch=PC-123-test -X $(VERSION_PKG).BuildGitRevision=e2602ddc" \
-		-t sloctl-test-bin . ; \
-	docker build -t sloctl-bats-$(*F) -f $(TEST_DIR)/Dockerfile.$(*F) .
-	docker run --rm sloctl-bats-$(*F) --filter-tags $(*F) $(TEST_DIR)/*
+		-t sloctl-unit-test-bin . ; \
+	docker build -t sloctl-bats-unit -f $(TEST_DIR)/Dockerfile.unit .
+	docker run -e TERM=linux --rm \
+		sloctl-bats-unit -F pretty --filter-tags unit $(TEST_DIR)/*
+
+## Run bats unit tests.
+test/bats/e2e:
+	echo "$(SLOCTL_CLIENT_ID)"
+	$(call _print_step,Running bats e2e tests)
+	docker build \
+		--build-arg LDFLAGS="-X $(VERSION_PKG).BuildVersion=$(VERSION) -X $(VERSION_PKG).BuildGitBranch=$(BRANCH) -X $(VERSION_PKG).BuildGitRevision=$(REVISION)" \
+		-t sloctl-e2e-test-bin . ; \
+	docker build -t sloctl-bats-e2e -f $(TEST_DIR)/Dockerfile.e2e .
+	docker run --rm \
+		-e SLOCTL_CLIENT_ID=$(SLOCTL_CLIENT_ID) \
+		-e SLOCTL_CLIENT_SECRET=$(SLOCTL_CLIENT_SECRET) \
+		-e SLOCTL_GIT_REVISION=$(REVISION) \
+		sloctl-bats-e2e -F pretty --filter-tags e2e $(TEST_DIR)/*
 
 .PHONY: check check/vet check/lint check/gosec check/spell check/trailing check/markdown check/format check/generate check/vulns
 ## Run all checks.
