@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"sigs.k8s.io/yaml"
+	"github.com/goccy/go-yaml"
 
 	"github.com/nobl9/sloctl/internal/csv"
 )

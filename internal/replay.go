@@ -16,11 +16,11 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/goccy/go-yaml"
 	"github.com/mitchellh/colorstring"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
-	"k8s.io/apimachinery/pkg/util/yaml"
 
 	v1alphaSLO "github.com/nobl9/nobl9-go/manifest/v1alpha/slo"
 	"github.com/nobl9/nobl9-go/sdk"
