@@ -5,7 +5,6 @@ go 1.21
 require (
 	github.com/go-playground/validator/v10 v10.16.0
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
-	github.com/nobl9/n9 v1.66.3
 	github.com/nobl9/nobl9-go v0.77.2
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.14.1

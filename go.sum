@@ -73,8 +73,6 @@ github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db h1:62I3jR2Em
 github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db/go.mod h1:l0dey0ia/Uv7NcFFVbCLtqEBQbrT4OCwCSKTEv6enCw=
 github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
 github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
-github.com/nobl9/n9 v1.66.3 h1:AUpkoq6pb9dctRuLT7v0Cd1111pA944cAiu3Voo7R58=
-github.com/nobl9/n9 v1.66.3/go.mod h1:SgVk5wJ+aPy0flvub4YImSHihI7nAT0YLd23okK92io=
 github.com/nobl9/nobl9-go v0.77.2 h1:EiUNXfc2QECaGZ8jisYdREk8WVksavOlaP7mNfz+IW4=
 github.com/nobl9/nobl9-go v0.77.2/go.mod h1:baz6btl+crjNVUPpJB5FPosQJvkh0L3AdNXWiALdj0E=
 github.com/patrickmn/go-cache v2.1.0+incompatible h1:HRMgzkcYKYpi3C8ajMPV8OFXaaRUnok+kx1WdO15EQc=
