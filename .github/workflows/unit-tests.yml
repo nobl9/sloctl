@@ -1,4 +1,4 @@
-name: Tests
+name: Unit tests
 on:
   push:
     branches:
@@ -17,5 +17,5 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
-      - name: Run unit tests
+      - name: Run tests
         run: make test/unit

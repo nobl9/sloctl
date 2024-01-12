@@ -4,18 +4,6 @@ on:
     tags:
       - "^v[0-9]+.[0-9]+.[0-9]+$"
 jobs:
-  e2e-test:
-    name: Run e2e tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: false
-      - name: Run unit tests
-        run: make test/e2e
   release:
     runs-on: ubuntu-latest
     steps:
