@@ -37,7 +37,7 @@ brew install sloctl
 docker pull nobl9/sloctl
 ```
 
-### Build docker image locally
+### Build Docker image locally
 
 1. Download Dockerfile and latest linux sloctl binary from the Releases page.
    Make sure they are in your working directory.
