@@ -2,7 +2,7 @@ name: Release
 on:
   push:
     tags:
-      - "^v[0-9]+.[0-9]+.[0-9]+-rc.*"
+      - "v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+"
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -20,6 +20,6 @@ jobs:
         uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
-          args: release --clean
+          args: release --clean --skip=homebrew
         env:
           GITHUB_TOKEN: ${{ secrets.GORELEASER_TOKEN }}
