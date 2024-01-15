@@ -8,7 +8,7 @@ builds:
   flags:
     - -trimpath
   ldflags:
-    - '-s -w -X github.com/nobl9/sloctl/internal/sloctl.BuildVersion={{ .Version }} -X github.com/nobl9/sloctl/internal/sloctl.BuildGitBranch={{ .Branch }} -X github.com/nobl9/sloctl/internal/sloctl.BuildGitRevision={{ .ShortCommit }}'
+    - '-s -w -X github.com/nobl9/sloctl/internal.BuildVersion={{ .Version }} -X github.com/nobl9/sloctl/internal.BuildGitBranch={{ .Branch }} -X github.com/nobl9/sloctl/internal.BuildGitRevision={{ .ShortCommit }}'
   goos:
     - windows
     - linux
