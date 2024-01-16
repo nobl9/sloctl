@@ -32,7 +32,7 @@ release:
 
 brews:
   - name: '{{ .ProjectName }}'
-    tap:
+    repository:
       owner: nobl9
       name: 'homebrew-{{ .ProjectName }}'
       branch: main
