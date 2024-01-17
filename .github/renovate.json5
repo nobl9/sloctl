@@ -15,21 +15,11 @@
   "rebaseWhen": "conflicted",
   "rangeStrategy": "pin",
   "branchPrefix": "renovate_",
-  // Auto-merge section.
-  // Only
-  "automergeType": "pr",
-  "lockFileMaintenance": {
-    "automerge": true
-  },
-  "minor": {
-    "automerge": true
-  },
-  "patch": {
-    "automerge": true
-  },
-  "pin": {
-    "automerge": true
-  },
+  "commitMessagePrefix": "chore:",
+  // PR approval is required.
+  // We're not using any bot to approve Renovate PRs, we're doing it ourselves.
+  // This effectively works as a convenience that skips pressing merge button manually.
+  "automerge": true,
   // This will run go mod tidy after each go.mod update.
   "postUpdateOptions": ["gomodTidy"],
   // Groups:
