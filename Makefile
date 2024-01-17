@@ -43,9 +43,26 @@ define _print_step
 	printf -- '------\n%s...\n' "${1}"
 endef
 
+# Build sloctl docker image.
+# ${1} - image name
+# ${2} - version
+# ${3} - git branch
+# ${4} - git revision
+define _build_docker
+	docker build \
+		--build-arg LDFLAGS="-X $(VERSION_PKG).BuildVersion=$(2) -X $(VERSION_PKG).BuildGitBranch=$(3) -X $(VERSION_PKG).BuildGitRevision=$(4)" \
+		-t "$(1)" .
+endef
+
 .PHONY: build
+## Build sloctl binary.
 build:
-	go build -ldflags=$(LDFLAGS) -o $(BIN_DIR)/$(APP_NAME) .
+	go build -ldflags="$(LDFLAGS)" -o $(BIN_DIR)/$(APP_NAME) ./cmd/$(APP_NAME)/
+
+.PHONY: docker
+## Build sloctl Docker image.
+docker:
+	$(call _build_docker,sloctl,$(VERSION),$(BRANCH),$(REVISION))
 
 .PHONY: test/unit test/go/unit test/bats/%
 ## Run all unit tests.
@@ -63,9 +80,7 @@ test/go/unit:
 ## Run bats unit tests.
 test/bats/unit:
 	$(call _print_step,Running bats unit tests)
-	docker build \
-		--build-arg LDFLAGS="-X $(VERSION_PKG).BuildVersion=v1.0.0 -X $(VERSION_PKG).BuildGitBranch=PC-123-test -X $(VERSION_PKG).BuildGitRevision=e2602ddc" \
-		-t sloctl-unit-test-bin . ; \
+	$(call _build_docker,sloctl-unit-test-bin,v1.0.0,PC-123-test,e2602ddc)
 	docker build -t sloctl-bats-unit -f $(TEST_DIR)/Dockerfile.unit .
 	docker run -e TERM=linux --rm \
 		sloctl-bats-unit -F pretty --filter-tags unit $(TEST_DIR)/*
@@ -74,9 +89,7 @@ test/bats/unit:
 test/bats/e2e:
 	echo "$(SLOCTL_CLIENT_ID)"
 	$(call _print_step,Running bats e2e tests)
-	docker build \
-		--build-arg LDFLAGS="-X $(VERSION_PKG).BuildVersion=$(VERSION) -X $(VERSION_PKG).BuildGitBranch=$(BRANCH) -X $(VERSION_PKG).BuildGitRevision=$(REVISION)" \
-		-t sloctl-e2e-test-bin . ; \
+	$(call _build_docker,sloctl-e2e-test-bin,$(VERSION),$(BRANCH),$(REVISION))
 	docker build -t sloctl-bats-e2e -f $(TEST_DIR)/Dockerfile.e2e .
 	docker run --rm \
 		-e SLOCTL_CLIENT_ID=$(SLOCTL_CLIENT_ID) \
