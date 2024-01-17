@@ -45,7 +45,7 @@ endef
 
 .PHONY: build
 build:
-	go build -ldflags=$(LDFLAGS) -o $(BIN_DIR)/$(APP_NAME) .
+	go build -ldflags="$(LDFLAGS)" -o $(BIN_DIR)/$(APP_NAME) ./cmd/$(APP_NAME)/
 
 .PHONY: test/unit test/go/unit test/bats/%
 ## Run all unit tests.
