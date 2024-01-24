@@ -15,21 +15,7 @@
   "rebaseWhen": "conflicted",
   "rangeStrategy": "pin",
   "branchPrefix": "renovate_",
-  // Auto-merge section.
-  // Only
-  "automergeType": "pr",
-  "lockFileMaintenance": {
-    "automerge": true
-  },
-  "minor": {
-    "automerge": true
-  },
-  "patch": {
-    "automerge": true
-  },
-  "pin": {
-    "automerge": true
-  },
+  "commitMessagePrefix": "chore:",
   // This will run go mod tidy after each go.mod update.
   "postUpdateOptions": ["gomodTidy"],
   // Groups:
