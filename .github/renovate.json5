@@ -5,6 +5,10 @@
     ":enableVulnerabilityAlertsWithLabel(security)", // https://docs.renovatebot.com/presets-default/#enablevulnerabilityalertswithlabelarg0
     "group:recommended", // https://docs.renovatebot.com/presets-group/#grouprecommended
     "workarounds:all", // https://docs.renovatebot.com/presets-workarounds/#workaroundsall
+    // Automerge configuration.
+    ":automergeMinor",
+    ":automergePr",
+    ":automergeRequireAllStatusChecks",
   ],
   "reviewersFromCodeOwners": true,
   "dependencyDashboard": true,
