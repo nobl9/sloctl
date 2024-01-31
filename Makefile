@@ -87,13 +87,14 @@ test/bats/unit:
 
 ## Run bats unit tests.
 test/bats/e2e:
-	echo "$(SLOCTL_CLIENT_ID)"
 	$(call _print_step,Running bats e2e tests)
 	$(call _build_docker,sloctl-e2e-test-bin,$(VERSION),$(BRANCH),$(REVISION))
 	docker build -t sloctl-bats-e2e -f $(TEST_DIR)/Dockerfile.e2e .
 	docker run --rm \
 		-e SLOCTL_CLIENT_ID=$(SLOCTL_CLIENT_ID) \
 		-e SLOCTL_CLIENT_SECRET=$(SLOCTL_CLIENT_SECRET) \
+		-e SLOCTL_OKTA_ORG_URL=$(SLOCTL_OKTA_ORG_URL) \
+		-e SLOCTL_OKTA_AUTH_SERVER=$(SLOCTL_OKTA_AUTH_SERVER) \
 		-e SLOCTL_GIT_REVISION=$(REVISION) \
 		sloctl-bats-e2e -F pretty --filter-tags e2e $(TEST_DIR)/*
 
