@@ -1,0 +1,20 @@
+- apiVersion: n9/v1alpha
+  kind: Project
+  metadata:
+    name: death-star
+  spec:
+    description: Dummy Project for 'sloctl aws-iam-ids' e2e tests
+- apiVersion: n9/v1alpha
+  kind: Direct
+  metadata:
+    name: splunk-observability-direct
+    displayName: Splunk Observability direct
+    project: death-star
+  spec:
+    description: This Direct is just for the e2e 'sloctl aws-iam-ids' tests, it's not supposed to work!
+    sourceOf:
+      - Metrics
+      - Services
+    splunkObservability:
+      realm: us1
+      accessToken: super-secret
