@@ -18,9 +18,6 @@ categories:
     labels:
       - chore
       - infrastructure
-  - title: 🤖 Dependency Updates
-    collapse-after: 3
-    labels:
       - dependencies
 change-template: "- $TITLE (#$NUMBER) @$AUTHOR"
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
