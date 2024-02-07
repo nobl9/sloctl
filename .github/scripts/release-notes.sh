@@ -55,7 +55,7 @@ while IFS= read -r line; do
 		continue
 	fi
 	commit_msg="${BASH_REMATCH[1]}"
-	commit_body=$(git log --grep "$commit_msg" -n1 --pretty="%b")
+	commit_body=$(git log -F --grep "$commit_msg" -n1 --pretty="%b")
 
 	add_notes() {
 		local notes="$1"
