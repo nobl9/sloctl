@@ -11,7 +11,7 @@ assignees: ''
 A clear and concise description of what the bug is.
 
 **To Reproduce**
-Steps to reproduce the behavior, ideally a minimal working working example.
+Steps to reproduce the behavior, ideally a minimal working example.
 
 **Expected behavior**
 A clear and concise description of what you expected to happen.
