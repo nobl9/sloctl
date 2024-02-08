@@ -16,7 +16,7 @@ Steps to reproduce the behavior, ideally a minimal working example.
 **Expected behavior**
 A clear and concise description of what you expected to happen.
 
-**System details (please complete the following information):**
+**System details (please complete the following information)**
  - OS (with version): [e.g. OS X 14.2.1, Ubuntu 22.04]
  - `sloctl` version [e.g. v1.0.2]
 
