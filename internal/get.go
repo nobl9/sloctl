@@ -73,6 +73,7 @@ To get more details in output use one of the available flags.`,
 		{Kind: manifest.KindService, Aliases: []string{"svc", "svcs"}},
 		{Kind: manifest.KindSLO},
 		{Kind: manifest.KindUserGroup},
+		{Kind: manifest.KindBudgetAdjustment},
 	} {
 		plural := subCmd.Kind.String() + "s"
 		if len(subCmd.Plural) > 0 {
