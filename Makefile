@@ -15,13 +15,13 @@ ifndef REVISION
 endif
 
 # renovate datasource=github-releases depName=securego/gosec
-GOSEC_VERSION := v2.18.2
+GOSEC_VERSION := v2.19.0
 # renovate datasource=github-releases depName=golangci/golangci-lint
 GOLANGCI_LINT_VERSION := v1.56.0
 # renovate datasource=go depName=golang.org/x/vuln/cmd/govulncheck
 GOVULNCHECK_VERSION := v1.0.4
 # renovate datasource=go depName=golang.org/x/tools/cmd/goimports
-GOIMPORTS_VERSION := v0.17.0
+GOIMPORTS_VERSION := v0.18.0
 
 # Check if the program is present in $PATH and install otherwise.
 # ${1} - oneOf{binary,yarn}

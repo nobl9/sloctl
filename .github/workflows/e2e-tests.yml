@@ -17,5 +17,5 @@ jobs:
       - name: Run tests
         run: make test/e2e
         env:
-          SLOCTL_CLIENT_ID: ${{ secrets.SLOCTL_CLIENT_ID }}
+          SLOCTL_CLIENT_ID: ${{ vars.SLOCTL_CLIENT_ID }}
           SLOCTL_CLIENT_SECRET: ${{ secrets.SLOCTL_CLIENT_SECRET }}
