@@ -23,9 +23,10 @@ extract_header() {
 	local header_name="$2"
 	awk "
     /^\s?$/ {next}
-    /## $header_name/ {rn=1}
-    rn && !/^##/ {print};
-    /##/ && !/## $header_name/ {rn=0}" <<<"$commit"
+    /^## $header_name/ {rn=1}
+    rn && !/^##/ && !/^--+/ {print};
+    /^--+/ {rn=0};
+    /^##/ && !/^## $header_name/ {rn=0}" <<<"$commit"
 }
 
 indent() {
@@ -45,10 +46,7 @@ while IFS= read -r line; do
 		fi
 		rls_header="${BASH_REMATCH[1]}"
 	fi
-	if [[ $rls_header == "" ]]; then
-		continue
-	fi
-	if [[ $line != -* ]]; then
+	if [[ $rls_header == "" ]] || [[ $line != -* ]] || [[ $line == *"@renovate"* ]]; then
 		continue
 	fi
 	if ! [[ $line =~ $commit_message_re ]]; then
