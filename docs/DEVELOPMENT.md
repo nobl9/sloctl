@@ -1,6 +1,14 @@
 # Development
 
 This document describes the intricacies of sloctl development workflow.
+If you see anything missing, feel free to contribute :)
+
+## Pull requests
+
+[Pull request template](.github/pull_request_template.md)
+is provided when you create new PR.
+Section worth noting and getting familiar with is located under
+`## Release Notes` header.
 
 ## Makefile
 
@@ -12,6 +20,12 @@ However, it does not detect if the binary you have is up to date with the
 versions declaration located in Makefile.
 If you see any discrepancies between CI and your local runs, remove the
 binaries from `bin` and let Makefile reinstall them with the latest version.
+
+## CI
+
+Continuous integration pipelines utilize the same Makefile commands which
+you run locally. This ensures consistent behavior of the executed checks
+and makes local debugging easier.
 
 ## Testing
 
@@ -48,22 +62,13 @@ how they're executed.
 
 ## Releases
 
-We're using [Release Drafter](https://github.com/release-drafter/release-drafter)
-to automate release notes creation. Drafter also does its best to propose
-the next release version based on commit messages from `main` branch.
+Refer to [RELEASE.md](./RELEASE.md) for more information on release process.
 
-Release Drafter is also responsible for auto-labeling of pull requests.
-It checks both title and body of pull request and adds appropriate labels. \
-**NOTE:** The auto-labeling mechanism will not remove labels once they're
-created. For example, If you end up changing PR title from `sec:` to `fix:`
-you'll have to manually remove `security` label.
+## Dependencies
 
-On each commit to `main` branch, Release Drafter will update the next release
-draft. Once you're ready to create new version, simply publish the draft.
-
-In addition to Release Drafter, we're also running a script which extracts
-explicitly listed release notes and breaking changes which are optionally
-defined in `## Release Notes` and `## Breaking Changes` headers.
+Renovate is configured to automatically merge minor and patch updates.
+For major versions, which sadly includes GitHub Actions, manual approval
+is required.
 
 ## Dependencies
 
