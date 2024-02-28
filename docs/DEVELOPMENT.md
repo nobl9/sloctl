@@ -69,9 +69,3 @@ Refer to [RELEASE.md](./RELEASE.md) for more information on release process.
 Renovate is configured to automatically merge minor and patch updates.
 For major versions, which sadly includes GitHub Actions, manual approval
 is required.
-
-## Dependencies
-
-Renovate is configured to automatically merge minor and patch updates.
-For major versions, which sadly includes GitHub Actions, manual approval
-is required.
