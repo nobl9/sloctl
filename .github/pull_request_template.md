@@ -22,8 +22,6 @@ If this change should be part of the Release Notes,
 **replace this entire paragraph** with 1-3 sentences about the changes.
 Otherwise, you **MUST** remove this section entirely.
 
-## Breaking Changes
-
 Does this PR contain any breaking changes?
-If so **replace this entire paragraph** with a description of these changes.
-Otherwise, you **MUST** remove this section entirely.
+If so, add `## Breaking Changes` header and list the introduced changes there.
+
