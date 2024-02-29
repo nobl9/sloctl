@@ -2,6 +2,13 @@
   kind: Project
   metadata:
     name: death-star
+    labels:
+      purpose:
+      - defensive
+      - offensive
+      team:
+      - vader
+      - sidious
   spec:
     description: Dummy Project for 'sloctl get' e2e tests
 - apiVersion: n9/v1alpha
@@ -9,5 +16,10 @@
   metadata:
     displayName: Hoth Base
     name: hoth-base
+    labels:
+      purpose:
+      - defensive
+      team:
+      - solo
   spec:
     description: Dummy Project for 'sloctl get' e2e tests
