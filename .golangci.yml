@@ -55,6 +55,10 @@ linters-settings:
     locale: US
   gocognit:
     min-complexity: 40
+  revive:
+    rules:
+      - name: unused-parameter
+        disabled: true
 
 linters:
   disable-all: true
