@@ -2,15 +2,20 @@ name: Release candidate
 on:
   push:
     tags:
-      - "v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-*"
 jobs:
+  test:
+    uses: ./.github/workflows/e2e-tests.yml
+    with:
+      clientId: "${{ vars.SLOCTL_CLIENT_ID }}"
+      ref: "${{ github.ref_name }}"
+    secrets:
+      clientSecret: "${{ secrets.SLOCTL_CLIENT_SECRET }}"
   release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -23,3 +28,4 @@ jobs:
           args: release --clean --skip=homebrew
         env:
           GITHUB_TOKEN: ${{ secrets.GORELEASER_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
