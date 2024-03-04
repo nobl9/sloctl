@@ -11,15 +11,21 @@ jobs:
       ref: "${{ github.ref_name }}"
     secrets:
       clientSecret: "${{ secrets.SLOCTL_CLIENT_SECRET }}"
-  qa:
+  qa-approval:
     runs-on: ubuntu-latest
     environment: qa-approval
     steps:
       - name: No-op approval
         run: echo "This is a no-op step, QA needs to approve it and may perform testing beforehand"
-  release:
+  management-approval:
     runs-on: ubuntu-latest
-    needs: [test, qa]
+    environment: management-approval
+    steps:
+      - name: No-op approval
+        run: echo "This is a no-op step, management needs to approve it"
+  goreleaser:
+    runs-on: ubuntu-latest
+    needs: [test, qa-approval, management-approval]
     environment: management-approval
     steps:
       - name: Checkout Source
