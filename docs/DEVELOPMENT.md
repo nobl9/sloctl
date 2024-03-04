@@ -5,7 +5,7 @@ If you see anything missing, feel free to contribute :)
 
 ## Pull requests
 
-[Pull request template](.github/pull_request_template.md)
+[Pull request template](../.github/pull_request_template.md)
 is provided when you create new PR.
 Section worth noting and getting familiar with is located under
 `## Release Notes` header.
