@@ -4,9 +4,23 @@ on:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
 jobs:
+  test:
+    uses: ./.github/workflows/e2e-tests.yml
+    with:
+      clientId: "${{ vars.SLOCTL_CLIENT_ID }}"
+      ref: "${{ github.ref_name }}"
+    secrets:
+      clientSecret: "${{ secrets.SLOCTL_CLIENT_SECRET }}"
+  qa:
+    runs-on: ubuntu-latest
+    environment: qa-approval
+    steps:
+      - name: No-op approval
+        run: echo "This is a no-op step, QA needs to approve it and may perform testing beforehand"
   release:
     runs-on: ubuntu-latest
-    environment: release
+    needs: [test, qa]
+    environment: management-approval
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
@@ -43,6 +57,7 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GORELEASER_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v5
