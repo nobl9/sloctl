@@ -1,10 +1,10 @@
 <!-- markdownlint-disable line-length html -->
 <h1 align="center">
    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/32738712/185149468-dc07f5d9-68c0-4922-a006-7baf6a08eaac.png">
-      <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/32738712/185148352-bea80385-c772-4842-8f7b-6838bb08a3f4.png">
-      <img alt="N9" src="https://user-images.githubusercontent.com/32738712/185148352-bea80385-c772-4842-8f7b-6838bb08a3f4.png" width="500" />
-   </picture><br/>
+      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/nobl9/n9/assets/84388336/2895fcab-a386-498f-b7c4-14a70c66093d">
+      <source media="(prefers-color-scheme: light)" srcset="https://github.com/nobl9/n9/assets/84388336/b21abc8b-8b05-448b-a8bc-5576c72e81b5">
+      <img alt="N9" src="https://github.com/nobl9/n9/assets/84388336/b21abc8b-8b05-448b-a8bc-5576c72e81b5" width="500" />
+   </picture>
 </h1>
 
 <div align="center">
