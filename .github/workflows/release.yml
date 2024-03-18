@@ -45,11 +45,19 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to Quay
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: nobl9/sloctl
+          images: |
+            nobl9/sloctl
+            quay.io/nobl9/sloctl
           flavor: |
             latest=true
           tags: |
