@@ -23,6 +23,7 @@
         name: objective-1
         target: 0.8
         op: lte
+        primary: true
         rawMetric:
           query:
             splunkObservability:
@@ -58,6 +59,7 @@
         timeSliceTarget: 0.99
         value: 1.2
         name: objective-1
+        primary: false
     alertPolicies:
       - trigger-alert-immediately
       - budget-will-be-burn-in-3days
