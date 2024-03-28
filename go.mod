@@ -14,11 +14,13 @@ require (
 	golang.org/x/sync v0.6.0
 )
 
+replace github.com/nobl9/nobl9-go => github.com/nobl9/nobl9-go v0.79.1-0.20240328163808-5380e6543cb9
+
 require (
 	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/MicahParks/jwkset v0.5.17 // indirect
 	github.com/MicahParks/keyfunc/v3 v3.3.2 // indirect
-	github.com/aws/aws-sdk-go v1.51.8 // indirect
+	github.com/aws/aws-sdk-go v1.51.9 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fatih/color v1.15.0 // indirect
