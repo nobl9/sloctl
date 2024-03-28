@@ -7,6 +7,8 @@ import (
 	"io"
 
 	"github.com/goccy/go-yaml"
+	"github.com/nobl9/nobl9-go/manifest"
+	"github.com/nobl9/nobl9-go/sdk"
 
 	"github.com/nobl9/sloctl/internal/csv"
 )
@@ -45,12 +47,17 @@ type jsonPrinter struct {
 }
 
 func (p *jsonPrinter) Print(content interface{}) error {
-	b, err := json.MarshalIndent(content, "", "  ")
-	if err != nil {
+	switch v := content.(type) {
+	case []manifest.Object:
+		return sdk.PrintObjects(v, p.Out, manifest.ObjectFormatJSON)
+	default:
+		b, err := json.MarshalIndent(content, "", "  ")
+		if err != nil {
+			return err
+		}
+		_, err = p.Out.Write(b)
 		return err
 	}
-	_, err = p.Out.Write(b)
-	return err
 }
 
 type yamlPrinter struct {
@@ -58,12 +65,17 @@ type yamlPrinter struct {
 }
 
 func (p *yamlPrinter) Print(content interface{}) error {
-	b, err := yaml.Marshal(content)
-	if err != nil {
+	switch v := content.(type) {
+	case []manifest.Object:
+		return sdk.PrintObjects(v, p.Out, manifest.ObjectFormatYAML)
+	default:
+		b, err := yaml.Marshal(content)
+		if err != nil {
+			return err
+		}
+		_, err = p.Out.Write(b)
 		return err
 	}
-	_, err = p.Out.Write(b)
-	return err
 }
 
 type csvPrinter struct {
