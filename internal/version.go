@@ -1,6 +1,7 @@
 package internal
 
 import (
+	_ "embed"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -20,8 +21,11 @@ func NewVersionCmd() *cobra.Command {
 }
 
 // Set during build time.
+// BuildVersion defaults to VERSION file contents.
+// This is neccessary since we don't have control over build flags when installed through `go install`.
 var (
 	BuildGitRevision string
 	BuildGitBranch   string
-	BuildVersion     string
+	//go:embed VERSION
+	BuildVersion string
 )
