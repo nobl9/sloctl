@@ -109,7 +109,7 @@ func (r *RootCmd) setupClient() error {
 
 func getUserAgent() string {
 	return fmt.Sprintf("%s/%s-%s-%s (%s %s %s)",
-		programName, BuildVersion, BuildGitBranch, BuildGitRevision,
+		programName, getBuildVersion(), BuildGitBranch, BuildGitRevision,
 		runtime.GOOS, runtime.GOARCH, runtime.Version(),
 	)
 }
