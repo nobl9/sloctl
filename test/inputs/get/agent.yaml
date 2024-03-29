@@ -6,5 +6,3 @@
     project: death-star
   spec:
     cloudwatch: {}
-    sourceOf:
-      - Metrics
