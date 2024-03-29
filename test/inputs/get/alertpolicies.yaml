@@ -6,15 +6,12 @@
   spec:
     description: Dummy AlertPolicy for 'sloctl get' e2e tests
     severity: Medium
-    coolDown: "5m"
+    coolDown: 5m
     conditions:
-      - lastsFor: 2m
-        measurement: timeToBurnBudget
-        op: lt
-        value: 72h
-    alertMethods:
-      - metadata:
-          name: mail-notification-genius
+      - measurement: burnedBudget
+        op: gte
+        value: 0.99
+    alertMethods: []
 - apiVersion: n9/v1alpha
   kind: AlertPolicy
   metadata:
@@ -23,7 +20,7 @@
   spec:
     description: Dummy AlertPolicy for 'sloctl get' e2e tests
     severity: Medium
-    coolDown: "5m"
+    coolDown: 5m
     conditions:
       - lastsFor: 10m
         measurement: timeToBurnBudget
