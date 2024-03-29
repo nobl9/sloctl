@@ -1,8 +1,8 @@
-FROM bats/bats:v1.10.0
+FROM bats/bats:1.11.0
 
 RUN apk --no-cache --update add \
   gettext jq git python3 py3-pip
-RUN pip install yq
+RUN pip install yq --break-system-packages
 
 WORKDIR /sloctl
 
