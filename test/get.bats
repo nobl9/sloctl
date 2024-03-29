@@ -9,6 +9,8 @@ setup_file() {
 	generate_inputs "$BATS_FILE_TMPDIR"
 	run_sloctl apply -f "'$TEST_INPUTS/**'"
 	assert_success
+
+	export TEST_OUTPUTS="$TEST_SUITE_OUTPUTS/get"
 }
 
 # teardown_file is run only once for the whole file.
@@ -142,6 +144,22 @@ setup() {
 	run_sloctl get project -l purpose=offensive hoth-base
 	assert_success
 	assert_output "No resources found."
+}
+
+@test "check full alert policy output" {
+	run_sloctl get alertpolicy -p death-star trigger-alert-immediately
+	assert_success
+	assert_equal \
+		"$(yq --sort-keys -y -r . <<<"$output")" \
+		"$(yq --sort-keys -y -r . "${TEST_OUTPUTS}/alertpolicy.yaml")"
+}
+
+@test "check full direct output" {
+	run_sloctl get direct -p death-star splunk-observability-direct
+	assert_success
+	assert_equal \
+		"$(yq --sort-keys -y -r . <<<"$output")" \
+		"$(yq --sort-keys -y -r . "${TEST_OUTPUTS}/direct.yaml")"
 }
 
 test_get() {
