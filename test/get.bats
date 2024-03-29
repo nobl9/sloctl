@@ -154,7 +154,6 @@ setup() {
 		"$(yq --sort-keys -y -r . "${TEST_OUTPUTS}/alertpolicy.yaml")"
 }
 
-# bats test_tags=bats:focus
 @test "check full direct output" {
 	run_sloctl get direct -p death-star splunk-observability-direct
 	assert_success
