@@ -81,7 +81,7 @@ test/go/unit:
 test/bats/unit:
 	$(call _print_step,Running bats unit tests)
 	$(call _build_docker,sloctl-unit-test-bin,v1.0.0,PC-123-test,e2602ddc)
-	docker build -t sloctl-bats-unit -f $(TEST_DIR)/Dockerfile.unit .
+	docker build -t sloctl-bats-unit -f $(TEST_DIR)/docker/Dockerfile.unit .
 	docker run -e TERM=linux --rm \
 		sloctl-bats-unit -F pretty --filter-tags unit $(TEST_DIR)/*
 
@@ -89,7 +89,7 @@ test/bats/unit:
 test/bats/e2e:
 	$(call _print_step,Running bats e2e tests)
 	$(call _build_docker,sloctl-e2e-test-bin,$(VERSION),$(BRANCH),$(REVISION))
-	docker build -t sloctl-bats-e2e -f $(TEST_DIR)/Dockerfile.e2e .
+	docker build -t sloctl-bats-e2e -f $(TEST_DIR)/docker/Dockerfile.e2e .
 	docker run --rm \
 		-e SLOCTL_CLIENT_ID=$(SLOCTL_CLIENT_ID) \
 		-e SLOCTL_CLIENT_SECRET=$(SLOCTL_CLIENT_SECRET) \
