@@ -4,8 +4,8 @@ github.com/MicahParks/jwkset v0.5.17 h1:DrcwyKwSP5adD0G2XJTvDulnWXjD6gbjROMgMXDb
 github.com/MicahParks/jwkset v0.5.17/go.mod h1:q8ptTGn/Z9c4MwbcfeCDssADeVQb3Pk7PnVxrvi+2QY=
 github.com/MicahParks/keyfunc/v3 v3.3.2 h1:YTtwc4dxalBZKFqHhqctBWN6VhbLdGhywmne9u5RQVM=
 github.com/MicahParks/keyfunc/v3 v3.3.2/go.mod h1:GJBeEjnv25OnD9y2OYQa7ELU6gYahEMBNXINZb+qm34=
-github.com/aws/aws-sdk-go v1.51.10 h1:/g8K1SllwdCnsVw2BFXsYd+TS5P75skj5a8QFbfdW0U=
-github.com/aws/aws-sdk-go v1.51.10/go.mod h1:LF8svs817+Nz+DmiMQKTO3ubZ/6IaTpq3TjupRn3Eqk=
+github.com/aws/aws-sdk-go v1.51.11 h1:El5VypsMIz7sFwAAj/j06JX9UGs4KAbAIEaZ57bNY4s=
+github.com/aws/aws-sdk-go v1.51.11/go.mod h1:LF8svs817+Nz+DmiMQKTO3ubZ/6IaTpq3TjupRn3Eqk=
 github.com/bmatcuk/doublestar/v4 v4.6.1 h1:FH9SifrbvJhnlQpztAx++wlkk70QBf0iBWDwNy7PA4I=
 github.com/bmatcuk/doublestar/v4 v4.6.1/go.mod h1:xBQ8jztBU6kakFMg+8WGxn0c6z1fTSPVIjEY1Wr7jzc=
 github.com/cpuguy83/go-md2man/v2 v2.0.3/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
@@ -53,8 +53,8 @@ github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWE
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db h1:62I3jR2EmQ4l5rM/4FEfDWcRD+abF5XlKShorW5LRoQ=
 github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db/go.mod h1:l0dey0ia/Uv7NcFFVbCLtqEBQbrT4OCwCSKTEv6enCw=
-github.com/nobl9/nobl9-go v0.79.1 h1:d5esYhnO91s/nK/EUxhuKlHLOIGSSKU/QxtMtnAwMd4=
-github.com/nobl9/nobl9-go v0.79.1/go.mod h1:CZ0bJwn5dMAl5dZ8EyFKU3nyPA8wBXR8F6b8fp4j8U8=
+github.com/nobl9/nobl9-go v0.79.2 h1:4Zeo8I2JEi/uW/gjcm9lb41O6locV68fCzul6mq3MqQ=
+github.com/nobl9/nobl9-go v0.79.2/go.mod h1:KVIRTmt2nu9d/tP6urcs5uC6otoA2LyOjZrE35mJL+A=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
