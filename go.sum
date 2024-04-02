@@ -55,6 +55,8 @@ github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db h1:62I3jR2Em
 github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db/go.mod h1:l0dey0ia/Uv7NcFFVbCLtqEBQbrT4OCwCSKTEv6enCw=
 github.com/nobl9/nobl9-go v0.79.2 h1:4Zeo8I2JEi/uW/gjcm9lb41O6locV68fCzul6mq3MqQ=
 github.com/nobl9/nobl9-go v0.79.2/go.mod h1:KVIRTmt2nu9d/tP6urcs5uC6otoA2LyOjZrE35mJL+A=
+github.com/nobl9/nobl9-go v0.79.3-rc1 h1:A9vR9d7ksvnOxRDZpsqBVVXK1m939cVRDbqZzROtFt8=
+github.com/nobl9/nobl9-go v0.79.3-rc1/go.mod h1:KVIRTmt2nu9d/tP6urcs5uC6otoA2LyOjZrE35mJL+A=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
