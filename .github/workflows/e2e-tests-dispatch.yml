@@ -1,0 +1,30 @@
+name: End-to-end tests dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      clientId:
+        description: Client ID to use for authentication
+        required: true
+        type: string
+      clientSecret:
+        description: Client secret to use for authentication
+        type: string
+        required: true
+      oktaOrgUrl:
+        description: Okta organization URL
+        required: false
+        type: string
+      oktaAuthServer:
+        description: Okta authentication server identifier
+        required: false
+        type: string
+jobs:
+  test:
+    uses: ./.github/workflows/e2e-tests.yml
+    with:
+      clientId: "${{ inputs.clientId }}"
+      ref: "${{ github.ref_name }}"
+      oktaOrgUrl: "${{ inputs.oktaOrgUrl }}"
+      oktaAuthServer: "${{ inputs.oktaAuthServer }}"
+    secrets:
+      clientSecret: "${{ inputs.clientSecret }}"
