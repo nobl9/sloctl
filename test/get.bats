@@ -234,7 +234,7 @@ verify_get_success() {
 	# we need to hack our way around it.
 	refute_output --partial "Available Commands:"
 	# We can't retrieve the same object we applied so we need to compare the minimum.
-	filter='[.[] | {"name": .metadata.name, "project": .metadata.project, "labels": .metadata.labels}] | sort_by(.name, .project)'
+	filter='[.[] | {"name": .metadata.name, "project": .metadata.project, "labels": .metadata.labels, "annotations": .metadata.annotations}] | sort_by(.name, .project)'
 	assert_equal \
 		"$(yq --sort-keys -y -r "$filter" <<<"$have")" \
 		"$(yq --sort-keys -y -r "$filter" <<<"$want")"
