@@ -3,6 +3,7 @@ package internal
 import (
 	_ "embed"
 	"fmt"
+	"os"
 	"reflect"
 
 	"github.com/spf13/cobra"
@@ -88,6 +89,8 @@ func (a ApplyCmd) Run(cmd *cobra.Command) error {
 			fmt.Println("Parsed target: ", reflect.TypeOf(target).Name())
 		}
 	}
+	data, _ := os.ReadFile("test/inputs/delete-by-name/slo.yaml")
+	fmt.Println(string(data))
 	printSourcesDetails("Applying", objects)
 	if err = a.client.Objects().V1().Apply(cmd.Context(), objects); err != nil {
 		return err

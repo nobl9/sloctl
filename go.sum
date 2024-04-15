@@ -53,8 +53,8 @@ github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWE
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db h1:62I3jR2EmQ4l5rM/4FEfDWcRD+abF5XlKShorW5LRoQ=
 github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db/go.mod h1:l0dey0ia/Uv7NcFFVbCLtqEBQbrT4OCwCSKTEv6enCw=
-github.com/nobl9/nobl9-go v0.82.0-rc1.0.20240415154030-905a269d6e89 h1:NjB/J2N/DFWUQRlWDquGhG6VEUIPNRFKsCFrwdRsFho=
-github.com/nobl9/nobl9-go v0.82.0-rc1.0.20240415154030-905a269d6e89/go.mod h1:xnmflPkGrPlGGbGhYalKDh+NQ855pNwYSudEHjIym+c=
+github.com/nobl9/nobl9-go v0.81.0 h1:0l12KaXtiiRes6OQPUeMMQ1FzlvQzyr6+BEMbBoy1Jo=
+github.com/nobl9/nobl9-go v0.81.0/go.mod h1:ccyZ3zJo/YoCuvkAJoGx7DyWrQpFfD2VS54+qahpGQM=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
