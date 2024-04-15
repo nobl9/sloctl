@@ -3,6 +3,7 @@ package internal
 import (
 	_ "embed"
 	"fmt"
+	"reflect"
 
 	"github.com/spf13/cobra"
 
@@ -78,6 +79,14 @@ func (a ApplyCmd) Run(cmd *cobra.Command) error {
 		a.projectFlagWasSet)
 	if err != nil {
 		return err
+	}
+	for _, obj := range objects {
+		if obj.GetKind() == manifest.KindSLO {
+			type M = map[string]interface{}
+			type L = []interface{}
+			target := obj.(v1alpha.GenericObject)["spec"].(M)["objectives"].(L)[0].(M)["target"]
+			fmt.Println(reflect.TypeOf(target).Name())
+		}
 	}
 	printSourcesDetails("Applying", objects)
 	if err = a.client.Objects().V1().Apply(cmd.Context(), objects); err != nil {

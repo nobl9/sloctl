@@ -1,6 +1,0 @@
-apiVersion: n9/v1alpha
-kind: Project
-metadata:
-  name: death-star
-spec:
-  description: Dummy Project for 'sloctl get' e2e tests

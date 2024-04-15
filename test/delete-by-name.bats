@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bats file_tags=e2e
+# bats file_tags=bats:focus,e2e
 
 # setup_file is run only once for the whole file.
 setup_file() {
