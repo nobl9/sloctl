@@ -2,8 +2,6 @@ module github.com/nobl9/sloctl
 
 go 1.22
 
-toolchain go1.22.2
-
 require (
 	github.com/go-playground/validator/v10 v10.19.0
 	github.com/goccy/go-yaml v1.11.3

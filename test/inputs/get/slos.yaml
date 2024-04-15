@@ -3,6 +3,8 @@
   metadata:
     name: tokyo-server-6-latency
     project: death-star
+    annotations:
+      registry: docker.io
   spec:
     description: This SLO is just for the e2e 'sloctl get' tests, it's not supposed to work!
     service: destroyer

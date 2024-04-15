@@ -3,6 +3,9 @@
   metadata:
     name: trigger-alert-immediately
     project: death-star
+    annotations:
+      registry: docker.io
+      visibility: internal
   spec:
     description: Dummy AlertPolicy for 'sloctl get' e2e tests
     conditions:
