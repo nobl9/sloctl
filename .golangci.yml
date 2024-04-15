@@ -32,7 +32,7 @@ linters-settings:
   goimports:
     # Put imports beginning with prefix after 3rd-party packages;
     # it's a comma-separated list of prefixes.
-    local-prefixes: github.com/nobl9/nobl9-go
+    local-prefixes: github.com/nobl9/sloctl
   govet:
     # False positives and reporting on error shadowing (which is intended).
     # Quoting Robi Pike:
@@ -55,6 +55,10 @@ linters-settings:
     locale: US
   gocognit:
     min-complexity: 40
+  revive:
+    rules:
+      - name: unused-parameter
+        disabled: true
 
 linters:
   disable-all: true

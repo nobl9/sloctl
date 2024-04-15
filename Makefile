@@ -17,11 +17,11 @@ endif
 # renovate datasource=github-releases depName=securego/gosec
 GOSEC_VERSION := v2.19.0
 # renovate datasource=github-releases depName=golangci/golangci-lint
-GOLANGCI_LINT_VERSION := v1.56.0
+GOLANGCI_LINT_VERSION := v1.57.2
 # renovate datasource=go depName=golang.org/x/vuln/cmd/govulncheck
 GOVULNCHECK_VERSION := v1.0.4
 # renovate datasource=go depName=golang.org/x/tools/cmd/goimports
-GOIMPORTS_VERSION := v0.18.0
+GOIMPORTS_VERSION := v0.20.0
 
 # Check if the program is present in $PATH and install otherwise.
 # ${1} - oneOf{binary,yarn}
@@ -81,7 +81,7 @@ test/go/unit:
 test/bats/unit:
 	$(call _print_step,Running bats unit tests)
 	$(call _build_docker,sloctl-unit-test-bin,v1.0.0,PC-123-test,e2602ddc)
-	docker build -t sloctl-bats-unit -f $(TEST_DIR)/Dockerfile.unit .
+	docker build -t sloctl-bats-unit -f $(TEST_DIR)/docker/Dockerfile.unit .
 	docker run -e TERM=linux --rm \
 		sloctl-bats-unit -F pretty --filter-tags unit $(TEST_DIR)/*
 
@@ -89,7 +89,7 @@ test/bats/unit:
 test/bats/e2e:
 	$(call _print_step,Running bats e2e tests)
 	$(call _build_docker,sloctl-e2e-test-bin,$(VERSION),$(BRANCH),$(REVISION))
-	docker build -t sloctl-bats-e2e -f $(TEST_DIR)/Dockerfile.e2e .
+	docker build -t sloctl-bats-e2e -f $(TEST_DIR)/docker/Dockerfile.e2e .
 	docker run --rm \
 		-e SLOCTL_CLIENT_ID=$(SLOCTL_CLIENT_ID) \
 		-e SLOCTL_CLIENT_SECRET=$(SLOCTL_CLIENT_SECRET) \
@@ -134,7 +134,7 @@ check/trailing:
 check/markdown:
 	$(call _print_step,Verifying Markdown files)
 	$(call _ensure_installed,yarn,markdownlint)
-	yarn --silent markdownlint '*.md' --disable MD010 # MD010 does not handle code blocks well.
+	yarn --silent markdownlint '**/*.md' --ignore node_modules
 
 ## Check for potential vulnerabilities across all Go dependencies.
 check/vulns:

@@ -359,9 +359,9 @@ func (g *GetCmd) getObjects(ctx context.Context, args []string, kind manifest.Ki
 		return nil, errors.New("'sloctl get alerts' does not support Project filtering," +
 			" explicitly pass '-A' flag to fetch all Alerts.")
 	}
-	query := url.Values{
-		objectsV1.QueryKeyName:   args,
-		objectsV1.QueryKeyLabels: parseFilterLabel(g.labels),
+	query := url.Values{objectsV1.QueryKeyName: args}
+	if len(g.labels) > 0 {
+		query.Set(objectsV1.QueryKeyLabels, parseFilterLabel(g.labels))
 	}
 	header := http.Header{sdk.HeaderProject: []string{g.client.Config.Project}}
 	objects, err := g.client.Objects().V1().Get(ctx, kind, header, query)
@@ -380,7 +380,7 @@ func (g *GetCmd) getObjects(ctx context.Context, args []string, kind manifest.Ki
 	return objects, nil
 }
 
-func parseFilterLabel(filterLabels []string) []string {
+func parseFilterLabel(filterLabels []string) string {
 	labels := make(v1alpha.Labels)
 	for _, filterLabel := range filterLabels {
 		filteredLabels := strings.Split(filterLabel, ",")
@@ -405,7 +405,7 @@ func parseFilterLabel(filterLabels []string) []string {
 			strLabels = append(strLabels, key)
 		}
 	}
-	return strLabels
+	return strings.Join(strLabels, ",")
 }
 
 func (g *GetCmd) printObjects(objects interface{}) error {

@@ -55,9 +55,6 @@ autolabeler:
   - label: breaking-change
     body:
       - '/^## Breaking Changes/im'
-  - label: release-notes
-    body:
-      - '/^## Release Notes/im'
   # Version labels.
   - label: minor
     title:

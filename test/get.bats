@@ -9,6 +9,8 @@ setup_file() {
 	generate_inputs "$BATS_FILE_TMPDIR"
 	run_sloctl apply -f "'$TEST_INPUTS/**'"
 	assert_success
+
+	export TEST_OUTPUTS="$TEST_SUITE_OUTPUTS/get"
 }
 
 # teardown_file is run only once for the whole file.
@@ -84,19 +86,81 @@ setup() {
 }
 
 @test "agent with keys" {
-  for flag in -k --with-keys; do
-	  run_sloctl get agent -p "death-star" "$flag"
-	  assert_success
-    # Assert length of client_id and regex of client_secret, as the latter may vary.
-	  client_id="$(yq -r .[].metadata.client_id <<<"$output")"
-	  client_secret="$(yq -r .[].metadata.client_secret <<<"$output")"
-	  assert_equal "${#client_id}" 20
-	  assert_regex "${#client_secret}" "[a-zA-Z0-9_-]+"
-    # Finally make sure the whole Agent definition is being presented.
+	for flag in -k --with-keys; do
+		run_sloctl get agent -p "death-star" "$flag"
+		assert_success
+		# Assert length of client_id and regex of client_secret, as the latter may vary.
+		client_id="$(yq -r .[].metadata.client_id <<<"$output")"
+		client_secret="$(yq -r .[].metadata.client_secret <<<"$output")"
+		assert_equal "${#client_id}" 20
+		assert_regex "${#client_secret}" "[a-zA-Z0-9_-]+"
+		# Finally make sure the whole Agent definition is being presented.
 		verify_get_success "$output" "$(read_files "${TEST_INPUTS}/agent.yaml")"
-  done
+	done
 }
 
+@test "projects, multiple names" {
+	run_sloctl get project death-star hoth-base
+	verify_get_success "$output" "$(read_files "${TEST_INPUTS}/projects.yaml")"
+}
+
+@test "projects, labels filtering, OR conditions" {
+	want=$(read_files "${TEST_INPUTS}/projects.yaml")
+	for label in \
+		"-l purpose=defensive" \
+		"-l purpose=offensive,purpose=defensive" \
+		"-l purpose=defensive,purpose=offensive" \
+		"-l purpose=defensive -l purpose=offensive" \
+		"-l purpose=offensive -l purpose=defensive"; do
+		run_sloctl get project "$label"
+		verify_get_success "$output" "$want"
+	done
+}
+
+@test "projects, labels filtering, AND conditions" {
+	want=$(read_files "${TEST_INPUTS}/projects.yaml" | yq -r '.[] |= select(.metadata.name == "death-star")')
+	for label in \
+		"-l purpose=offensive" \
+		"-l purpose=defensive,team=vader" \
+		"-l purpose=offensive,team=vader" \
+		"-l purpose=offensive,purpose=defensive,team=sidious" \
+		"-l team=sidious,purpose=offensive,purpose=defensive" \
+		"-l team=sidious,purpose=defensive,purpose=offensive" \
+		"-l purpose=offensive -l purpose=defensive,team=sidious" \
+		"-l purpose=offensive -l team=sidious,purpose=defensive" \
+		"-l team=sidious -l purpose=offensive -l purpose=defensive" \
+		"-l purpose=defensive -l purpose=offensive -l team=sidious" \
+		"-l purpose=offensive -l purpose=defensive -l team=sidious"; do
+		run_sloctl get project "$label"
+		verify_get_success "$output" "$want"
+	done
+}
+
+@test "projects, labels filtering with name" {
+	run_sloctl get project -l purpose=defensive hoth-base
+	want=$(read_files "${TEST_INPUTS}/projects.yaml" | yq -r '.[] |= select(.metadata.name == "hoth-base")')
+	verify_get_success "$output" "$want"
+
+	run_sloctl get project -l purpose=offensive hoth-base
+	assert_success
+	assert_output "No resources found."
+}
+
+@test "check full alert policy output" {
+	run_sloctl get alertpolicy -p death-star trigger-alert-immediately
+	assert_success
+	assert_equal \
+		"$(yq --sort-keys -y -r . <<<"$output")" \
+		"$(yq --sort-keys -y -r . "${TEST_OUTPUTS}/alertpolicy.yaml")"
+}
+
+@test "check full direct output" {
+	run_sloctl get direct -p death-star splunk-observability-direct
+	assert_success
+	assert_equal \
+		"$(yq --sort-keys -y -r . <<<"$output")" \
+		"$(yq --sort-keys -y -r . "${TEST_OUTPUTS}/direct.yaml")"
+}
 
 test_get() {
 	local \
@@ -145,11 +209,11 @@ test_get() {
 
 	for alias in "${aliases[@]}"; do
 		if [[ "$kind" == "Project" ]] || [[ "$kind" == "UserGroup" ]]; then
-		  run_sloctl get "$alias" "fake-name-123-321"
-		  assert_success
-		  assert_output "No resources found."
+			run_sloctl get "$alias" "fake-name-123-321"
+			assert_success
+			assert_output "No resources found."
 
-		  continue
+			continue
 		fi
 
 		run_sloctl get "$alias" "fake-name-123-321"
@@ -170,7 +234,7 @@ verify_get_success() {
 	# we need to hack our way around it.
 	refute_output --partial "Available Commands:"
 	# We can't retrieve the same object we applied so we need to compare the minimum.
-	filter='[.[] | {"name": .metadata.name, "project": .metadata.project}] | sort_by(.name, .project)'
+	filter='[.[] | {"name": .metadata.name, "project": .metadata.project, "labels": .metadata.labels, "annotations": .metadata.annotations}] | sort_by(.name, .project)'
 	assert_equal \
 		"$(yq --sort-keys -y -r "$filter" <<<"$have")" \
 		"$(yq --sort-keys -y -r "$filter" <<<"$want")"

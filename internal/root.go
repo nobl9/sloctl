@@ -104,12 +104,15 @@ func (r *RootCmd) setupClient() error {
 	r.Client.SetUserAgent(getUserAgent())
 	// Use generic object representation instead of concrete models for sloctl to be version agnostic.
 	v1alphaParser.UseGenericObjects = true
+	// Decode JSON numbers into [json.Number] in order to properly handle integers and floats.
+	// If we don't use this option, all numbers will be converted to floats, including integers.
+	v1alphaParser.UseJSONNumber = true
 	return nil
 }
 
 func getUserAgent() string {
 	return fmt.Sprintf("%s/%s-%s-%s (%s %s %s)",
-		programName, BuildVersion, BuildGitBranch, BuildGitRevision,
+		programName, getBuildVersion(), BuildGitBranch, BuildGitRevision,
 		runtime.GOOS, runtime.GOARCH, runtime.Version(),
 	)
 }

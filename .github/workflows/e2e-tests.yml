@@ -1,8 +1,28 @@
 name: End-to-end tests
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_call:
+    inputs:
+      clientId:
+        description: Client ID to use for authentication
+        required: true
+        type: string
+      oktaOrgUrl:
+        description: Okta organization URL
+        required: false
+        type: string
+      oktaAuthServer:
+        description: Okta authentication server identifier
+        required: false
+        type: string
+      ref:
+        description: Reference branch, tag or commit SHA to checkout
+        required: false
+        type: string
+        default: main
+    secrets:
+      clientSecret:
+        description: Client secret to use for authentication
+        required: true
 jobs:
   test:
     name: Run e2e tests
@@ -10,12 +30,17 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+        with:
+          repository: nobl9/sloctl
+          ref: ${{ inputs.ref }}
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: false
       - name: Run tests
-        run: make test/e2e
         env:
-          SLOCTL_CLIENT_ID: ${{ vars.SLOCTL_CLIENT_ID }}
-          SLOCTL_CLIENT_SECRET: ${{ secrets.SLOCTL_CLIENT_SECRET }}
+          SLOCTL_CLIENT_ID: ${{ inputs.clientId }}
+          SLOCTL_CLIENT_SECRET: ${{ secrets.clientSecret }}
+          SLOCTL_OKTA_ORG_URL: "${{ inputs.oktaOrgUrl }}"
+          SLOCTL_OKTA_AUTH_SERVER: "${{ inputs.oktaAuthServer }}"
+        run: make test/e2e

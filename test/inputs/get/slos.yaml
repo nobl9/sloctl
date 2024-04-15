@@ -3,6 +3,8 @@
   metadata:
     name: tokyo-server-6-latency
     project: death-star
+    annotations:
+      registry: docker.io
   spec:
     description: This SLO is just for the e2e 'sloctl get' tests, it's not supposed to work!
     service: destroyer
@@ -23,6 +25,7 @@
         name: objective-1
         target: 0.8
         op: lte
+        primary: true
         rawMetric:
           query:
             splunkObservability:
@@ -58,6 +61,7 @@
         timeSliceTarget: 0.99
         value: 1.2
         name: objective-1
+        primary: false
     alertPolicies:
       - trigger-alert-immediately
       - budget-will-be-burn-in-3days

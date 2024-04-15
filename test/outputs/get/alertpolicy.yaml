@@ -1,0 +1,18 @@
+- apiVersion: n9/v1alpha
+  kind: AlertPolicy
+  metadata:
+    name: trigger-alert-immediately
+    project: death-star
+    annotations:
+      registry: docker.io
+      visibility: internal
+  spec:
+    description: Dummy AlertPolicy for 'sloctl get' e2e tests
+    conditions:
+      - lastsFor: 0m
+        measurement: burnedBudget
+        op: gte
+        value: 0.99
+    coolDown: 5m
+    severity: Medium
+    alertMethods: []
