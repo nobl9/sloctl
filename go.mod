@@ -49,3 +49,5 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/nobl9/nobl9-go => github.com/nobl9/nobl9-go v0.82.0-rc1.0.20240415155321-50d119ae6e19
