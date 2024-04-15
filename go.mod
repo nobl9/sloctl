@@ -50,4 +50,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/nobl9/nobl9-go => github.com/nobl9/nobl9-go v0.82.0-rc1.0.20240415152947-d2149286a480
+replace github.com/nobl9/nobl9-go => github.com/nobl9/nobl9-go v0.82.0-rc1.0.20240415154030-905a269d6e89
