@@ -3,8 +3,10 @@ package internal
 import (
 	_ "embed"
 	"fmt"
+	"os"
 	"reflect"
 
+	"github.com/goccy/go-yaml"
 	"github.com/spf13/cobra"
 
 	"github.com/nobl9/nobl9-go/manifest"
@@ -85,9 +87,15 @@ func (a ApplyCmd) Run(cmd *cobra.Command) error {
 			type M = map[string]interface{}
 			type L = []interface{}
 			target := obj.(v1alpha.GenericObject)["spec"].(M)["objectives"].(L)[0].(M)["target"]
-			fmt.Println(reflect.TypeOf(target).Name())
+			fmt.Println("Parsed target: ", reflect.TypeOf(target).Name())
 		}
 	}
+	data, _ := os.ReadFile("test/inputs/delete-by-name/slo.yaml")
+	var object v1alpha.GenericObject
+	yaml.Unmarshal(data, &object)
+	target := object["spec"].(map[string]interface{})["objectives"].([]interface{})[0].(map[string]interface{})["target"]
+	fmt.Println("Unmarshalled target: ", reflect.TypeOf(target).Name())
+
 	printSourcesDetails("Applying", objects)
 	if err = a.client.Objects().V1().Apply(cmd.Context(), objects); err != nil {
 		return err
