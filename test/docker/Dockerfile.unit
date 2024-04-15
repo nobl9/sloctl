@@ -2,7 +2,8 @@ FROM bats/bats:1.11.0
 
 RUN apk --no-cache --update add \
   gettext jq git python3 py3-pip
-RUN pip install yq --break-system-packages
+# Pinned due to https://github.com/kislyuk/yq/issues/187.
+RUN pip install yq==v3.2.3 --break-system-packages
 
 WORKDIR /sloctl
 

@@ -3,8 +3,6 @@ package internal
 import (
 	_ "embed"
 	"fmt"
-	"os"
-	"reflect"
 
 	"github.com/spf13/cobra"
 
@@ -81,16 +79,6 @@ func (a ApplyCmd) Run(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	for _, obj := range objects {
-		if obj.GetKind() == manifest.KindSLO {
-			type M = map[string]interface{}
-			type L = []interface{}
-			target := obj.(v1alpha.GenericObject)["spec"].(M)["objectives"].(L)[0].(M)["target"]
-			fmt.Println("Parsed target: ", reflect.TypeOf(target).Name())
-		}
-	}
-	data, _ := os.ReadFile("test/inputs/delete-by-name/slo.yaml")
-	fmt.Println("READ DIRECT FROM FILE: ", string(data))
 	printSourcesDetails("Applying", objects)
 	if err = a.client.Objects().V1().Apply(cmd.Context(), objects); err != nil {
 		return err
