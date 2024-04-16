@@ -26,6 +26,7 @@ checksum:
   algorithm: sha256
 
 release:
+  make_latest: fase
   github:
     owner: nobl9
     name: sloctl
