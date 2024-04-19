@@ -17,15 +17,9 @@ jobs:
     steps:
       - name: No-op approval
         run: echo "This is a no-op step, QA needs to approve it and may perform testing beforehand"
-  management-approval:
-    runs-on: ubuntu-latest
-    environment: management-approval
-    steps:
-      - name: No-op approval
-        run: echo "This is a no-op step, management needs to approve it"
   goreleaser:
     runs-on: ubuntu-latest
-    needs: [test, qa-approval, management-approval]
+    needs: [test, qa-approval]
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
