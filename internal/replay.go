@@ -113,7 +113,6 @@ type ReplayConfig struct {
 	SLO     string    `json:"slo" validate:"required"`
 	From    time.Time `json:"from" validate:"required"`
 
-	isComposite  bool
 	metricSource v1alphaSLO.MetricSourceSpec
 }
 
@@ -278,8 +277,9 @@ outer:
 		for j := range slos {
 			if replays[i].SLO == slos[j].Metadata.Name && replays[i].Project == slos[j].Metadata.Project {
 				if slos[j].Spec.HasCompositeObjectives() {
-					replays[i].isComposite = true
-					continue outer
+					return errors.Errorf("Replay is unavailable for composite SLOs: '%s' SLO in '%s' Project",
+						slos[j].Metadata.Name,
+						slos[j].Metadata.Project)
 				}
 				replays[i].metricSource = slos[j].Spec.Indicator.MetricSource
 				continue outer
@@ -307,10 +307,6 @@ outer:
 			tt := c.ToReplay(timeNow)
 			offset := i * int(averageReplayDuration.Minutes())
 			expectedDuration := offset + tt.Duration.Value
-			if c.isComposite {
-				return errors.Errorf(
-					"Replay is unavailable for composite SLOs: '%s' SLO in '%s' Project", c.SLO, c.Project)
-			}
 			av, err := r.getReplayAvailability(ctx, c, tt.Duration.Unit, expectedDuration)
 			if err != nil {
 				return errors.Wrapf(err,
