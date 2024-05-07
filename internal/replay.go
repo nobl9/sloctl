@@ -113,7 +113,7 @@ type ReplayConfig struct {
 	SLO     string    `json:"slo" validate:"required"`
 	From    time.Time `json:"from" validate:"required"`
 
-	isComposite  bool `json:"isComposite"`
+	isComposite  bool
 	metricSource v1alphaSLO.MetricSourceSpec
 }
 
