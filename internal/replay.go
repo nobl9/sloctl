@@ -113,6 +113,7 @@ type ReplayConfig struct {
 	SLO     string    `json:"slo" validate:"required"`
 	From    time.Time `json:"from" validate:"required"`
 
+	IsComposite  bool `json:"isComposite"`
 	metricSource v1alphaSLO.MetricSourceSpec
 }
 
@@ -276,6 +277,10 @@ outer:
 	for i := range replays {
 		for j := range slos {
 			if replays[i].SLO == slos[j].Metadata.Name && replays[i].Project == slos[j].Metadata.Project {
+				if slos[j].Spec.HasCompositeObjectives() {
+					replays[i].IsComposite = true
+					continue outer
+				}
 				replays[i].metricSource = slos[j].Spec.Indicator.MetricSource
 				continue outer
 			}
@@ -373,6 +378,7 @@ func (r *ReplayCmd) getReplayAvailability(
 		"dataSourceProject": {config.metricSource.Project},
 		"durationUnit":      {durationUnit},
 		"durationValue":     {strconv.Itoa(durationValue)},
+		"isComposite":       {strconv.FormatBool(config.IsComposite)},
 	}
 	data, err := r.doRequest(ctx, http.MethodGet, endpointReplayGetAvailability, config.Project, values, nil)
 	if err != nil {
