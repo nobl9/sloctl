@@ -307,6 +307,10 @@ outer:
 			tt := c.ToReplay(timeNow)
 			offset := i * int(averageReplayDuration.Minutes())
 			expectedDuration := offset + tt.Duration.Value
+			if c.isComposite {
+				return errors.Errorf(
+					"Replay is unavailable for composite SLOs: '%s' SLO in '%s' Project", c.SLO, c.Project)
+			}
 			av, err := r.getReplayAvailability(ctx, c, tt.Duration.Unit, expectedDuration)
 			if err != nil {
 				return errors.Wrapf(err,
@@ -378,7 +382,6 @@ func (r *ReplayCmd) getReplayAvailability(
 		"dataSourceProject": {config.metricSource.Project},
 		"durationUnit":      {durationUnit},
 		"durationValue":     {strconv.Itoa(durationValue)},
-		"isComposite":       {strconv.FormatBool(config.isComposite)},
 	}
 	data, err := r.doRequest(ctx, http.MethodGet, endpointReplayGetAvailability, config.Project, values, nil)
 	if err != nil {
