@@ -276,14 +276,14 @@ func (r *ReplayCmd) verifySLOs(ctx context.Context, replays []ReplayConfig) erro
 outer:
 	for i := range replays {
 		for j := range slos {
-			if slos[j].Spec.HasCompositeObjectives() {
-				compositeSLOs = append(compositeSLOs,
-					fmt.Sprintf("Replay is unavailable for composite SLOs: '%s' SLO in '%s' Project",
-						slos[j].Metadata.Name,
-						slos[j].Metadata.Project))
-				continue outer
-			}
 			if replays[i].SLO == slos[j].Metadata.Name && replays[i].Project == slos[j].Metadata.Project {
+				if slos[j].Spec.HasCompositeObjectives() {
+					compositeSLOs = append(compositeSLOs,
+						fmt.Sprintf("Replay is unavailable for composite SLOs: '%s' SLO in '%s' Project",
+							slos[j].Metadata.Name,
+							slos[j].Metadata.Project))
+					continue outer
+				}
 				replays[i].metricSource = slos[j].Spec.Indicator.MetricSource
 				continue outer
 			}
