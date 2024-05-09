@@ -370,7 +370,7 @@ func (g *GetCmd) getObjects(ctx context.Context, args []string, kind manifest.Ki
 	}
 	if len(objects) == 0 {
 		switch kind {
-		case manifest.KindProject, manifest.KindUserGroup:
+		case manifest.KindProject, manifest.KindUserGroup, manifest.KindBudgetAdjustment:
 			fmt.Printf("No resources found.\n")
 		default:
 			fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)
