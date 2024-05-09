@@ -272,13 +272,16 @@ func (r *ReplayCmd) verifySLOs(ctx context.Context, replays []ReplayConfig) erro
 		return err
 	}
 	missingSLOs := make([]string, 0)
+	compositeSLOs := make([]string, 0)
 outer:
 	for i := range replays {
 		for j := range slos {
 			if slos[j].Spec.HasCompositeObjectives() {
-				return errors.Errorf("Replay is unavailable for composite SLOs: '%s' SLO in '%s' Project",
-					slos[j].Metadata.Name,
-					slos[j].Metadata.Project)
+				compositeSLOs = append(compositeSLOs,
+					fmt.Sprintf("Replay is unavailable for composite SLOs: '%s' SLO in '%s' Project",
+						slos[j].Metadata.Name,
+						slos[j].Metadata.Project))
+				continue outer
 			}
 			if replays[i].SLO == slos[j].Metadata.Name && replays[i].Project == slos[j].Metadata.Project {
 				replays[i].metricSource = slos[j].Spec.Indicator.MetricSource
@@ -292,6 +295,10 @@ outer:
 	if len(missingSLOs) > 0 {
 		return errors.Errorf("Some of the SLOs marked for Replay were not found or"+
 			" you don't have permissions to view them: \n - %s", strings.Join(missingSLOs, "\n - "))
+	}
+	if len(compositeSLOs) > 0 {
+		return errors.Errorf("The following SLOs are composite and not eligible for Replay: \n - %s",
+			strings.Join(compositeSLOs, "\n - "))
 	}
 
 	// Check Replay availability.
