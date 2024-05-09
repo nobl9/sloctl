@@ -80,6 +80,11 @@ setup() {
 	test_get "SLO" "$aliases" "${TEST_INPUTS}/slos.yaml" "$output"
 }
 
+@test "budget adjustments" {
+	aliases="budgetadjustment budgetadjustments"
+	test_get "BudgetAdjustment" "$aliases" "${TEST_INPUTS}/budgetadjustments.yaml" "$output"
+}
+
 @test "agent" {
 	aliases="agent agents"
 	test_get "Agent" "$aliases" "${TEST_INPUTS}/agent.yaml" "$output"
