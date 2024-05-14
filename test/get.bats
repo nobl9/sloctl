@@ -80,6 +80,11 @@ setup() {
 	test_get "SLO" "$aliases" "${TEST_INPUTS}/slos.yaml" "$output"
 }
 
+@test "budget adjustments" {
+	aliases="budgetadjustment budgetadjustments"
+	test_get "BudgetAdjustment" "$aliases" "${TEST_INPUTS}/budgetadjustments.yaml" "$output"
+}
+
 @test "agent" {
 	aliases="agent agents"
 	test_get "Agent" "$aliases" "${TEST_INPUTS}/agent.yaml" "$output"
@@ -182,7 +187,7 @@ test_get() {
 			continue
 		fi
 
-		if [[ "$kind" == "Project" ]]; then
+		if [[ "$kind" == "Project" ]] || [[ "$kind" == "BudgetAdjustment" ]]; then
 			# shellcheck disable=2046
 			run_sloctl get "$alias" $(yq -r .[].metadata.name "$input")
 			verify_get_success "$output" "$(read_files "$input")"
@@ -208,7 +213,7 @@ test_get() {
 	done
 
 	for alias in "${aliases[@]}"; do
-		if [[ "$kind" == "Project" ]] || [[ "$kind" == "UserGroup" ]]; then
+		if [[ "$kind" == "Project" ]] || [[ "$kind" == "UserGroup" ]] || [[ "$kind" == "BudgetAdjustment" ]]; then
 			run_sloctl get "$alias" "fake-name-123-321"
 			assert_success
 			assert_output "No resources found."

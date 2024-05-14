@@ -1,0 +1,14 @@
+apiVersion: n9/v1alpha
+kind: BudgetAdjustment
+metadata:
+  name: newrelic
+  displayName: NewRelic budget adjustment
+spec:
+  description: Example budget adjustment
+  firstEventStart: 2024-03-05T05:00:00Z
+  duration: 2h0m0s
+  rrule: FREQ=DAILY;INTERVAL=7
+  filters:
+    slos:
+      - name: newrelic-rolling-timeslices-threshold
+        project: death-star

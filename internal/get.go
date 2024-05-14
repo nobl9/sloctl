@@ -73,6 +73,7 @@ To get more details in output use one of the available flags.`,
 		{Kind: manifest.KindService, Aliases: []string{"svc", "svcs"}},
 		{Kind: manifest.KindSLO},
 		{Kind: manifest.KindUserGroup},
+		{Kind: manifest.KindBudgetAdjustment},
 	} {
 		plural := subCmd.Kind.String() + "s"
 		if len(subCmd.Plural) > 0 {
@@ -369,7 +370,7 @@ func (g *GetCmd) getObjects(ctx context.Context, args []string, kind manifest.Ki
 	}
 	if len(objects) == 0 {
 		switch kind {
-		case manifest.KindProject, manifest.KindUserGroup:
+		case manifest.KindProject, manifest.KindUserGroup, manifest.KindBudgetAdjustment:
 			fmt.Printf("No resources found.\n")
 		default:
 			fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)
