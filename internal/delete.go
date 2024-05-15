@@ -69,6 +69,7 @@ func (r *RootCmd) NewDeleteCmd() *cobra.Command {
 		{kind: manifest.KindRoleBinding},
 		{kind: manifest.KindService, aliases: []string{"svc", "svcs"}},
 		{kind: manifest.KindSLO},
+		{kind: manifest.KindBudgetAdjustment},
 	} {
 		if len(def.plural) == 0 {
 			def.plural = def.kind.String() + "s"
