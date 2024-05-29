@@ -1,7 +1,7 @@
 - apiVersion: n9/v1alpha
   kind: SLO
   metadata:
-    name: tokyo-server-6-latency
+    name: splunk-raw-rolling
     project: death-star
     annotations:
       registry: docker.io
@@ -11,7 +11,7 @@
     indicator:
       metricSource:
         kind: Direct
-        name: splunk-observability-direct
+        name: splunk-direct
     timeWindows:
       - unit: Day
         count: 1
@@ -28,8 +28,8 @@
         primary: true
         rawMetric:
           query:
-            splunkObservability:
-              program: "data('demo.trans.latency', filter=filter('demo_datacenter', 'Tokyo') and filter('demo_host', 'server6')).mean().publish()"
+            splunk:
+              query: "index=* source=udp:5072 sourcetype=syslog status<400 | bucket _time span=1m | stats avg(response_time) as n9value by _time | rename _time as n9time | fields n9time n9value"
     alertPolicies:
       - trigger-alert-immediately
       - budget-will-be-burn-in-3days

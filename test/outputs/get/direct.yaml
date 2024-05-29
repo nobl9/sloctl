@@ -1,17 +1,33 @@
 - apiVersion: n9/v1alpha
   kind: Direct
   metadata:
-    displayName: Splunk Observability direct
-    name: splunk-observability-direct
+    displayName: Splunk direct
+    name: splunk-direct
     project: death-star
   spec:
     description: This Direct is just for the e2e 'sloctl get' tests, it's not supposed to work!
+    historicalDataRetrieval:
+      defaultDuration:
+        unit: Day
+        value: 0
+      maxDuration:
+        unit: Day
+        value: 0
+    interval:
+      unit: Minute
+      value: 1
+    jitter:
+      unit: Second
+      value: 20
     queryDelay:
       unit: Minute
       value: 5
     releaseChannel: stable
-    splunkObservability:
+    splunk:
       accessToken: '[hidden]'
-      realm: us1
+      url: https://splunk.example.com
+    timeout:
+      unit: Second
+      value: 30
   status:
-    directType: SplunkObservability
+    directType: Splunk

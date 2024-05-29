@@ -10,7 +10,7 @@
     rrule: FREQ=WEEKLY;INTERVAL=1
     filters:
       slos:
-        - name: tokyo-server-6-latency
+        - name: splunk-raw-rolling
           project: death-star
 - apiVersion: n9/v1alpha
   kind: BudgetAdjustment

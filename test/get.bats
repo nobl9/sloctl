@@ -160,7 +160,7 @@ setup() {
 }
 
 @test "check full direct output" {
-	run_sloctl get direct -p death-star splunk-observability-direct
+	run_sloctl get direct -p death-star splunk-direct
 	assert_success
 	assert_equal \
 		"$(yq --sort-keys -y -r . <<<"$output")" \
