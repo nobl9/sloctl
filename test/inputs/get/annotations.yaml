@@ -14,7 +14,7 @@
     name: tate-nano
     project: death-star
   spec:
-    slo: tokyo-server-6-latency
+    slo: splunk-raw-rolling
     description: Dummy Annotation for 'sloctl get' e2e tests
     startTime: 2023-01-02T17:20:05Z
     endTime: 2023-01-02T17:30:05Z

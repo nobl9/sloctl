@@ -5,7 +5,7 @@
     project: death-star
   spec:
     description: Dummy AlertSilence for 'sloctl get' e2e tests
-    slo: tokyo-server-6-latency
+    slo: splunk-raw-rolling
     alertPolicy:
       name: trigger-alert-immediately
     period:
