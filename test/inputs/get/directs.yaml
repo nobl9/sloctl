@@ -18,7 +18,7 @@
   spec:
     description: This Direct is just for the e2e 'sloctl get' tests, it's not supposed to work!
     splunk:
-      accessToken: ""
+      accessToken: "theaccesstoken"
       url: "https://splunk.example.com"
     queryDelay:
       unit: Minute
