@@ -30,7 +30,7 @@ setup() {
 }
 
 @test "direct" {
-	run_sloctl aws-iam-ids direct splunk-observability-direct
+	run_sloctl aws-iam-ids direct splunk-direct
 	assert_success
 	assert_output --regexp "externalID: [-a-zA-Z0-9]+\naccountID: \"\d+\""
 }

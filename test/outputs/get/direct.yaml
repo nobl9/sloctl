@@ -1,8 +1,8 @@
 - apiVersion: n9/v1alpha
   kind: Direct
   metadata:
-    displayName: Splunk Observability direct
-    name: splunk-observability-direct
+    displayName: Splunk direct
+    name: splunk-direct
     project: death-star
   spec:
     description: This Direct is just for the e2e 'sloctl get' tests, it's not supposed to work!
@@ -10,8 +10,8 @@
       unit: Minute
       value: 5
     releaseChannel: stable
-    splunkObservability:
+    splunk:
       accessToken: '[hidden]'
-      realm: us1
+      url: "https://splunk.example.com"
   status:
-    directType: SplunkObservability
+    directType: Splunk
