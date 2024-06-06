@@ -13,7 +13,7 @@ RUN CGO_ENABLED=0 go build \
   -o /artifacts/sloctl \
   "${PWD}/cmd/sloctl"
 
-FROM scratch
+FROM gcr.io/distroless/static-debian12
 
 COPY --from=builder /artifacts/sloctl /usr/bin/sloctl
 
