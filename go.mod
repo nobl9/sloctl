@@ -8,7 +8,7 @@ require (
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/nobl9/nobl9-go v0.82.0
 	github.com/pkg/errors v0.9.1
-	github.com/schollz/progressbar/v3 v3.14.3
+	github.com/schollz/progressbar/v3 v3.14.4
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/sync v0.7.0
