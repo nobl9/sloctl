@@ -97,8 +97,11 @@ _assert_objects_existence() {
 		case "$1" in
 		apply)
 			run_sloctl "${args[*]}"
+			refute_output --partial "No resources found"
+	    # We can't retrieve the same object we applied so we need to compare the minimum.
+	    filter='[.[] | {"name": .metadata.name, "project": .metadata.project, "labels": .metadata.labels, "annotations": .metadata.annotations}] | sort_by(.name, .project)'
 			# shellcheck disable=2154
-			have=$(yq --sort-keys -y '[.[] | del(.status)]' <<<"$output")
+			have=$(yq --sort-keys -y "$filter" <<<"$output")
 			want=$(yq --sort-keys -y '[
           .[] | select(.kind == "'"$kind"'") |
           select(.metadata.name == "'"$name"'") |
@@ -106,7 +109,7 @@ _assert_objects_existence() {
             select(.metadata.project == "'"$project"'")
           else
             .
-          end]' <<<"$2")
+          end] | '"$filter"'' <<<"$2")
 			assert_equal "$have" "$want"
 			;;
 		delete)

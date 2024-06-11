@@ -57,6 +57,7 @@ EOF
 	assert_deleted "$(read_files "$input")"
 }
 
+# bats test_tags=bats:focus
 @test "read single object from file" {
 	input="${TEST_INPUTS}/single-object.yaml"
 
