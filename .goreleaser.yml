@@ -57,4 +57,4 @@ brews:
       For more information on how to use the command-line client
       and the Nobl9 managed cloud service, visit:
         https://docs.nobl9.com/sloctl-user-guide
-    folder: Formula
+    directory: Formula
