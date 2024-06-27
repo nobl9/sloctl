@@ -23,7 +23,7 @@ on:
         required: false
         type: string
       sloctlImage:
-        description: > 
+        description: >
           Sloctl docker image to use for e2e docker image tests.
           If not provided, the image will be built inside the workflow.
         type: string
