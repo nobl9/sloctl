@@ -18,13 +18,25 @@ on:
         description: Okta authentication server identifier
         required: false
         type: string
+      target:
+        description: Makefile test target to run
+        required: false
+        type: string
+      sloctlImage:
+        description: > 
+          Sloctl docker image to use for e2e docker image tests.
+          If not provided, the image will be built inside the workflow.
+        type: string
+        required: false
 jobs:
   test:
     uses: ./.github/workflows/e2e-tests.yml
     with:
-      clientId: "${{ inputs.clientId }}"
-      ref: "${{ github.ref_name }}"
-      oktaOrgUrl: "${{ inputs.oktaOrgUrl }}"
-      oktaAuthServer: "${{ inputs.oktaAuthServer }}"
+      clientId: ${{ inputs.clientId }}
+      ref: ${{ github.ref_name }}
+      oktaOrgUrl: ${{ inputs.oktaOrgUrl }}
+      oktaAuthServer: ${{ inputs.oktaAuthServer }}
+      sloctlImage: ${{ inputs.sloctlImage }}
+      target: ${{ inputs.target }}
     secrets:
-      clientSecret: "${{ inputs.clientSecret }}"
+      clientSecret: ${{ inputs.clientSecret }}
