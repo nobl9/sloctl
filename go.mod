@@ -48,3 +48,5 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/goccy/go-yaml => github.com/nobl9/go-yaml v0.0.0-20240626115914-6b82fd0d61b9
