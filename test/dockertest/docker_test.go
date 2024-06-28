@@ -90,7 +90,7 @@ func setup(t *testing.T) {
 	t.Helper()
 	once.Do(func() {
 		if imageOverride := os.Getenv("SLOCTL_E2E_DOCKER_TEST_IMAGE"); imageOverride != "" {
-			dockerImage = imageOverride
+			dockerImage = strings.TrimPrefix(imageOverride, "v")
 			t.Log("Using sloctl image override:", dockerImage)
 			return
 		}
