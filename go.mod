@@ -6,7 +6,7 @@ require (
 	github.com/go-playground/validator/v10 v10.22.0
 	github.com/goccy/go-yaml v1.11.3
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
-	github.com/nobl9/nobl9-go v0.83.0-rc2
+	github.com/nobl9/nobl9-go v0.83.0-rc2.0.20240701201046-54a821616fdf
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.14.4
 	github.com/spf13/cobra v1.8.1
@@ -18,7 +18,7 @@ require (
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/MicahParks/jwkset v0.5.18 // indirect
 	github.com/MicahParks/keyfunc/v3 v3.3.3 // indirect
-	github.com/aws/aws-sdk-go v1.54.9 // indirect
+	github.com/aws/aws-sdk-go v1.54.11 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fatih/color v1.17.0 // indirect

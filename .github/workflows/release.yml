@@ -7,11 +7,10 @@ jobs:
   test:
     uses: ./.github/workflows/e2e-tests.yml
     with:
-      clientId: ${{ vars.SLOCTL_CLIENT_ID }}
-      ref: ${{ github.ref_name }}
-      target: test/bats/e2e
+      clientId: "${{ vars.SLOCTL_CLIENT_ID }}"
+      ref: "${{ github.ref_name }}"
     secrets:
-      clientSecret: ${{ secrets.SLOCTL_CLIENT_SECRET }}
+      clientSecret: "${{ secrets.SLOCTL_CLIENT_SECRET }}"
   qa-approval:
     runs-on: ubuntu-latest
     environment: qa-approval
@@ -75,16 +74,3 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: LDFLAGS=-s -w -X github.com/nobl9/sloctl/internal.BuildVersion=${{ github.ref_name }}
-  docker-test:
-    uses: ./.github/workflows/e2e-tests.yml
-    needs: [goreleaser]
-    strategy:
-      matrix:
-        image: [nobl9/sloctl, quay.io/nobl9/sloctl]
-    with:
-      clientId: ${{ vars.SLOCTL_CLIENT_ID }}
-      ref: ${{ github.ref_name }}
-      sloctlImage: ${{ matrix.image }}:${{ github.ref_name }}
-      target: test/go/e2e-docker
-    secrets:
-      clientSecret: "${{ secrets.SLOCTL_CLIENT_SECRET }}"

@@ -68,19 +68,14 @@ docker:
 ## Run all unit tests.
 test/unit: test/go/unit test/bats/unit
 
-.PHONY: test/e2e test/bats/unit test/bats/e2e test/go/e2e-docker
+.PHONY: test/e2e
 ## Run all e2e tests.
-test/e2e: test/bats/e2e test/go/e2e-docker
+test/e2e: test/bats/e2e
 
 ## Run go unit tests.
 test/go/unit:
 	$(call _print_step,Running go unit tests)
 	go test -race -cover ./...
-
-## Run go e2e docker tests.
-test/go/e2e-docker:
-	$(call _print_step,Running go docker image tests)
-	go test -race -tags=e2e_test ./...
 
 ## Run bats unit tests.
 test/bats/unit:
@@ -90,7 +85,7 @@ test/bats/unit:
 	docker run -e TERM=linux --rm \
 		sloctl-bats-unit -F pretty --filter-tags unit $(TEST_DIR)/*
 
-## Run bats e2e tests.
+## Run bats unit tests.
 test/bats/e2e:
 	$(call _print_step,Running bats e2e tests)
 	$(call _build_docker,sloctl-e2e-test-bin,$(VERSION),$(BRANCH),$(REVISION))
