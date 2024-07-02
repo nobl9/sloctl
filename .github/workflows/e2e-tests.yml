@@ -19,17 +19,6 @@ on:
         required: false
         type: string
         default: main
-      target:
-        description: Makefile test target to run
-        required: false
-        type: string
-        default: test/e2e
-      sloctlImage:
-        description: >
-          Sloctl docker image to use for e2e docker image tests.
-          If not provided, the image will be built inside the workflow.
-        type: string
-        required: false
     secrets:
       clientSecret:
         description: Client secret to use for authentication
@@ -52,8 +41,6 @@ jobs:
         env:
           SLOCTL_CLIENT_ID: ${{ inputs.clientId }}
           SLOCTL_CLIENT_SECRET: ${{ secrets.clientSecret }}
-          SLOCTL_OKTA_ORG_URL: ${{ inputs.oktaOrgUrl }}
-          SLOCTL_OKTA_AUTH_SERVER: ${{ inputs.oktaAuthServer }}
-          SLOCTL_E2E_DOCKER_TEST_IMAGE: ${{ inputs.sloctlImage }}
-          TEST_TARGET: ${{ inputs.target }}
-        run: make "$TEST_TARGET"
+          SLOCTL_OKTA_ORG_URL: "${{ inputs.oktaOrgUrl }}"
+          SLOCTL_OKTA_AUTH_SERVER: "${{ inputs.oktaAuthServer }}"
+        run: make test/e2e
