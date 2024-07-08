@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/goccy/go-yaml"
 	"github.com/mitchellh/colorstring"
+	"github.com/nobl9/go-yaml"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
