@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/goccy/go-yaml"
+	"github.com/nobl9/go-yaml"
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/sdk"
 
