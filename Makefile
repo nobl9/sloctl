@@ -96,6 +96,7 @@ test/bats/e2e:
 	$(call _build_docker,sloctl-e2e-test-bin,$(VERSION),$(BRANCH),$(REVISION))
 	docker build -t sloctl-bats-e2e -f $(TEST_DIR)/docker/Dockerfile.e2e .
 	docker run --rm \
+		-e SLOCTL_URL=$(SLOCTL_URL) \
 		-e SLOCTL_CLIENT_ID=$(SLOCTL_CLIENT_ID) \
 		-e SLOCTL_CLIENT_SECRET=$(SLOCTL_CLIENT_SECRET) \
 		-e SLOCTL_OKTA_ORG_URL=$(SLOCTL_OKTA_ORG_URL) \

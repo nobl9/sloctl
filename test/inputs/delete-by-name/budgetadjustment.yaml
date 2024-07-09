@@ -5,8 +5,7 @@ metadata:
   displayName: NewRelic budget adjustment
 spec:
   description: Example budget adjustment
-  # this event date is far in the future to avoid triggering past budget adjustment validations
-  firstEventStart: 2055-03-05T05:00:00Z
+  firstEventStart: <FUTURE_TIME>
   duration: 2h0m0s
   rrule: FREQ=DAILY;INTERVAL=7
   filters:
