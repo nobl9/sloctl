@@ -80,7 +80,6 @@ setup() {
 	test_get "SLO" "$aliases" "${TEST_INPUTS}/slos.yaml" "$output"
 }
 
-# bats test_tags=bats:focus
 @test "budget adjustments" {
 	aliases="budgetadjustment budgetadjustments"
 	test_get "BudgetAdjustment" "$aliases" "${TEST_INPUTS}/budgetadjustments.yaml" "$output"

@@ -70,7 +70,6 @@ setup() {
 	test_delete_by_name "Project" "${TEST_INPUTS}/project.yaml"
 }
 
-# bats test_tags=bats:focus
 @test "budget adjustment" {
 	test_delete_by_name "BudgetAdjustment" "${TEST_INPUTS}/budgetadjustment.yaml"
 }
