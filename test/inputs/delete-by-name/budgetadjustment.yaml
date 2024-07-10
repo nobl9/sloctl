@@ -5,7 +5,7 @@ metadata:
   displayName: NewRelic budget adjustment
 spec:
   description: Example budget adjustment
-  firstEventStart: <FUTURE_TIME>
+  firstEventStart: <NEXT_DAY_TIME>
   duration: 2h0m0s
   rrule: FREQ=DAILY;INTERVAL=7
   filters:

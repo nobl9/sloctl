@@ -169,11 +169,11 @@ generate_inputs() {
 		new_file="${file/$TEST_SUITE_INPUTS/$directory}"
 		mkdir -p "$(dirname "$new_file")"
 		sed_project_replace="s/<PROJECT>/$TEST_PROJECT/g"
-		sed_future_time_replace="s/<NEXT_DAY_TIME>/$NEXT_DAY_TIME/g"
+		sed_next_day_time_replace="s/<NEXT_DAY_TIME>/$NEXT_DAY_TIME/g"
 		if [[ $file =~ .*.ya?ml ]]; then
-			yq -Y "$filter" "$file" | sed "$sed_project_replace" | sed "$sed_future_time_replace" >"$new_file"
+			yq -Y "$filter" "$file" | sed "$sed_project_replace" | sed "$sed_next_day_time_replace" >"$new_file"
 		elif [[ $file == *.json ]]; then
-			jq "$filter" "$file" | sed "$sed_project_replace" | sed "$sed_future_time_replace" >"$new_file"
+			jq "$filter" "$file" | sed "$sed_project_replace" | sed "$sed_next_day_time_replace" >"$new_file"
 		else
 			fail "test input file: ${file} must be either YAML or JSON"
 		fi
