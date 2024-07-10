@@ -149,6 +149,8 @@ generate_inputs() {
 
 	test_hash="${BATS_TEST_NUMBER}-$(date +%s)-$SLOCTL_GIT_REVISION"
 	TEST_PROJECT="e2e-$test_hash"
+  # This time is used to test BudgetAdjustment objects that have a start time in the future.
+	NEXT_DAY_TIME=$(date -d "@$(( $(date +%s) + 1 * 24 * 60 * 60 ))" +%Y-%m-%dT%H:%M:%SZ)
 
 	files=$(find "$TEST_SUITE_INPUTS/$test_filename" -type f \( -iname \*.json -o -iname \*.yaml -o -iname \*.yml \))
 	for file in $files; do
@@ -166,11 +168,12 @@ generate_inputs() {
       end'
 		new_file="${file/$TEST_SUITE_INPUTS/$directory}"
 		mkdir -p "$(dirname "$new_file")"
-		sed_replace="s/<PROJECT>/$TEST_PROJECT/g"
+		sed_project_replace="s/<PROJECT>/$TEST_PROJECT/g"
+		sed_next_day_time_replace="s/<NEXT_DAY_TIME>/$NEXT_DAY_TIME/g"
 		if [[ $file =~ .*.ya?ml ]]; then
-			yq -Y "$filter" "$file" | sed "$sed_replace" >"$new_file"
+			yq -Y "$filter" "$file" | sed "$sed_project_replace" | sed "$sed_next_day_time_replace" >"$new_file"
 		elif [[ $file == *.json ]]; then
-			jq "$filter" "$file" | sed "$sed_replace" >"$new_file"
+			jq "$filter" "$file" | sed "$sed_project_replace" | sed "$sed_next_day_time_replace" >"$new_file"
 		else
 			fail "test input file: ${file} must be either YAML or JSON"
 		fi

@@ -5,7 +5,7 @@
     displayName: Tokyo server budget adjustment
   spec:
     description: Example budget adjustment
-    firstEventStart: 2024-02-05T05:00:00Z
+    firstEventStart: <NEXT_DAY_TIME>
     duration: 1h0m0s
     rrule: FREQ=WEEKLY;INTERVAL=1
     filters:
@@ -19,7 +19,7 @@
     displayName: NewRelic budget adjustment
   spec:
     description: Example budget adjustment
-    firstEventStart: 2024-03-05T05:00:00Z
+    firstEventStart: <NEXT_DAY_TIME>
     duration: 2h0m0s
     rrule: FREQ=DAILY;INTERVAL=7
     filters:
