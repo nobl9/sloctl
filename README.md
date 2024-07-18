@@ -78,10 +78,10 @@ Here's an example workflow for managing Project object:
 
 1. Export sloctl access keys through environment variables.
 
-```shell
-export SLOCTL_CLIENT_ID=<your-client-id>
-export SLOCTL_CLIENT_SECRET=<your-client-secret>
-```
+   ```shell
+   export SLOCTL_CLIENT_ID=<your-client-id>
+   export SLOCTL_CLIENT_SECRET=<your-client-secret>
+   ```
 
 2. Create a sample Project object and save it to `project.yaml` file.
 
@@ -96,6 +96,7 @@ export SLOCTL_CLIENT_SECRET=<your-client-secret>
      description: Just and example Project :)
    EOF
    ```
+
 3. Apply the project from `project.yaml`.
    To keep STDIN open and allow piping the contents of `project.yaml` into
    the `docker run` command, use interactive mode with `docker run`.
