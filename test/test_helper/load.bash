@@ -11,8 +11,9 @@
 #
 # The output of sloctl is sanitized, the trailing whitespaces,
 # if present, are removed for easier output validation.
+# Stderr is separated from stdout into $stderr and $output.
 run_sloctl() {
-	run bash -c "set -o pipefail && sloctl $* | sed 's/ *$//'"
+	run --separate-stderr bash -c "set -o pipefail && sloctl $* | sed 's/ *$//'"
 }
 
 # read_files
