@@ -38,8 +38,7 @@ You can use it in CI/CD or your terminal power-user workflows :fire:
 
 ## Usage
 
-Sloctl comes with built-in documentation for each command, to access it,
-run:
+Sloctl includes built-in documentation for each command, to access it, run:
 
 ```shell
 sloctl <command> --help
@@ -98,9 +97,8 @@ export SLOCTL_CLIENT_SECRET=<your-client-secret>
    EOF
    ```
 3. Apply the project from `project.yaml`.
-   Interactive mode has to be used for `docker run` in order to keep the STDIN
-   open and allow the `project.yaml` contents to be piped into
-   `docker run` call.
+   To keep STDIN open and allow piping the contents of `project.yaml` into
+   the `docker run` command, use interactive mode with `docker run`.
 
    ```shell
    cat project.yaml | docker run --rm -i \
@@ -159,7 +157,7 @@ Prerequisites:
 1. Filter out SLOs with specific integration (_prometheus_ in this example):
 
 ```shell
-sloctl get slos -A | 
+sloctl get slos -A |
   yq -Y \
   --arg source_type "prometheus" \
   '[ .[] | select(
