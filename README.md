@@ -161,7 +161,7 @@ sloctl get slos -A |
   yq -Y \
   --arg source_type "prometheus" \
   '[ .[] | select(
-    .spec.objectives[] | 
+    .spec.objectives[] |
       (.rawMetric and .rawMetric.query[$source_type])
       or
       (.countMetrics and .countMetrics.total[$source_type])
