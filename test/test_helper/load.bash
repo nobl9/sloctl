@@ -13,7 +13,8 @@
 # if present, are removed for easier output validation.
 # Stderr is separated from stdout into $stderr and $output.
 run_sloctl() {
-	run --separate-stderr bash -c "set -o pipefail && sloctl $* | sed 's/ *$//'"
+  bats_require_minimum_version 1.5.0
+  run --separate-stderr bash -c "set -o pipefail && sloctl $* | sed 's/ *$//'"
 }
 
 # read_files
@@ -32,7 +33,7 @@ run_sloctl() {
 # documents style.
 # yq works with json as it is only a preprocessor for jq.
 read_files() {
-	yq -sY '[ .[] | if type == "array" then .[] else . end]' "$@"
+  yq -sY '[ .[] | if type == "array" then .[] else . end]' "$@"
 }
 
 # assert_applied
@@ -45,7 +46,7 @@ read_files() {
 # Options:
 #   <expected>    The expected YAML string.
 assert_applied() {
-	_assert_objects_existence "apply" "$1"
+  _assert_objects_existence "apply" "$1"
 }
 
 # assert_deleted
@@ -58,7 +59,7 @@ assert_applied() {
 # Options:
 #   <expected>    The expected YAML string.
 assert_deleted() {
-	_assert_objects_existence "delete" "$1"
+  _assert_objects_existence "delete" "$1"
 }
 
 # _assert_objects_existence
@@ -81,29 +82,29 @@ assert_deleted() {
 # - apply: assert that the output contains the expected object.
 # - delete: assert that the output contains 'No resources found'.
 _assert_objects_existence() {
-	load_lib "bats-support"
+  load_lib "bats-support"
 
-	assert [ -n "$2" ]
-	assert [ "$(yq -r 'type' <<<"$2")" = "array" ]
+  assert [ -n "$2" ]
+  assert [ "$(yq -r 'type' <<<"$2")" = "array" ]
 
-	yq -c .[] <<<"$2" | while read -r object; do
-		name=$(yq -r .metadata.name <<<"$object")
-		kind=$(yq -r .kind <<<"$object")
-		args=("get" "${kind,,}" "$name") # Converts kind to lowercase.
-		if [[ "$kind" != "Project" ]] && [[ "$kind" != "RoleBinding" ]]; then
-			project=$(yq -r .metadata.project <<<"$object")
-			args+=(-p "$project")
-		fi
+  yq -c .[] <<<"$2" | while read -r object; do
+    name=$(yq -r .metadata.name <<<"$object")
+    kind=$(yq -r .kind <<<"$object")
+    args=("get" "${kind,,}" "$name") # Converts kind to lowercase.
+    if [[ "$kind" != "Project" ]] && [[ "$kind" != "RoleBinding" ]]; then
+      project=$(yq -r .metadata.project <<<"$object")
+      args+=(-p "$project")
+    fi
 
-		case "$1" in
-		apply)
-			run_sloctl "${args[*]}"
-			refute_output --partial "No resources found"
-	    # We can't retrieve the same object we applied so we need to compare the minimum.
-	    filter='[.[] | {"name": .metadata.name, "project": .metadata.project, "labels": .metadata.labels, "annotations": .metadata.annotations}] | sort_by(.name, .project)'
-			# shellcheck disable=2154
-			have=$(yq --sort-keys -y "$filter" <<<"$output")
-			want=$(yq --sort-keys -y '[
+    case "$1" in
+    apply)
+      run_sloctl "${args[*]}"
+      refute_output --partial "No resources found"
+      # We can't retrieve the same object we applied so we need to compare the minimum.
+      filter='[.[] | {"name": .metadata.name, "project": .metadata.project, "labels": .metadata.labels, "annotations": .metadata.annotations}] | sort_by(.name, .project)'
+      # shellcheck disable=2154
+      have=$(yq --sort-keys -y "$filter" <<<"$output")
+      want=$(yq --sort-keys -y '[
           .[] | select(.kind == "'"$kind"'") |
           select(.metadata.name == "'"$name"'") |
           if .metadata.project then
@@ -111,17 +112,17 @@ _assert_objects_existence() {
           else
             .
           end] | '"$filter"'' <<<"$2")
-			assert_equal "$have" "$want"
-			;;
-		delete)
-			run_sloctl "${args[*]}"
-			assert_output --partial "No resources found"
-			;;
-		*)
-			fail "Unknown verb '$1'"
-			;;
-		esac
-	done
+      assert_equal "$have" "$want"
+      ;;
+    delete)
+      run_sloctl "${args[*]}"
+      assert_output --partial "No resources found"
+      ;;
+    *)
+      fail "Unknown verb '$1'"
+      ;;
+    esac
+  done
 }
 
 # generate_inputs
@@ -141,47 +142,47 @@ _assert_objects_existence() {
 # them in parallel or a cleanup after the test fails for whatever reason.
 # It works for both YAML and JSON files.
 generate_inputs() {
-	load_lib "bats-support"
+  load_lib "bats-support"
 
-	directory="$1"
-	test_filename=$(basename "$BATS_TEST_FILENAME" .bats)
-	TEST_INPUTS="$directory/$test_filename"
-	mkdir "$TEST_INPUTS"
+  directory="$1"
+  test_filename=$(basename "$BATS_TEST_FILENAME" .bats)
+  TEST_INPUTS="$directory/$test_filename"
+  mkdir "$TEST_INPUTS"
 
-	test_hash="${BATS_TEST_NUMBER}-$(date +%s)-$SLOCTL_GIT_REVISION"
-	TEST_PROJECT="e2e-$test_hash"
+  test_hash="${BATS_TEST_NUMBER}-$(date +%s)-$SLOCTL_GIT_REVISION"
+  TEST_PROJECT="e2e-$test_hash"
   # This time is used to test BudgetAdjustment objects that have a start time in the future.
-	NEXT_DAY_TIME=$(date -d "@$(( $(date +%s) + 1 * 24 * 60 * 60 ))" +%Y-%m-%dT%H:%M:%SZ)
+  NEXT_DAY_TIME=$(date -d "@$(($(date +%s) + 1 * 24 * 60 * 60))" +%Y-%m-%dT%H:%M:%SZ)
 
-	files=$(find "$TEST_SUITE_INPUTS/$test_filename" -type f \( -iname \*.json -o -iname \*.yaml -o -iname \*.yml \))
-	for file in $files; do
-		pipeline='
+  files=$(find "$TEST_SUITE_INPUTS/$test_filename" -type f \( -iname \*.json -o -iname \*.yaml -o -iname \*.yml \))
+  for file in $files; do
+    pipeline='
       if .kind == "Project" then
         .metadata.labels.origin = ["sloctl-e2e-tests"]
       else
         .
       end'
-		filter='
+    filter='
       if type == "array" then
         [.[] | '"$pipeline"' ]
       else
         '"$pipeline"'
       end'
-		new_file="${file/$TEST_SUITE_INPUTS/$directory}"
-		mkdir -p "$(dirname "$new_file")"
-		sed_project_replace="s/<PROJECT>/$TEST_PROJECT/g"
-		sed_next_day_time_replace="s/<NEXT_DAY_TIME>/$NEXT_DAY_TIME/g"
-		if [[ $file =~ .*.ya?ml ]]; then
-			yq -Y "$filter" "$file" | sed "$sed_project_replace" | sed "$sed_next_day_time_replace" >"$new_file"
-		elif [[ $file == *.json ]]; then
-			jq "$filter" "$file" | sed "$sed_project_replace" | sed "$sed_next_day_time_replace" >"$new_file"
-		else
-			fail "test input file: ${file} must be either YAML or JSON"
-		fi
-	done
+    new_file="${file/$TEST_SUITE_INPUTS/$directory}"
+    mkdir -p "$(dirname "$new_file")"
+    sed_project_replace="s/<PROJECT>/$TEST_PROJECT/g"
+    sed_next_day_time_replace="s/<NEXT_DAY_TIME>/$NEXT_DAY_TIME/g"
+    if [[ $file =~ .*.ya?ml ]]; then
+      yq -Y "$filter" "$file" | sed "$sed_project_replace" | sed "$sed_next_day_time_replace" >"$new_file"
+    elif [[ $file == *.json ]]; then
+      jq "$filter" "$file" | sed "$sed_project_replace" | sed "$sed_next_day_time_replace" >"$new_file"
+    else
+      fail "test input file: ${file} must be either YAML or JSON"
+    fi
+  done
 
-	export TEST_INPUTS
-	export TEST_PROJECT
+  export TEST_INPUTS
+  export TEST_PROJECT
 }
 
 # select_object
@@ -199,7 +200,7 @@ generate_inputs() {
 # extract an object by its former name a regex match with jq 'test'
 # function has to be performed.
 select_object() {
-	yq '[if type == "array" then .[] else . end |
+  yq '[if type == "array" then .[] else . end |
     select(.metadata.name | test("^'"$1"'"))]' "$1" "$2"
 }
 
@@ -215,16 +216,16 @@ select_object() {
 #
 # If 'yq' is provided as one of the dependencies, ensure it is coming from https://github.com/kislyuk/yq.
 ensure_installed() {
-	load_lib "bats-support"
+  load_lib "bats-support"
 
-	for dep in "$@"; do
-		if ! command -v "$dep" >/dev/null 2>&1; then
-			fail "ERROR: $dep is not installed!"
-		fi
-		if [ "$dep" = "yq" ] && [ "$(yq --help | grep "kislyuk/yq")" -eq 1 ]; then
-			fail "ERROR: yq is not installed from https://github.com/kislyuk/yq!"
-		fi
-	done
+  for dep in "$@"; do
+    if ! command -v "$dep" >/dev/null 2>&1; then
+      fail "ERROR: $dep is not installed!"
+    fi
+    if [ "$dep" = "yq" ] && [ "$(yq --help | grep "kislyuk/yq")" -eq 1 ]; then
+      fail "ERROR: yq is not installed from https://github.com/kislyuk/yq!"
+    fi
+  done
 }
 
 # load_lib
@@ -237,6 +238,6 @@ ensure_installed() {
 # Options:
 #   <name>    Name of the library to load.
 load_lib() {
-	local name="$1"
-	load "/usr/lib/bats/${name}/load.bash"
+  local name="$1"
+  load "/usr/lib/bats/${name}/load.bash"
 }
