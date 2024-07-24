@@ -83,6 +83,7 @@ To get more details in output use one of the available flags.`,
 		{Kind: manifest.KindSLO},
 		{Kind: manifest.KindUserGroup},
 		{Kind: manifest.KindBudgetAdjustment},
+		{Kind: manifest.KindReport},
 	} {
 		plural := subCmd.Kind.String() + "s"
 		if len(subCmd.Plural) > 0 {
