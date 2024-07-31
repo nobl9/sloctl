@@ -8,7 +8,7 @@ setup_file() {
 
 	generate_inputs "$BATS_FILE_TMPDIR"
 	run_sloctl apply -f "'$TEST_INPUTS/**'"
-	assert_success
+	assert_success_joined_output
 
 	export TEST_OUTPUTS="$TEST_SUITE_OUTPUTS/get"
 }
@@ -93,7 +93,7 @@ setup() {
 @test "agent with keys" {
 	for flag in -k --with-keys; do
 		run_sloctl get agent -p "death-star" "$flag"
-		assert_success
+		assert_success_joined_output
 		# Assert length of client_id and regex of client_secret, as the latter may vary.
 		client_id="$(yq -r .[].metadata.client_id <<<"$output")"
 		client_secret="$(yq -r .[].metadata.client_secret <<<"$output")"
@@ -147,13 +147,13 @@ setup() {
 	verify_get_success "$output" "$want"
 
 	run_sloctl get project -l purpose=offensive hoth-base
-	assert_success
+	assert_success_joined_output
 	assert_output "No resources found."
 }
 
 @test "check full alert policy output" {
 	run_sloctl get alertpolicy -p death-star trigger-alert-immediately
-	assert_success
+	assert_success_joined_output
 	assert_equal \
 		"$(yq --sort-keys -y -r . <<<"$output")" \
 		"$(yq --sort-keys -y -r . "${TEST_OUTPUTS}/alertpolicy.yaml")"
@@ -161,7 +161,7 @@ setup() {
 
 @test "check full direct output" {
 	run_sloctl get direct -p death-star splunk-direct
-	assert_success
+	assert_success_joined_output
 	assert_equal \
 		"$(yq --sort-keys -y -r . <<<"$output")" \
 		"$(yq --sort-keys -y -r . "${TEST_OUTPUTS}/direct.yaml")"
@@ -181,7 +181,7 @@ test_get() {
 		# org limits making it impossible to test with applied objects.
 		if [[ "$kind" == "UserGroup" ]] || [[ "$kind" == "DataExport" ]]; then
 			run_sloctl get "$alias" -A
-			assert_success
+			assert_success_joined_output
 			refute_output --partial "Available Commands:"
 
 			continue
@@ -215,17 +215,17 @@ test_get() {
 	for alias in "${aliases[@]}"; do
 		if [[ "$kind" == "Project" ]] || [[ "$kind" == "UserGroup" ]] || [[ "$kind" == "BudgetAdjustment" ]]; then
 			run_sloctl get "$alias" "fake-name-123-321"
-			assert_success
+			assert_success_joined_output
 			assert_output "No resources found."
 
 			continue
 		fi
 
 		run_sloctl get "$alias" "fake-name-123-321"
-		assert_success
+		assert_success_joined_output
 		assert_output "No resources found in 'default' project."
 		run_sloctl get "$alias" -p "fake-project-123-321"
-		assert_success
+		assert_success_joined_output
 		assert_output "No resources found in 'fake-project-123-321' project."
 	done
 }
@@ -234,7 +234,7 @@ verify_get_success() {
 	local \
 		have="$1" \
 		want="$2"
-	assert_success
+	assert_success_joined_output
 	# Since cobra does not return errors on unknown subcommands (https://github.com/spf13/cobra/issues/706)
 	# we need to hack our way around it.
 	refute_output --partial "Available Commands:"

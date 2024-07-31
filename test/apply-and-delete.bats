@@ -14,7 +14,7 @@ setup() {
 
   # apply
   run_sloctl apply -f "$input"
-  assert_success
+  assert_success_joined_output
   assert_output - <<EOF
 Applying 3 objects from the following sources:
  - $input
@@ -24,7 +24,7 @@ EOF
 
   # delete
   run_sloctl delete -f "$input"
-  assert_success
+  assert_success_joined_output
   assert_output - <<EOF
 Deleting 3 objects from the following sources:
  - $input
@@ -38,7 +38,7 @@ EOF
 
   # apply
   run_sloctl apply -f "$input"
-  assert_success
+  assert_success_joined_output
   assert_output - <<EOF
 Applying 3 objects from the following sources:
  - $input
@@ -48,7 +48,7 @@ EOF
 
   # delete
   run_sloctl delete -f "$input"
-  assert_success
+  assert_success_joined_output
   assert_output - <<EOF
 Deleting 3 objects from the following sources:
  - $input
@@ -62,7 +62,7 @@ EOF
 
   # apply
   run_sloctl apply -f "$input"
-  assert_success
+  assert_success_joined_output
   assert_output - <<EOF
 Applying 1 objects from the following sources:
  - $input
@@ -72,7 +72,7 @@ EOF
 
   # delete
   run_sloctl delete -f "$input"
-  assert_success
+  assert_success_joined_output
   assert_output - <<EOF
 Deleting 1 objects from the following sources:
  - $input
@@ -86,13 +86,13 @@ EOF
 
   # apply
   run_sloctl apply -f - <"$input"
-  assert_success
+  assert_success_joined_output
   assert_output "The resources were successfully applied."
   assert_applied "$(read_files "$input")"
 
   # delete
   run_sloctl delete -f - <"$input"
-  assert_success
+  assert_success_joined_output
   assert_output "The resources were successfully deleted."
   assert_deleted "$(read_files "$input")"
 }
@@ -128,7 +128,7 @@ allow the Project to be inferred from the object definition."
 
   # apply
   run_sloctl apply -f "$input"
-  assert_success
+  assert_success_joined_output
   assert_output - <<EOF
 Applying 1 objects from the following sources:
  - $input
@@ -138,7 +138,7 @@ EOF
 
   # delete
   run_sloctl delete -f "$input"
-  assert_success
+  assert_success_joined_output
   assert_output - <<EOF
 Deleting 1 objects from the following sources:
  - $input
@@ -157,7 +157,7 @@ EOF
 
   # apply
   run_sloctl apply -f "${inputs[0]}" -f "${inputs[1]}" -f "${inputs[2]}"
-  assert_success
+  assert_success_joined_output
   assert_output - <<EOF
 Applying 4 objects from the following sources:
  - ${inputs[0]}
@@ -169,7 +169,7 @@ EOF
 
   # delete
   run_sloctl delete -f "${inputs[0]}" -f "${inputs[1]}" -f "${inputs[2]}"
-  assert_success
+  assert_success_joined_output
   assert_output - <<EOF
 Deleting 4 objects from the following sources:
  - ${inputs[0]}
@@ -190,7 +190,7 @@ EOF
 
   # apply
   run_sloctl apply -f "'$inputs_base/**'"
-  assert_success
+  assert_success_joined_output
   assert_output - <<EOF
 Applying 4 objects from the following sources:
  - ${inputs[0]}
@@ -202,7 +202,7 @@ EOF
 
   # delete
   run_sloctl delete -f "'$inputs_base/**'"
-  assert_success
+  assert_success_joined_output
   assert_output - <<EOF
 Deleting 4 objects from the following sources:
  - ${inputs[0]}

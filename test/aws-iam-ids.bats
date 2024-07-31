@@ -8,7 +8,7 @@ setup_file() {
 
 	generate_inputs "$BATS_FILE_TMPDIR"
 	run_sloctl apply -f "'$TEST_INPUTS/**'"
-	assert_success
+	assert_success_joined_output
 }
 
 # teardown_file is run only once for the whole file.
@@ -25,12 +25,12 @@ setup() {
 
 @test "dataexport" {
 	run_sloctl aws-iam-ids dataexport
-	assert_success
+	assert_success_joined_output
 	assert_output --regexp "[-a-zA-Z0-9]+"
 }
 
 @test "direct" {
 	run_sloctl aws-iam-ids direct splunk-direct
-	assert_success
+	assert_success_joined_output
 	assert_output --regexp "externalID: [-a-zA-Z0-9]+\naccountID: \"\d+\""
 }

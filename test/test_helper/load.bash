@@ -229,7 +229,7 @@ ensure_installed() {
 }
 
 # load_lib
-# ================
+# ========
 #
 # Summary: Load a given bats library.
 #
@@ -240,4 +240,19 @@ ensure_installed() {
 load_lib() {
   local name="$1"
   load "/usr/lib/bats/${name}/load.bash"
+}
+
+# assert_success_joined_output
+# ============================
+#
+# Summary: Assert success of command.
+#
+# Usage: assert_success_joined_output
+#
+# In case erroroneus code is detected, both stderr and stdout are conjoined.
+# This is neccessary due to `run --separate-stderr` usage.
+# Otherwise, only stdout is printed which is not very useful.
+assert_success_joined_output() {
+  output+="
+$stderr" assert_success
 }
