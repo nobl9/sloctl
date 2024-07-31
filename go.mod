@@ -6,7 +6,7 @@ require (
 	github.com/go-playground/validator/v10 v10.22.0
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/nobl9/go-yaml v1.0.1
-	github.com/nobl9/nobl9-go v0.83.1-0.20240723082822-9a4538ce5b1b
+	github.com/nobl9/nobl9-go v0.84.0-rc2.0.20240731085020-3affd06a99d8
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.14.6
 	github.com/spf13/cobra v1.8.1
