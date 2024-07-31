@@ -22,10 +22,11 @@ extract_header() {
 	local commit="$1"
 	local header_name="$2"
 	awk "
-    /^\s?$/ {next}
-    /^## $header_name/ {rn=1}
-    rn && !/^##/ && !/^--+/ {print};
+    /^\s?$/ {next};
     /^--+/ {rn=0};
+    /^Signed-off-by|Co-authored-by/ {rn=0};
+    /^## $header_name/ {rn=1};
+    rn && !/^##/ && !/^--+/ {print};
     /^##/ && !/^## $header_name/ {rn=0}" <<<"$commit"
 }
 

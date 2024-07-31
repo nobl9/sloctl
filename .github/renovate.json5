@@ -30,7 +30,7 @@
         "minor",
         "patch",
       ],
-      "groupName": "minor and patch golang dependencies",
+      "groupName": "minor and patch Golang dependencies",
     },
     {
       "matchManagers": ["github-actions"],
@@ -54,4 +54,9 @@
       ]
     }
   ],
+  "ignorePaths": [
+    "**/vendor/**",
+    "**/node_modules/**",
+    "**/test_data/**",
+  ]
 }
