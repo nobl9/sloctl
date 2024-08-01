@@ -75,12 +75,12 @@ func objectKindSupportsProjectFlag(kind manifest.Kind) bool {
 }
 
 func registerProjectFlag(cmd *cobra.Command, storeIn *string) {
-	cmd.PersistentFlags().StringVarP(storeIn, "project", "p", "",
+	cmd.Flags().StringVarP(storeIn, "project", "p", "",
 		`List the requested object(s) which belong to the specified Project (name).`)
 }
 
 func registerAllProjectsFlag(cmd *cobra.Command, storeIn *bool) {
-	cmd.PersistentFlags().BoolVarP(storeIn, "all-projects", "A", false,
+	cmd.Flags().BoolVarP(storeIn, "all-projects", "A", false,
 		`List the requested object(s) across all projects.`)
 }
 
@@ -97,6 +97,6 @@ func objectKindSupportsLabelsFlag(kind manifest.Kind) bool {
 }
 
 func registerLabelsFlag(cmd *cobra.Command, storeIn *[]string) {
-	cmd.PersistentFlags().StringArrayVarP(storeIn, "label", "l", []string{},
+	cmd.Flags().StringArrayVarP(storeIn, "label", "l", []string{},
 		`Filter resource by label. Example: key=value,key2=value2,key2=value3.`)
 }

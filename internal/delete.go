@@ -51,6 +51,7 @@ func (r *RootCmd) NewDeleteCmd() *cobra.Command {
 	registerFileFlag(cmd, false, &deleteCmd.definitionPaths)
 	registerDryRunFlag(cmd, &deleteCmd.dryRun)
 	registerAutoConfirmationFlag(cmd, &deleteCmd.autoConfirm)
+	registerProjectFlag(cmd, &deleteCmd.project)
 
 	// register all subcommands for delete
 	for _, def := range []struct {
@@ -75,9 +76,6 @@ func (r *RootCmd) NewDeleteCmd() *cobra.Command {
 	} {
 		if len(def.plural) == 0 {
 			def.plural = def.kind.String() + "s"
-		}
-		if objectKindSupportsProjectFlag(def.kind) {
-			registerProjectFlag(cmd, &deleteCmd.project)
 		}
 		cmd.AddCommand(newSubcommand(
 			deleteCmd,
@@ -128,6 +126,9 @@ func newSubcommand(
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runSubcommand(cmd.Context(), deleteCmd, kind, args)
 		},
+	}
+	if objectKindSupportsProjectFlag(kind) {
+		registerProjectFlag(sc, &deleteCmd.project)
 	}
 	registerDryRunFlag(sc, &deleteCmd.dryRun)
 	return sc
