@@ -60,7 +60,7 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 		RunE:             func(cmd *cobra.Command, args []string) error { return replay.Run(cmd) },
 	}
 
-	RegisterFileFlag(cmd, false, &replay.configPaths)
+	registerFileFlag(cmd, false, &replay.configPaths)
 	cmd.Flags().Var(&replay.from, "from", "Sets the start of Replay time window.")
 
 	return cmd
