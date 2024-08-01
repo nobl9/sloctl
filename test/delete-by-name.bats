@@ -8,7 +8,7 @@ setup_file() {
 
   generate_inputs "$BATS_FILE_TMPDIR"
   run_sloctl apply -f "'$TEST_INPUTS/**'"
-  assert_success
+  assert_success_joined_output
 }
 
 # teardown_file is run only once for the whole file.
@@ -103,6 +103,6 @@ test_delete_by_name() {
     args+=("-p" "death-star")
   fi
   run_sloctl "${args[@]}"
-  assert_success
+  assert_success_joined_output
   assert_deleted "$(read_files "$input")"
 }
