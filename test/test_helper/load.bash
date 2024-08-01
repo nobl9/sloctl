@@ -91,7 +91,7 @@ _assert_objects_existence() {
     name=$(yq -r .metadata.name <<<"$object")
     kind=$(yq -r .kind <<<"$object")
     args=("get" "${kind,,}" "$name") # Converts kind to lowercase.
-    if [[ "$kind" != "Project" ]] && [[ "$kind" != "RoleBinding" ]]; then
+    if [[ "$kind" != "Project" ]] && [[ "$kind" != "RoleBinding" ]] && [[ "$kind" != "BudgetAdjustment" ]]; then
       project=$(yq -r .metadata.project <<<"$object")
       args+=(-p "$project")
     fi
