@@ -40,6 +40,7 @@ func (r *RootCmd) NewApplyCmd() *cobra.Command {
 			apply.client = r.GetClient()
 			if apply.project != "" {
 				apply.projectFlagWasSet = true
+				apply.client.Config.Project = apply.project
 			}
 			if apply.dryRun {
 				notifyDryRunFlag()
