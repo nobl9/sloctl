@@ -18,6 +18,7 @@ type DeleteCmd struct {
 	definitionPaths   []string
 	dryRun            bool
 	autoConfirm       bool
+	project           string
 }
 
 //go:embed delete_example.sh
@@ -36,19 +37,21 @@ func (r *RootCmd) NewDeleteCmd() *cobra.Command {
 		Args:    positionalArgsCondition,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			deleteCmd.client = r.GetClient()
-			if r.Flags.Project != "" {
+			if deleteCmd.project != "" {
 				deleteCmd.projectFlagWasSet = true
+				deleteCmd.client.Config.Project = deleteCmd.project
 			}
 			if deleteCmd.dryRun {
-				NotifyDryRunFlag()
+				notifyDryRunFlag()
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error { return deleteCmd.Run(cmd) },
 	}
 
-	RegisterFileFlag(cmd, false, &deleteCmd.definitionPaths)
-	RegisterDryRunFlag(cmd, &deleteCmd.dryRun)
-	RegisterAutoConfirmationFlag(cmd, &deleteCmd.autoConfirm)
+	registerFileFlag(cmd, false, &deleteCmd.definitionPaths)
+	registerDryRunFlag(cmd, &deleteCmd.dryRun)
+	registerAutoConfirmationFlag(cmd, &deleteCmd.autoConfirm)
+	registerProjectFlag(cmd, &deleteCmd.project)
 
 	// register all subcommands for delete
 	for _, def := range []struct {
@@ -124,7 +127,10 @@ func newSubcommand(
 			return runSubcommand(cmd.Context(), deleteCmd, kind, args)
 		},
 	}
-	RegisterDryRunFlag(sc, &deleteCmd.dryRun)
+	if objectKindSupportsProjectFlag(kind) {
+		registerProjectFlag(sc, &deleteCmd.project)
+	}
+	registerDryRunFlag(sc, &deleteCmd.dryRun)
 	return sc
 }
 

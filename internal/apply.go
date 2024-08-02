@@ -19,6 +19,7 @@ type ApplyCmd struct {
 	autoConfirm       bool
 	replay            bool
 	replayFrom        TimeValue
+	project           string
 }
 
 //go:embed apply_example.sh
@@ -37,19 +38,21 @@ func (r *RootCmd) NewApplyCmd() *cobra.Command {
 		Args:    positionalArgsCondition,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			apply.client = r.GetClient()
-			if r.Flags.Project != "" {
+			if apply.project != "" {
 				apply.projectFlagWasSet = true
+				apply.client.Config.Project = apply.project
 			}
 			if apply.dryRun {
-				NotifyDryRunFlag()
+				notifyDryRunFlag()
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error { return apply.Run(cmd) },
 	}
 
-	RegisterFileFlag(cmd, true, &apply.definitionPaths)
-	RegisterDryRunFlag(cmd, &apply.dryRun)
-	RegisterAutoConfirmationFlag(cmd, &apply.autoConfirm)
+	registerFileFlag(cmd, true, &apply.definitionPaths)
+	registerDryRunFlag(cmd, &apply.dryRun)
+	registerAutoConfirmationFlag(cmd, &apply.autoConfirm)
+	registerProjectFlag(cmd, &apply.project)
 
 	const (
 		replayFlagName     = "replay"

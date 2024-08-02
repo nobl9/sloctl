@@ -22,6 +22,7 @@ on:
         description: Makefile test target to run
         required: false
         type: string
+        default: test/e2e
       sloctlImage:
         description: >
           Sloctl docker image to use for e2e docker image tests.

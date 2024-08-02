@@ -25,8 +25,6 @@ func Execute() {
 type globalFlags struct {
 	ConfigFile   string
 	Context      string
-	Project      string
-	AllProjects  bool
 	NoConfigFile bool
 }
 
@@ -46,10 +44,6 @@ For every command more detailed help is available.`,
 	rootCmd.PersistentFlags().StringVar(&root.Flags.ConfigFile, "config", "", "Config file path.")
 	rootCmd.PersistentFlags().StringVarP(&root.Flags.Context, "context", "c", "",
 		`Overrides the default context for the duration of the selected command.`)
-	rootCmd.PersistentFlags().StringVarP(&root.Flags.Project, "project", "p", "",
-		`Overrides the default project from active Delete for the duration of the selected command.`)
-	rootCmd.PersistentFlags().BoolVarP(&root.Flags.AllProjects, "all-projects", "A", false,
-		`Displays the objects from all of the projects.`)
 	rootCmd.PersistentFlags().BoolVarP(&root.Flags.NoConfigFile, "no-config-file", "", false,
 		`Don't create config.toml, operate only on env variables.`)
 
@@ -91,11 +85,6 @@ func (r *RootCmd) setupClient() error {
 	conf, err := sdk.ReadConfig(options...)
 	if err != nil {
 		return err
-	}
-	if r.Flags.AllProjects {
-		conf.Project = "*"
-	} else if r.Flags.Project != "" {
-		conf.Project = r.Flags.Project
 	}
 	r.Client, err = sdk.NewClient(conf)
 	if err != nil {
