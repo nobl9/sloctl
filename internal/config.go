@@ -292,7 +292,7 @@ func (c *ConfigCmd) CurrentContextCommand() *cobra.Command {
 		},
 	}
 
-	RegisterVerboseFlag(currentCtxCmd, &c.verbose)
+	registerVerboseFlag(currentCtxCmd, &c.verbose)
 
 	return currentCtxCmd
 }
@@ -331,7 +331,7 @@ func (c *ConfigCmd) GetContextsCommand() *cobra.Command {
 		},
 	}
 
-	RegisterVerboseFlag(getContextsCmd, &c.verbose)
+	registerVerboseFlag(getContextsCmd, &c.verbose)
 
 	return getContextsCmd
 }
