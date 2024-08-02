@@ -159,14 +159,19 @@ check/format:
 	$(call _print_step,Checking if files are formatted)
 	./scripts/check-formatting.sh
 
-.PHONY: generate generate/code
+.PHONY: generate generate/code generate/docs
 ## Auto generate files.
-generate: generate/code
+generate: generate/code generate/docs
 
 ## Generate Golang code.
 generate/code:
 	echo "Generating Go code..."
 	go generate ./...
+
+## Generate sloctl docs.
+generate/docs:
+	echo "Generating sloctl docs..."
+	go run internal/cmd/docgen/main.go
 
 .PHONY: format format/go format/cspell
 ## Format files.

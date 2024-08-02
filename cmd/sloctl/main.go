@@ -5,8 +5,15 @@
 // example configuration file can be found in this repository samples/config.toml.
 package main
 
-import "github.com/nobl9/sloctl/internal"
+import (
+	"os"
+
+	"github.com/nobl9/sloctl/internal"
+)
 
 func main() {
-	internal.Execute()
+	cmd := internal.NewRootCmd()
+	if err := cmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }
