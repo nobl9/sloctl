@@ -67,6 +67,8 @@ github.com/nobl9/nobl9-go v0.84.0-rc2.0.20240731125017-a10e83dc6b7e h1:hT/YtGvIM
 github.com/nobl9/nobl9-go v0.84.0-rc2.0.20240731125017-a10e83dc6b7e/go.mod h1:Jq840pSewkS1xvbwOENjqvNKugs3p3ZAdZG+iWZksGQ=
 github.com/nobl9/nobl9-go v0.84.0-rc2.0.20240802062312-672ef8ff7607 h1:8xnubOpbNryLxbavwAr038/qAZkzmlZfaAcKRx8iZGU=
 github.com/nobl9/nobl9-go v0.84.0-rc2.0.20240802062312-672ef8ff7607/go.mod h1:Jq840pSewkS1xvbwOENjqvNKugs3p3ZAdZG+iWZksGQ=
+github.com/nobl9/nobl9-go v0.84.0-rc3 h1:HYzfElK5HacQOnwQOeX1gOzWdOImw43VosuD75/9qjw=
+github.com/nobl9/nobl9-go v0.84.0-rc3/go.mod h1:Jq840pSewkS1xvbwOENjqvNKugs3p3ZAdZG+iWZksGQ=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
