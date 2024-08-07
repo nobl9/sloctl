@@ -1,0 +1,25 @@
+- apiVersion: n9/v1alpha
+  kind: Report
+  metadata:
+    name: latest-system-review
+    displayName: Latest System Review
+  spec:
+    shared: true
+    filters:
+      projects:
+        - default
+    systemHealthReview:
+      timeFrame:
+        snapshot:
+          point: latest
+        timeZone: Europe/Warsaw
+      rowGroupBy: project
+      columns:
+        - displayName: Europe
+          labels:
+            region:
+              - europe
+        - displayName: North America
+          labels:
+            region:
+              - north-america
