@@ -16,7 +16,7 @@ created. For example, If you end up changing PR title from `sec:` to `fix:`
 you'll have to manually remove `security` label.
 
 On each commit to `main` branch, Release Drafter will update the next release
-draft. Once you're ready to create new version, simply publish this draft.
+draft.
 
 In addition to Release Drafter, we're also running a script which extracts
 explicitly listed release notes and breaking changes which are optionally
