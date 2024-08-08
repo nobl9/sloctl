@@ -192,7 +192,7 @@ test_get() {
       continue
     fi
 
-    if [[ "$kind" == "Project" ]] || [[ "$kind" == "BudgetAdjustment" ]]; then
+    if [[ "$kind" == "Project" ]] || [[ "$kind" == "BudgetAdjustment" ]] || [[ "$kind" == "Report" ]]; then
       # shellcheck disable=2046
       run_sloctl get "$alias" $(yq -r .[].metadata.name "$input")
       verify_get_success "$output" "$(read_files "$input")"
@@ -218,7 +218,7 @@ test_get() {
   done
 
   for alias in "${aliases[@]}"; do
-    if [[ "$kind" == "Project" ]] || [[ "$kind" == "UserGroup" ]] || [[ "$kind" == "BudgetAdjustment" ]]; then
+    if [[ "$kind" == "Project" ]] || [[ "$kind" == "UserGroup" ]] || [[ "$kind" == "BudgetAdjustment" ]] || [[ "$kind" == "Report" ]]; then
       run_sloctl get "$alias" "fake-name-123-321"
       assert_success_joined_output
       assert_output "No resources found."

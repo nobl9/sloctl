@@ -7,7 +7,7 @@
     shared: true
     filters:
       projects:
-        - default
+        - death-star
     systemHealthReview:
       timeFrame:
         snapshot:
@@ -15,11 +15,39 @@
         timeZone: Europe/Warsaw
       rowGroupBy: project
       columns:
-        - displayName: Europe
-          labels:
-            region:
-              - europe
-        - displayName: North America
-          labels:
-            region:
-              - north-america
+      - displayName: Tatooine
+        labels:
+          planet:
+            - tatooine
+      - displayName: Alderaan
+        labels:
+          planet:
+            - alderaan
+---
+apiVersion: n9/v1alpha
+kind: Report
+metadata:
+  name: past-system-review
+  displayName: Past System Review
+spec:
+  shared: true
+  filters:
+    projects:
+      - death-star
+  systemHealthReview:
+    timeFrame:
+      snapshot:
+        point: past
+        datetime: 2024-07-01T10:00:00Z
+        rrule: FREQ=WEEKLY;BYDAY=MO;BYHOUR=10;BYMINUTE=0;BYSECOND=0
+      timeZone: Europe/Warsaw
+    rowGroupBy: project
+    columns:
+      - displayName: Tatooine
+        labels:
+          planet:
+            - tatooine
+      - displayName: Alderaan
+        labels:
+          planet:
+            - alderaan

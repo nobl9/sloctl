@@ -7,7 +7,7 @@ spec:
   shared: true
   filters:
     projects:
-      - default
+      - death-star
   systemHealthReview:
     timeFrame:
       snapshot:
@@ -15,11 +15,11 @@ spec:
       timeZone: Europe/Warsaw
     rowGroupBy: project
     columns:
-      - displayName: Europe
+      - displayName: Tatooine
         labels:
-          region:
-            - europe
-      - displayName: North America
+          planet:
+            - tatooine
+      - displayName: Alderaan
         labels:
-          region:
-            - north-america
+          planet:
+            - alderaan
