@@ -67,6 +67,9 @@ var projectFlagSupportingKinds = map[manifest.Kind]struct{}{
 	manifest.KindDataExport:   {},
 	manifest.KindRoleBinding:  {},
 	manifest.KindAnnotation:   {},
+	// While Alert itself is not Project scoped per-se,
+	// it does support Project filtering.
+	manifest.KindAlert: {},
 }
 
 func objectKindSupportsProjectFlag(kind manifest.Kind) bool {
