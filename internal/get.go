@@ -250,7 +250,7 @@ func (g *GetCmd) newGetAlertCommand(cmd *cobra.Command) *cobra.Command {
 			return err
 		}
 		if len(objects) == 0 {
-			fmt.Printf("No resources found.\n")
+			fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)
 			return nil
 		}
 		if err = g.printObjects(objects); err != nil {
