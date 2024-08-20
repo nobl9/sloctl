@@ -98,9 +98,9 @@ To get more details in output use one of the available flags.`,
 			subCmd.Extender(sc)
 		}
 		if objectKindSupportsProjectFlag(subCmd.Kind) {
-			cmd.Flags().StringVarP(&get.project, "project", "p", "",
+			sc.Flags().StringVarP(&get.project, "project", "p", "",
 				`List the requested object(s) which belong to the specified Project (name).`)
-			cmd.Flags().BoolVarP(&get.allProjects, "all-projects", "A", false,
+			sc.Flags().BoolVarP(&get.allProjects, "all-projects", "A", false,
 				`List the requested object(s) across all projects.`)
 		}
 		if objectKindSupportsLabelsFlag(subCmd.Kind) {
