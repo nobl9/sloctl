@@ -51,7 +51,8 @@ func (r *RootCmd) NewDeleteCmd() *cobra.Command {
 	registerFileFlag(cmd, false, &deleteCmd.definitionPaths)
 	registerDryRunFlag(cmd, &deleteCmd.dryRun)
 	registerAutoConfirmationFlag(cmd, &deleteCmd.autoConfirm)
-	registerProjectFlag(cmd, &deleteCmd.project)
+	cmd.Flags().StringVarP(&deleteCmd.project, "project", "p", "",
+		`Specifies a default Project to assign to the resources if no Project was defined in the object's definition.`)
 
 	// register all subcommands for delete
 	for _, def := range []struct {
@@ -129,7 +130,8 @@ func newSubcommand(
 		},
 	}
 	if objectKindSupportsProjectFlag(kind) {
-		registerProjectFlag(sc, &deleteCmd.project)
+		sc.Flags().StringVarP(&deleteCmd.project, "project", "p", "",
+			`Specifies which Project to delete the resources from. If not provided, the default Project will be used.`)
 	}
 	registerDryRunFlag(sc, &deleteCmd.dryRun)
 	return sc

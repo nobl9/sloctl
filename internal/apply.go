@@ -52,7 +52,8 @@ func (r *RootCmd) NewApplyCmd() *cobra.Command {
 	registerFileFlag(cmd, true, &apply.definitionPaths)
 	registerDryRunFlag(cmd, &apply.dryRun)
 	registerAutoConfirmationFlag(cmd, &apply.autoConfirm)
-	registerProjectFlag(cmd, &apply.project)
+	cmd.Flags().StringVarP(&apply.project, "project", "p", "",
+		`Specifies a default Project to assign to the resources if no Project was defined in the object's definition.`)
 
 	const (
 		replayFlagName     = "replay"

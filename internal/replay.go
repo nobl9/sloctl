@@ -67,7 +67,8 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 	}
 
 	registerFileFlag(cmd, false, &replay.configPaths)
-	registerProjectFlag(cmd, &replay.project)
+	cmd.Flags().StringVarP(&replay.project, "project", "p", "",
+		`Specifies the Project for the SLOs you want to run Replay for.`)
 	cmd.Flags().Var(&replay.from, "from", "Sets the start of Replay time window.")
 
 	return cmd

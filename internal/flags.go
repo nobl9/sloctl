@@ -77,16 +77,6 @@ func objectKindSupportsProjectFlag(kind manifest.Kind) bool {
 	return ok
 }
 
-func registerProjectFlag(cmd *cobra.Command, storeIn *string) {
-	cmd.Flags().StringVarP(storeIn, "project", "p", "",
-		`List the requested object(s) which belong to the specified Project (name).`)
-}
-
-func registerAllProjectsFlag(cmd *cobra.Command, storeIn *bool) {
-	cmd.Flags().BoolVarP(storeIn, "all-projects", "A", false,
-		`List the requested object(s) across all projects.`)
-}
-
 var labelSupportingKinds = map[manifest.Kind]struct{}{
 	manifest.KindProject:     {},
 	manifest.KindService:     {},
