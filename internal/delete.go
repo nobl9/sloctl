@@ -131,7 +131,7 @@ func newSubcommand(
 	}
 	if objectKindSupportsProjectFlag(kind) {
 		sc.Flags().StringVarP(&deleteCmd.project, "project", "p", "",
-			`Specifies which Project to delete the resources from. If not provided, the default Project will be used.`)
+			`Specifies the Project from which to delete the resources. If not provided, the default Project will be used.`)
 	}
 	registerDryRunFlag(sc, &deleteCmd.dryRun)
 	return sc
