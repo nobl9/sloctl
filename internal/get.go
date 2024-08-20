@@ -98,8 +98,10 @@ To get more details in output use one of the available flags.`,
 			subCmd.Extender(sc)
 		}
 		if objectKindSupportsProjectFlag(subCmd.Kind) {
-			registerProjectFlag(sc, &get.project)
-			registerAllProjectsFlag(sc, &get.allProjects)
+			sc.Flags().StringVarP(&get.project, "project", "p", "",
+				`List the requested object(s) which belong to the specified Project (name).`)
+			sc.Flags().BoolVarP(&get.allProjects, "all-projects", "A", false,
+				`List the requested object(s) across all projects.`)
 		}
 		if objectKindSupportsLabelsFlag(subCmd.Kind) {
 			registerLabelsFlag(sc, &get.labels)

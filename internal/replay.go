@@ -33,6 +33,7 @@ type ReplayCmd struct {
 	from        TimeValue
 	configPaths []string
 	sloName     string
+	project     string
 }
 
 //go:embed replay_example.sh
@@ -54,13 +55,20 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 			"Importing data takes time: Replay for a single SLO may take several minutes up to an hour. " +
 			"During that time, the command keeps on running, periodically checking the status of Replay. " +
 			"If you cancel the program execution at any time, the current Replay in progress will not be revoked.",
-		Example:          replayExample,
-		Args:             replay.arguments,
-		PersistentPreRun: func(cmd *cobra.Command, args []string) { replay.client = r.GetClient() },
-		RunE:             func(cmd *cobra.Command, args []string) error { return replay.Run(cmd) },
+		Example: replayExample,
+		Args:    replay.arguments,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			replay.client = r.GetClient()
+			if replay.project != "" {
+				replay.client.Config.Project = replay.project
+			}
+		},
+		RunE: func(cmd *cobra.Command, args []string) error { return replay.Run(cmd) },
 	}
 
 	registerFileFlag(cmd, false, &replay.configPaths)
+	cmd.Flags().StringVarP(&replay.project, "project", "p", "",
+		`Specifies the Project for the SLOs you want to Replay.`)
 	cmd.Flags().Var(&replay.from, "from", "Sets the start of Replay time window.")
 
 	return cmd
