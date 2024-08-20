@@ -52,7 +52,7 @@ func (r *RootCmd) NewDeleteCmd() *cobra.Command {
 	registerDryRunFlag(cmd, &deleteCmd.dryRun)
 	registerAutoConfirmationFlag(cmd, &deleteCmd.autoConfirm)
 	cmd.Flags().StringVarP(&deleteCmd.project, "project", "p", "",
-		`Assigns the provided Project to the resources if no Project was defined in the object's definition.`)
+		`Assigns the provided Project to the resources if no Project is defined in the object's definition.`)
 
 	// register all subcommands for delete
 	for _, def := range []struct {
