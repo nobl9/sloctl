@@ -40,7 +40,7 @@ For every command more detailed help is available.`,
 	}
 
 	root := RootCmd{}
-	rootCmd.Flags().BoolP("help", "h", false, fmt.Sprintf("Help for %s.", rootCmd.Name()))
+	rootCmd.PersistentFlags().BoolP("help", "h", false, fmt.Sprintf("Help for %s.", rootCmd.Name()))
 	rootCmd.PersistentFlags().StringVar(&root.Flags.ConfigFile, "config", "", "Config file path.")
 	rootCmd.PersistentFlags().StringVarP(&root.Flags.Context, "context", "c", "",
 		`Overrides the default context for the duration of the selected command.`)
