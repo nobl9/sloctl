@@ -23,6 +23,10 @@
         labels:
           planet:
             - alderaan
+      thresholds:
+        redLte: 0.8
+        greenGt: 0.95
+        showNoData: false
 - apiVersion: n9/v1alpha
   kind: Report
   metadata:
@@ -50,3 +54,7 @@
           labels:
             planet:
               - alderaan
+      thresholds:
+        redLte: 0.8
+        greenGt: 0.95
+        showNoData: false
