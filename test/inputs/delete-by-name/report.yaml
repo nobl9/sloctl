@@ -23,3 +23,7 @@ spec:
         labels:
           planet:
             - alderaan
+    thresholds:
+      redLte: 0.8
+      greenGt: 0.95
+      showNoData: false
