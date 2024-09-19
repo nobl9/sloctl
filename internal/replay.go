@@ -396,6 +396,10 @@ func (r *ReplayCmd) getReplayAvailability(
 		"durationUnit":      {durationUnit},
 		"durationValue":     {strconv.Itoa(durationValue)},
 	}
+	if config.SourceSLO != nil {
+		values.Set("sourceSloProject", config.SourceSLO.Project)
+		values.Set("sourceSloName", config.SourceSLO.Name)
+	}
 	data, err := r.doRequest(ctx, http.MethodGet, endpointReplayGetAvailability, config.Project, values, nil)
 	if err != nil {
 		return
@@ -497,6 +501,13 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 		return "You've exceeded the limit of concurrent Replay runs. Wait until the current Replay(s) are done."
 	case sdkModels.ReplayUnknownAgentVersion:
 		return "Your Agent isn't connected to the Data Source. Deploy the Agent and run Replay once again."
+	case sdkModels.ReplayCannotRunReplayOnCurrentSourceSLO:
+		return fmt.Sprintf("SLO '%s' in '%s' Project is currently being used as sourceSLO in Replay."+
+			" Wait until it's done and run Replay once again.", replay.SLO, replay.Project)
+	case sdkModels.ReplayCannotUseSourceSLOWhenItsRunningReplay:
+		return fmt.Sprintf("You currently can't use the sourceSLO '%s' in '%s' Project because it's being "+
+			" used in another Replay. Wait until it's done and run Replay once again.",
+			replay.SourceSLO.Name, replay.SourceSLO.Project)
 	default:
 		return reason
 	}
