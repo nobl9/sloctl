@@ -54,6 +54,7 @@
       ]
     }
   ],
+  "ignoreDeps": ["github.com/nobl9/nobl9-go"],
   "ignorePaths": [
     "**/vendor/**",
     "**/node_modules/**",
