@@ -2,13 +2,13 @@ module github.com/nobl9/sloctl
 
 go 1.22
 
-replace github.com/nobl9/nobl9-go => ../nobl9-go
+// replace github.com/nobl9/nobl9-go => ../nobl9-go
 
 require (
 	github.com/go-playground/validator/v10 v10.22.1
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/nobl9/go-yaml v1.0.1
-	github.com/nobl9/nobl9-go v0.84.1-rc6
+	github.com/nobl9/nobl9-go v0.84.1-rc7.0.20240919143032-cd28a60068a2
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.15.0
 	github.com/spf13/cobra v1.8.1
@@ -18,7 +18,7 @@ require (
 
 require (
 	github.com/BurntSushi/toml v1.4.0 // indirect
-	github.com/MicahParks/jwkset v0.5.19 // indirect
+	github.com/MicahParks/jwkset v0.5.20 // indirect
 	github.com/MicahParks/keyfunc/v3 v3.3.5 // indirect
 	github.com/aws/aws-sdk-go v1.55.5 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
