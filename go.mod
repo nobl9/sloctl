@@ -8,7 +8,7 @@ require (
 	github.com/go-playground/validator/v10 v10.22.1
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/nobl9/go-yaml v1.0.1
-	github.com/nobl9/nobl9-go v0.84.1-rc7.0.20240919143032-cd28a60068a2
+	github.com/nobl9/nobl9-go v0.85.2-0.20240926090809-5c43255ecb29
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.15.0
 	github.com/spf13/cobra v1.8.1
@@ -35,7 +35,7 @@ require (
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/nobl9/govy v0.1.1 // indirect
+	github.com/nobl9/govy v0.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
