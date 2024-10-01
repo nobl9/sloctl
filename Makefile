@@ -176,7 +176,7 @@ format: format/go format/cspell
 format/go:
 	echo "Formatting Go files..."
 	$(call _ensure_installed,binary,goimports)
-	go fmt ./...
+	gofmt -w -l -s .
 	$(BIN_DIR)/goimports -local=github.com/nobl9/sloctl -w .
 
 ## Format cspell config file.
