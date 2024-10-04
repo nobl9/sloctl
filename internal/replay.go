@@ -48,7 +48,7 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 		Short: "Retrieve historical SLI data and recalculate their SLO error budgets.",
 		Long: "Replay pulls in the historical data while your SLO collects new data in real-time. " +
 			"The historical and current data are merged, producing an error budget calculated for the entire period. " +
-			"Refer to https://https://docs.nobl9.com/replay for more details on Replay.\n\n" +
+			"Refer to https://docs.nobl9.com/replay for more details on Replay.\n\n" +
 			"The 'replay' command allows you to import data for multiple SLOs in bulk. " +
 			"Before running the Replays it will verify if the SLOs you've provided are eligible for Replay. " +
 			"It will only run a single Replay simultaneously (current limit for concurrent Replays). " +
