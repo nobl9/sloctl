@@ -71,6 +71,8 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 		`Specifies the Project for the SLOs you want to Replay.`)
 	cmd.Flags().Var(&replay.from, "from", "Sets the start of Replay time window.")
 
+	cmd.AddCommand(replay.AddDeleteCommand())
+
 	return cmd
 }
 
@@ -114,6 +116,19 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 		r.printSummary(cmd, replays, failedIndexes)
 	}
 	return len(failedIndexes), nil
+}
+
+// AddDeleteCommand returns cobra command delete, allows to delete a replay from a queue.
+func (r *ReplayCmd) AddDeleteCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "delete",
+		Short: "Delete a replay from a queue",
+		Long:  "Delete a replay from a queue.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			fmt.Printf("Deleting replays from a queue\n")
+			return nil
+		},
+	}
 }
 
 type ReplayConfig struct {
@@ -427,6 +442,7 @@ func (r *ReplayCmd) getReplayStatus(
 
 const (
 	endpointReplayPost            = "/timetravel"
+	endpointReplayDelete          = "/timetravel"
 	endpointReplayGetStatus       = "/timetravel/%s"
 	endpointReplayGetAvailability = "/internal/timemachine/availability"
 	endpointGetSLO                = "/get/slo"
