@@ -15,13 +15,13 @@ ifndef REVISION
 endif
 
 # renovate datasource=github-releases depName=securego/gosec
-GOSEC_VERSION := v2.21.2
+GOSEC_VERSION := v2.21.4
 # renovate datasource=github-releases depName=golangci/golangci-lint
 GOLANGCI_LINT_VERSION := v1.61.0
 # renovate datasource=go depName=golang.org/x/vuln/cmd/govulncheck
 GOVULNCHECK_VERSION := v1.1.3
 # renovate datasource=go depName=golang.org/x/tools/cmd/goimports
-GOIMPORTS_VERSION := v0.25.0
+GOIMPORTS_VERSION := v0.26.0
 
 # Check if the program is present in $PATH and install otherwise.
 # ${1} - oneOf{binary,yarn}
@@ -176,7 +176,7 @@ format: format/go format/cspell
 format/go:
 	echo "Formatting Go files..."
 	$(call _ensure_installed,binary,goimports)
-	go fmt ./...
+	gofmt -w -l -s .
 	$(BIN_DIR)/goimports -local=github.com/nobl9/sloctl -w .
 
 ## Format cspell config file.

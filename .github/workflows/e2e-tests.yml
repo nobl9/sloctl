@@ -49,6 +49,11 @@ jobs:
           go-version-file: go.mod
           cache: false
       - name: Run tests
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          command: make "$TEST_TARGET"
         env:
           SLOCTL_CLIENT_ID: ${{ inputs.clientId }}
           SLOCTL_CLIENT_SECRET: ${{ secrets.clientSecret }}
@@ -56,4 +61,3 @@ jobs:
           SLOCTL_OKTA_AUTH_SERVER: ${{ inputs.oktaAuthServer }}
           SLOCTL_E2E_DOCKER_TEST_IMAGE: ${{ inputs.sloctlImage }}
           TEST_TARGET: ${{ inputs.target }}
-        run: make "$TEST_TARGET"
