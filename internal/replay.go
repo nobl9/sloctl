@@ -117,9 +117,10 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 }
 
 type ReplayConfig struct {
-	Project string    `json:"project" validate:"required"`
-	SLO     string    `json:"slo" validate:"required"`
-	From    time.Time `json:"from" validate:"required"`
+	Project   string                     `json:"project" validate:"required"`
+	SLO       string                     `json:"slo" validate:"required"`
+	From      time.Time                  `json:"from" validate:"required"`
+	SourceSLO *sdkModels.ReplaySourceSLO `json:"sourceSLO,omitempty"`
 
 	metricSource v1alphaSLO.MetricSourceSpec
 }
@@ -140,6 +141,7 @@ func (r ReplayConfig) ToReplay(timeNow time.Time) sdkModels.Replay {
 			Unit:  sdkModels.DurationUnitMinute,
 			Value: startOffsetMinutes + int(windowDuration.Minutes()),
 		},
+		SourceSLO: r.SourceSLO,
 	}
 }
 
@@ -256,8 +258,12 @@ const averageReplayDuration = 20 * time.Minute
 
 func (r *ReplayCmd) verifySLOs(ctx context.Context, replays []ReplayConfig) error {
 	sloNames := make([]string, 0, len(replays))
-	for i := range replays {
-		sloNames = append(sloNames, replays[i].SLO)
+	for _, r := range replays {
+		sloNames = append(sloNames, r.SLO)
+		if r.SourceSLO != nil {
+			// Add source SLOs to the list of SLOs to check for existence and permissions.
+			sloNames = append(sloNames, r.SourceSLO.Slo)
+		}
 	}
 	if r.client.Config.Project == "" {
 		r.client.Config.Project = sdk.ProjectsWildcard

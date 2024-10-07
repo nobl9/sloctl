@@ -55,10 +55,10 @@ github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db h1:62I3jR2Em
 github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db/go.mod h1:l0dey0ia/Uv7NcFFVbCLtqEBQbrT4OCwCSKTEv6enCw=
 github.com/nobl9/go-yaml v1.0.1 h1:Aj1kSaYdRQTKlvS6ihvXzQJhCpoHhtf9nfA95zqWH4Q=
 github.com/nobl9/go-yaml v1.0.1/go.mod h1:t7vCO8ctYdBweZxU5lUgxzAw31+ZcqJYeqRtrv+5RHI=
-github.com/nobl9/govy v0.2.0 h1:KXZRzHte3uJSpB2i0wBD+3fUoON5ptvlfMrkvtRO8Sc=
-github.com/nobl9/govy v0.2.0/go.mod h1:O+xSiKwZ6gs/orRvH5qLkfkgyT7CkuXprRIq3C5uNXQ=
-github.com/nobl9/nobl9-go v0.86.0 h1:TpBjVgcluHwgBHtTUuyJF9UCcTiGtHQN5VrFKSjfL00=
-github.com/nobl9/nobl9-go v0.86.0/go.mod h1:DPGLjkUkf2BHDj72BbKFuJzD/gxO/qTLtgFU9wKtqzE=
+github.com/nobl9/govy v0.3.0 h1:OokgZ9PHfFNt2TkX8h/9rF0Y3doj/nnr0BlPo1BsasY=
+github.com/nobl9/govy v0.3.0/go.mod h1:O+xSiKwZ6gs/orRvH5qLkfkgyT7CkuXprRIq3C5uNXQ=
+github.com/nobl9/nobl9-go v0.87.1-0.20241003100141-13a5a306624d h1:jDCIdJPMEOW3cSDHajeX9mxAm/kuBxeI6ifC9xRU1ck=
+github.com/nobl9/nobl9-go v0.87.1-0.20241003100141-13a5a306624d/go.mod h1:jICYB6/RFcKs/Mqm3ltGbsD2Ign64/uy8JMaHxpYQ5o=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
