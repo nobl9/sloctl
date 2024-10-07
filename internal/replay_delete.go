@@ -2,7 +2,9 @@ package internal
 
 import (
 	"fmt"
+	"net/http"
 
+	"github.com/mitchellh/colorstring"
 	"github.com/spf13/cobra"
 )
 
@@ -15,9 +17,9 @@ func (r *ReplayCmd) AddDeleteCommand() *cobra.Command {
 		Args:  r.deleteArguments,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if r.all {
-				return r.deleteAllReplays()
+				return r.deleteAllReplays(cmd)
 			} else {
-				return r.deleteReplaysForSLO(r.sloName, r.project)
+				return r.deleteReplaysForSLO(cmd, r.sloName, r.project)
 			}
 		},
 	}
@@ -43,12 +45,67 @@ func (r *ReplayCmd) deleteArguments(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func (r *ReplayCmd) deleteAllReplays() error {
-	fmt.Printf("Deleting all replays from queue\n")
+type deleteReplayRequest struct {
+	Project string `json:"project,omitempty"`
+	Slo     string `json:"slo,omitempty"`
+	All     bool   `json:"all,omitempty"`
+}
+
+func (r *ReplayCmd) deleteAllReplays(cmd *cobra.Command) error {
+	cmd.Println(colorstring.Color("[yellow]Deleting all replays from queue[reset]"))
+
+	_, err := r.doRequest(
+		cmd.Context(),
+		http.MethodDelete,
+		endpointReplayPost,
+		"",
+		nil,
+		deleteReplayRequest{
+			All: true,
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	cmd.Println(colorstring.Color("[green]All replays in queue deleted successfully[reset]"))
+
 	return nil
 }
 
-func (r *ReplayCmd) deleteReplaysForSLO(sloName, project string) error {
-	fmt.Printf("Deleting replays from a queue for SLO %s in project %s\n", sloName, project)
+func (r *ReplayCmd) deleteReplaysForSLO(cmd *cobra.Command, sloName, project string) error {
+	cmd.Println(
+		colorstring.Color(
+			fmt.Sprintf("[yellow]Deleting replays from a queue for SLO %s in project %s[reset]",
+				sloName,
+				project,
+			)))
+
+	_, err := r.doRequest(
+		cmd.Context(),
+		http.MethodDelete,
+		endpointReplayPost,
+		project,
+		nil,
+		deleteReplayRequest{
+			Project: project,
+			Slo:     sloName,
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	cmd.Println(
+		colorstring.Color(
+			fmt.Sprintf("[green]Replays from queue for SLO %s in project %s deleted successfully[reset]",
+				sloName,
+				project,
+			),
+		),
+	)
+
 	return nil
 }
