@@ -58,21 +58,25 @@ func NewGetCmd(client *sdk.Client) *cobra.Command {
 			project, _ := cmd.Flags().GetString(flagProject)
 			sloName, _ := cmd.Flags().GetString(flagSloName)
 			if project != "" {
-				cmd.MarkFlagRequired(flagSloName)
+				if err := cmd.MarkFlagRequired(flagSloName); err != nil {
+					panic(err)
+				}
 			}
 			if sloName != "" {
-				cmd.MarkFlagRequired(flagProject)
+				if err := cmd.MarkFlagRequired(flagProject); err != nil {
+					panic(err)
+				}
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error { return get.run(cmd) },
 	}
 
-	registerOutputFormatFlags(cmd, &get.outputFormat, &get.fieldSeparator, &get.recordSeparator)
-	registerAdjustmentFlag(cmd, &get.adjustment)
+	mustRegisterOutputFormatFlags(cmd, &get.outputFormat, &get.fieldSeparator, &get.recordSeparator)
+	mustRegisterAdjustmentFlag(cmd, &get.adjustment)
 	registerProjectFlag(cmd, &get.project)
 	registerSloNameFlag(cmd, &get.sloName)
-	registerFromFlag(cmd, &get.from)
-	registerToFlag(cmd, &get.to)
+	mustRegisterFromFlag(cmd, &get.from)
+	mustRegisterToFlag(cmd, &get.to)
 
 	return cmd
 }
@@ -102,7 +106,9 @@ func (g *GetCmd) run(cmd *cobra.Command) error {
 		return errors.Wrap(err, "failed parse response")
 	}
 
-	g.printObjects(events)
+	if err := g.printObjects(events); err != nil {
+		return errors.Wrap(err, "failed to print objects")
+	}
 
 	return nil
 }

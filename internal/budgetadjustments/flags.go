@@ -16,7 +16,7 @@ const (
 	flagSloName    = "slo-name"
 )
 
-func registerOutputFormatFlags(
+func mustRegisterOutputFormatFlags(
 	cmd *cobra.Command,
 	outputFormat, fieldSeparator, recordSeparator *string,
 ) {
@@ -34,7 +34,7 @@ func registerOutputFormatFlags(
 	}
 }
 
-func registerAdjustmentFlag(cmd *cobra.Command, storeIn *string) {
+func mustRegisterAdjustmentFlag(cmd *cobra.Command, storeIn *string) {
 	cmd.Flags().StringVar(storeIn, flagAdjustment, "", "Name of the Adjustment.")
 	if err := cmd.MarkFlagRequired(flagAdjustment); err != nil {
 		panic(err)
@@ -74,7 +74,7 @@ func (t *TimeValue) Type() string {
 	return "time"
 }
 
-func registerFromFlag(
+func mustRegisterFromFlag(
 	cmd *cobra.Command,
 	storeIn *TimeValue,
 ) {
@@ -85,7 +85,7 @@ func registerFromFlag(
 	}
 }
 
-func registerToFlag(
+func mustRegisterToFlag(
 	cmd *cobra.Command,
 	storeIn *TimeValue,
 ) {
