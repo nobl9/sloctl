@@ -51,7 +51,8 @@ func NewGetCmd(client *sdk.Client) *cobra.Command {
 		Long: "This endpoint only return past and ongoing events (events that are already started)." +
 			"Please see Editing budget adjustments." +
 			"Maximum 500 events can be returned." +
-			"Optional filtering for specific SLO (only one). If SLO is defined we will return only events for that SLO and the result will also include other SLOs that this events have. Sorted by eventStart.",
+			"Optional filtering for specific SLO (only one). If SLO is defined we will return only events" +
+			" for that SLO and the result will also include other SLOs that this events have. Sorted by eventStart.",
 		Example: example,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			get.client = client
