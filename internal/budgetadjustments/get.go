@@ -19,7 +19,6 @@ import (
 
 type GetCmd struct {
 	client           *sdk.Client
-	filepath         string
 	outputFormat     string
 	fieldSeparator   string
 	recordSeparator  string
