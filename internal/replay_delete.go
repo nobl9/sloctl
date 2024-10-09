@@ -8,12 +8,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// AddDeleteCommand returns cobra command delete, allows to delete a replay from a queue.
+// AddDeleteCommand returns cobra command delete, which allows to delete a queued Replay.
 func (r *ReplayCmd) AddDeleteCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete <slo-name>",
-		Short: "Delete a replay from a queue",
-		Long:  "Delete a replay from a queue.",
+		Short: "Delete a queued Replay",
 		Args:  r.deleteArguments,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if r.project != "" {
@@ -28,8 +27,8 @@ func (r *ReplayCmd) AddDeleteCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&r.project, "project", "p", "",
-		`Specifies the Project of the SLO you want to remove Replays from queue for.`)
-	cmd.Flags().BoolVar(&r.all, "all", false, "Delete ALL replays in queue.")
+		`Specifies the Project of the SLO you want to remove queued Replays for.`)
+	cmd.Flags().BoolVar(&r.all, "all", false, "Delete ALL queued Replays.")
 
 	return cmd
 }
@@ -55,7 +54,7 @@ type deleteReplayRequest struct {
 }
 
 func (r *ReplayCmd) deleteAllReplays(cmd *cobra.Command) error {
-	cmd.Println(colorstring.Color("[yellow]Deleting all replays from queue[reset]"))
+	cmd.Println(colorstring.Color("[yellow]Deleting all Replays from queue[reset]"))
 
 	_, err := r.doRequest(
 		cmd.Context(),
@@ -72,18 +71,18 @@ func (r *ReplayCmd) deleteAllReplays(cmd *cobra.Command) error {
 		return err
 	}
 
-	cmd.Println(colorstring.Color("[green]All replays in queue deleted successfully[reset]"))
+	cmd.Println(colorstring.Color("[green]All queued Replays deleted successfully[reset]"))
 
 	return nil
 }
 
 func (r *ReplayCmd) deleteReplaysForSLO(cmd *cobra.Command, sloName string) error {
 	cmd.Println(
-		colorstring.Color(
-			fmt.Sprintf("[yellow]Deleting replays from a queue for SLO %s in project %s[reset]",
-				sloName,
-				r.client.Config.Project,
-			)))
+		colorstring.Printf(
+			"[yellow]Deleting queued Replays for SLO '%s' in project '%s'[reset]",
+			sloName,
+			r.client.Config.Project,
+		))
 
 	_, err := r.doRequest(
 		cmd.Context(),
@@ -103,7 +102,7 @@ func (r *ReplayCmd) deleteReplaysForSLO(cmd *cobra.Command, sloName string) erro
 
 	cmd.Println(
 		colorstring.Color(
-			fmt.Sprintf("[green]Replays from queue for SLO %s in project %s deleted successfully[reset]",
+			fmt.Sprintf("[green]Queued Replays for SLO '%s' in project '%s' deleted successfully[reset]",
 				sloName,
 				r.client.Config.Project,
 			),
