@@ -18,7 +18,7 @@ func (r *ReplayCmd) AddDeleteCommand() *cobra.Command {
 			if r.project != "" {
 				r.client.Config.Project = r.project
 			}
-			if r.all {
+			if r.deleteAll {
 				return r.deleteAllReplays(cmd)
 			} else {
 				return r.deleteReplaysForSLO(cmd, r.sloName)
@@ -28,13 +28,13 @@ func (r *ReplayCmd) AddDeleteCommand() *cobra.Command {
 
 	cmd.Flags().StringVarP(&r.project, "project", "p", "",
 		`Specifies the Project of the SLO you want to remove queued Replays for.`)
-	cmd.Flags().BoolVar(&r.all, "all", false, "Delete ALL queued Replays.")
+	cmd.Flags().BoolVar(&r.deleteAll, "all", false, "Delete ALL queued Replays.")
 
 	return cmd
 }
 
 func (r *ReplayCmd) deleteArguments(cmd *cobra.Command, args []string) error {
-	if !r.all && len(args) == 0 {
+	if !r.deleteAll && len(args) == 0 {
 		_ = cmd.Usage()
 		return errReplayDeleteInvalidOptions
 	}

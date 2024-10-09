@@ -34,7 +34,7 @@ type ReplayCmd struct {
 	configPaths []string
 	sloName     string
 	project     string
-	all         bool
+	deleteAll   bool
 }
 
 //go:embed replay_example.sh
