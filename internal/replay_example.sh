@@ -27,3 +27,30 @@ cat <<EOF > ./replay.yaml
 - slo: datadog-latency
 EOF
 sloctl replay -f ./replay.yaml -p my-project --from 2023-03-02T15:00:00Z
+
+# Replay SLOs using SLI data from other SLOs.
+cat <<EOF > ./replay.yaml
+- slo: prometheus-latency
+  project: default
+  from: 2023-03-02T16:00:00Z
+  sourceSLO:
+    slo: my-service-latency
+    project: my-service-test-project
+    objectivesMap:
+      - source: acceptable
+        target: objective-1
+      - source: alarming
+        target: objective-2
+- slo: datadog-latency
+  project: default
+  from: 2023-03-02T16:00:00Z
+  sourceSLO:
+    slo: my-service-latency
+    project: my-service-test-project
+    objectivesMap:
+      - source: alarming
+        target: objective-1
+      - source: alarming
+        target: objective-2
+EOF
+sloctl -f ./replay.yaml replay
