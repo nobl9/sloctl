@@ -67,7 +67,7 @@ linters:
     - dogsled
     - errcheck
     - exhaustive
-    - exportloopref
+    - copyloopvar
     - gochecknoinits
     - gocognit
     - gocritic

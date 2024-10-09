@@ -327,7 +327,6 @@ func (g *GetCmd) getAgentsWithSecrets(ctx context.Context, objects []manifest.Ob
 	var mu sync.Mutex
 	eg, ctx := errgroup.WithContext(ctx)
 	for i := range objects {
-		i := i
 		eg.Go(func() error {
 			agent, ok := objects[i].(v1alpha.GenericObject)
 			if !ok {
