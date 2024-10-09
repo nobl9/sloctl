@@ -16,10 +16,13 @@ func (r *ReplayCmd) AddDeleteCommand() *cobra.Command {
 		Long:  "Delete a replay from a queue.",
 		Args:  r.deleteArguments,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if r.project != "" {
+				r.client.Config.Project = r.project
+			}
 			if r.all {
 				return r.deleteAllReplays(cmd)
 			} else {
-				return r.deleteReplaysForSLO(cmd, r.sloName, r.project)
+				return r.deleteReplaysForSLO(cmd, r.sloName)
 			}
 		},
 	}
@@ -57,7 +60,7 @@ func (r *ReplayCmd) deleteAllReplays(cmd *cobra.Command) error {
 	_, err := r.doRequest(
 		cmd.Context(),
 		http.MethodDelete,
-		endpointReplayPost,
+		endpointReplayDelete,
 		"",
 		nil,
 		deleteReplayRequest{
@@ -74,22 +77,22 @@ func (r *ReplayCmd) deleteAllReplays(cmd *cobra.Command) error {
 	return nil
 }
 
-func (r *ReplayCmd) deleteReplaysForSLO(cmd *cobra.Command, sloName, project string) error {
+func (r *ReplayCmd) deleteReplaysForSLO(cmd *cobra.Command, sloName string) error {
 	cmd.Println(
 		colorstring.Color(
 			fmt.Sprintf("[yellow]Deleting replays from a queue for SLO %s in project %s[reset]",
 				sloName,
-				project,
+				r.client.Config.Project,
 			)))
 
 	_, err := r.doRequest(
 		cmd.Context(),
 		http.MethodDelete,
-		endpointReplayPost,
-		project,
+		endpointReplayDelete,
+		r.client.Config.Project,
 		nil,
 		deleteReplayRequest{
-			Project: project,
+			Project: r.client.Config.Project,
 			Slo:     sloName,
 		},
 	)
@@ -102,7 +105,7 @@ func (r *ReplayCmd) deleteReplaysForSLO(cmd *cobra.Command, sloName, project str
 		colorstring.Color(
 			fmt.Sprintf("[green]Replays from queue for SLO %s in project %s deleted successfully[reset]",
 				sloName,
-				project,
+				r.client.Config.Project,
 			),
 		),
 	)
