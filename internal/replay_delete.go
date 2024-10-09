@@ -54,7 +54,7 @@ type deleteReplayRequest struct {
 }
 
 func (r *ReplayCmd) deleteAllReplays(cmd *cobra.Command) error {
-	cmd.Println(colorstring.Color("[yellow]Deleting all Replays from queue[reset]"))
+	cmd.Println(colorstring.Color("[yellow]Deleting all queued Replays[reset]"))
 
 	_, err := r.doRequest(
 		cmd.Context(),
