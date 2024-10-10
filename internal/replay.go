@@ -34,6 +34,7 @@ type ReplayCmd struct {
 	configPaths []string
 	sloName     string
 	project     string
+	deleteAll   bool
 }
 
 //go:embed replay_example.sh
@@ -47,7 +48,7 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 		Short: "Retrieve historical SLI data and recalculate their SLO error budgets.",
 		Long: "Replay pulls in the historical data while your SLO collects new data in real-time. " +
 			"The historical and current data are merged, producing an error budget calculated for the entire period. " +
-			"Refer to https://docs.nobl9.com/Features/replay?_highlight=replay for more details on Replay.\n\n" +
+			"Refer to https://docs.nobl9.com/replay for more details on Replay.\n\n" +
 			"The 'replay' command allows you to import data for multiple SLOs in bulk. " +
 			"Before running the Replays it will verify if the SLOs you've provided are eligible for Replay. " +
 			"It will only run a single Replay simultaneously (current limit for concurrent Replays). " +
@@ -70,6 +71,8 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&replay.project, "project", "p", "",
 		`Specifies the Project for the SLOs you want to Replay.`)
 	cmd.Flags().Var(&replay.from, "from", "Sets the start of Replay time window.")
+
+	cmd.AddCommand(replay.AddDeleteCommand())
 
 	return cmd
 }
@@ -186,17 +189,6 @@ func (r *ReplayCmd) prepareConfigs() ([]ReplayConfig, error) {
 	}
 	return replays, nil
 }
-
-var (
-	errReplayInvalidOptions = errors.New("you must either run 'sloctl replay' for a single SLO," +
-		" providing its name as an argument, or provide configuration file using '-f' flag, but not both")
-	errReplayTooManyArgs = errors.New("'replay' command accepts a single SLO name," +
-		" If you want to run it for multiple SLOs provide a configuration file instead using '-f' flag")
-	errReplayMissingFromArg = errors.Errorf("when running 'sloctl replay' for a single SLO,"+
-		" you must provide Replay window start time (%s layout) with '--from' flag", timeLayoutString)
-	errProjectWildcardIsNotAllowed = errors.New(
-		"wildcard Project is not allowed, you must provide specific Project name(s)")
-)
 
 func (r *ReplayCmd) arguments(cmd *cobra.Command, args []string) error {
 	if len(r.configPaths) == 0 && len(args) == 0 {
@@ -321,7 +313,6 @@ outer:
 	eg, ctx := errgroup.WithContext(ctx)
 	eg.SetLimit(10)
 	for i := range replays {
-		i := i
 		eg.Go(func() error {
 			c := replays[i]
 			timeNow := time.Now()
@@ -433,6 +424,7 @@ func (r *ReplayCmd) getReplayStatus(
 
 const (
 	endpointReplayPost            = "/timetravel"
+	endpointReplayDelete          = "/timetravel"
 	endpointReplayGetStatus       = "/timetravel/%s"
 	endpointReplayGetAvailability = "/internal/timemachine/availability"
 	endpointGetSLO                = "/get/slo"
