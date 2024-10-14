@@ -99,7 +99,7 @@ func (g *GetCmd) run(cmd *cobra.Command) error {
 		values.Add("project", g.project)
 	}
 
-	resBody, err := request.DoRequest(
+	resBody, apiError, err := request.DoRequest(
 		g.client,
 		cmd.Context(),
 		http.MethodGet,
@@ -108,6 +108,9 @@ func (g *GetCmd) run(cmd *cobra.Command) error {
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to get events")
+	}
+	if apiError != nil {
+		return errors.Errorf(apiError.ToString())
 	}
 
 	var events []Event
