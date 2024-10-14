@@ -4,17 +4,17 @@ import (
 	_ "embed"
 	"fmt"
 
-	"github.com/nobl9/nobl9-go/sdk"
 	"github.com/spf13/cobra"
+
+	"github.com/nobl9/sloctl/internal/sdkclient"
 )
 
-func NewRootCmd(client *sdk.Client) *cobra.Command {
+func NewRootCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "events",
 		Short: "Budget adjustments events managment",
 	}
 	cmd.PersistentFlags().BoolP("help", "h", false, fmt.Sprintf("Help for %s.", cmd.Name()))
-	cmd.AddCommand(NewGetCmd(client))
-	cmd.AddCommand(NewUpdateCmd(client))
+	cmd.AddCommand(NewGetCmd(clientProvider))
 	return cmd
 }

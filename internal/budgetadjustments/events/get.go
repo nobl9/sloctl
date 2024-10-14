@@ -17,6 +17,7 @@ import (
 	"github.com/nobl9/sloctl/internal/budgetadjustments/flags"
 	"github.com/nobl9/sloctl/internal/budgetadjustments/request"
 	"github.com/nobl9/sloctl/internal/printer"
+	"github.com/nobl9/sloctl/internal/sdkclient"
 )
 
 type GetCmd struct {
@@ -44,7 +45,7 @@ type Event struct {
 //go:embed examples/get_example.sh
 var example string
 
-func NewGetCmd(client *sdk.Client) *cobra.Command {
+func NewGetCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 	get := &GetCmd{out: os.Stdout}
 
 	cmd := &cobra.Command{
@@ -57,7 +58,7 @@ func NewGetCmd(client *sdk.Client) *cobra.Command {
 			" for that SLO and the result will also include other SLOs that this events have. Sorted by eventStart.",
 		Example: example,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			get.client = client
+			get.client = clientProvider.GetClient()
 			project, _ := cmd.Flags().GetString(flags.FlagSloProject)
 			sloName, _ := cmd.Flags().GetString(flags.FlagSloName)
 			if project != "" {

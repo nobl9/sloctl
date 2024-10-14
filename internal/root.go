@@ -55,7 +55,7 @@ For every command more detailed help is available.`,
 	rootCmd.AddCommand(root.NewConfigCmd())
 	rootCmd.AddCommand(root.NewReplayCmd())
 	rootCmd.AddCommand(root.NewAwsIamIds())
-	rootCmd.AddCommand(budgetadjustments.NewRootCmd(root.GetClient()))
+	rootCmd.AddCommand(budgetadjustments.NewRootCmd(&root))
 	return rootCmd
 }
 
