@@ -1,4 +1,4 @@
-package budgetadjustments
+package request
 
 import (
 	"context"
@@ -10,9 +10,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-const budgetAdjustmentAPI = "/v1/budgetadjustments"
+const BudgetAdjustmentAPI = "/v1/budgetadjustments"
 
-func doRequest(
+func DoRequest(
 	client *sdk.Client,
 	ctx context.Context,
 	method, endpoint string,

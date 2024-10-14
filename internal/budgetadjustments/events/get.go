@@ -1,4 +1,4 @@
-package budgetadjustments
+package events
 
 import (
 	_ "embed"
@@ -14,6 +14,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/nobl9/sloctl/internal/budgetadjustments/flags"
+	"github.com/nobl9/sloctl/internal/budgetadjustments/request"
 	"github.com/nobl9/sloctl/internal/printer"
 )
 
@@ -24,7 +26,7 @@ type GetCmd struct {
 	recordSeparator  string
 	out              io.Writer
 	adjustment       string
-	from, to         TimeValue
+	from, to         flags.TimeValue
 	project, sloName string
 }
 
@@ -56,15 +58,15 @@ func NewGetCmd(client *sdk.Client) *cobra.Command {
 		Example: example,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			get.client = client
-			project, _ := cmd.Flags().GetString(flagProject)
-			sloName, _ := cmd.Flags().GetString(flagSloName)
+			project, _ := cmd.Flags().GetString(flags.FlagSloProject)
+			sloName, _ := cmd.Flags().GetString(flags.FlagSloName)
 			if project != "" {
-				if err := cmd.MarkFlagRequired(flagSloName); err != nil {
+				if err := cmd.MarkFlagRequired(flags.FlagSloName); err != nil {
 					panic(err)
 				}
 			}
 			if sloName != "" {
-				if err := cmd.MarkFlagRequired(flagProject); err != nil {
+				if err := cmd.MarkFlagRequired(flags.FlagSloProject); err != nil {
 					panic(err)
 				}
 			}
@@ -72,12 +74,17 @@ func NewGetCmd(client *sdk.Client) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error { return get.run(cmd) },
 	}
 
-	mustRegisterOutputFormatFlags(cmd, &get.outputFormat, &get.fieldSeparator, &get.recordSeparator)
-	mustRegisterAdjustmentFlag(cmd, &get.adjustment)
-	registerProjectFlag(cmd, &get.project)
-	registerSloNameFlag(cmd, &get.sloName)
-	mustRegisterFromFlag(cmd, &get.from)
-	mustRegisterToFlag(cmd, &get.to)
+	flags.MustRegisterOutputFormatFlags(
+		cmd,
+		&get.outputFormat,
+		&get.fieldSeparator,
+		&get.recordSeparator,
+	)
+	flags.MustRegisterAdjustmentFlag(cmd, &get.adjustment)
+	flags.RegisterProjectFlag(cmd, &get.project)
+	flags.RegisterSloNameFlag(cmd, &get.sloName)
+	flags.MustRegisterFromFlag(cmd, &get.from)
+	flags.MustRegisterToFlag(cmd, &get.to)
 
 	return cmd
 }
@@ -91,15 +98,15 @@ func (g *GetCmd) run(cmd *cobra.Command) error {
 		values.Add("project", g.project)
 	}
 
-	resBody, err := doRequest(
+	resBody, err := request.DoRequest(
 		g.client,
 		cmd.Context(),
 		http.MethodGet,
-		fmt.Sprintf("%s/%s/events", budgetAdjustmentAPI, g.adjustment),
+		fmt.Sprintf("%s/%s/events", request.BudgetAdjustmentAPI, g.adjustment),
 		values,
 	)
 	if err != nil {
-		return errors.Wrap(err, "failed to get")
+		return errors.Wrap(err, "failed to get events")
 	}
 
 	var events []Event
