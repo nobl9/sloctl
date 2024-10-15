@@ -7,8 +7,9 @@ import (
 	"os"
 
 	"github.com/mitchellh/colorstring"
-	"github.com/nobl9/sloctl/internal/printer"
 	"github.com/spf13/cobra"
+
+	"github.com/nobl9/sloctl/internal/printer"
 )
 
 // AddListCommand returns cobra command list, which allows to list all queued Replays.
@@ -23,7 +24,7 @@ func (r *ReplayCmd) AddListCommand() *cobra.Command {
 	return cmd
 }
 
-type ReplayList struct {
+type ReplayQueueItem struct {
 	Slo            string `json:"slo,omitempty"`
 	Project        string `json:"project"`
 	ElapsedTime    string `json:"elapsedTime,omitempty"`
@@ -47,16 +48,16 @@ func (r *ReplayCmd) listAllReplays(cmd *cobra.Command) error {
 		return err
 	}
 
-	var replayList []ReplayList
-	if err := json.Unmarshal(response, &replayList); err != nil {
+	var replayQueueList []ReplayQueueItem
+	if err := json.Unmarshal(response, &replayQueueList); err != nil {
 		fmt.Printf("err: %v\n", err)
 	}
 
-	p, err := printer.New(os.Stdout, "yaml", "|", "-")
+	p, err := printer.New(os.Stdout, "yaml", "", "")
 	if err != nil {
 		return err
 	}
-	if err = p.Print(replayList); err != nil {
+	if err = p.Print(replayQueueList); err != nil {
 		return err
 	}
 	return nil
