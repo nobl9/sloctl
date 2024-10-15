@@ -53,7 +53,6 @@ func NewGetCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 		Short: "Return a list of events for given Adjustment with related SLOs.",
 		Long: "This endpoint only return past and ongoing events (events that are already started)." +
 			"Please see Editing budget adjustments." +
-			"Maximum 500 events can be returned." +
 			"Optional filtering for specific SLO (only one). If SLO is defined we will return only events" +
 			" for that SLO and the result will also include other SLOs that this events have. Sorted by eventStart.",
 		Example: example,
@@ -110,7 +109,7 @@ func (g *GetCmd) run(cmd *cobra.Command) error {
 		return errors.Wrap(err, "failed to get events")
 	}
 	if apiError != nil {
-		return errors.Errorf(apiError.ToString())
+		return errors.New(apiError.ToString())
 	}
 
 	var events []Event
