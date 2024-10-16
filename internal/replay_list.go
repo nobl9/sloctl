@@ -34,7 +34,7 @@ type ReplayQueueItem struct {
 }
 
 func (r *ReplayCmd) listAllReplays(cmd *cobra.Command) error {
-	cmd.Println(colorstring.Color("[yellow]Listing all queued Replays[reset]"))
+	cmd.Println(colorstring.Color("[yellow]Listing all Replays[reset]"))
 
 	response, err := r.doRequest(
 		cmd.Context(),
