@@ -43,19 +43,20 @@ type Event struct {
 }
 
 //go:embed examples/get_example.sh
-var example string
+var getExample string
 
 func NewGetCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 	get := &GetCmd{out: os.Stdout}
 
 	cmd := &cobra.Command{
 		Use:   "get",
-		Short: "Return a list of events for given Adjustment with related SLOs.",
-		Long: "This endpoint only return past and ongoing events (events that are already started)." +
-			"Please see Editing budget adjustments." +
-			"Optional filtering for specific SLO (only one). If SLO is defined we will return only events" +
-			" for that SLO and the result will also include other SLOs that this events have. Sorted by eventStart.",
-		Example: example,
+		Short: "Return a list of events for given Adjustment with related SLOs",
+		Long: "Returns a list of events for the specified adjustment along with related **SLO**." +
+			"This command returns past and ongoing events (events that have already started)." +
+			"The events 'get' command can return a maximum of 250 events. You can optionally filter for a specific SLO (only one)." +
+			"If an SLO is defined, only events for that SLO will be returned, but the results will also include other SLOs associated with those events." +
+			"The results are sorted by event start time.",
+		Example: getExample,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			get.client = clientProvider.GetClient()
 			project, _ := cmd.Flags().GetString(flags.FlagSloProject)
