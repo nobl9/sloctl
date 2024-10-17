@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-// type TimeValue struct{ time.Time }
 type TimeValue struct{ time.Time }
 
 const (
