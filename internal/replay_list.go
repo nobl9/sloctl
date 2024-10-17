@@ -16,7 +16,7 @@ import (
 func (r *ReplayCmd) AddListCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List queued Replays",
+		Short: "List all Replays",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return r.listAllReplays(cmd)
 		},
