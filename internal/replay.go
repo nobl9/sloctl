@@ -73,6 +73,7 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 	cmd.Flags().Var(&replay.from, "from", "Sets the start of Replay time window.")
 
 	cmd.AddCommand(replay.AddDeleteCommand())
+	cmd.AddCommand(replay.AddListCommand())
 
 	return cmd
 }
@@ -425,6 +426,7 @@ func (r *ReplayCmd) getReplayStatus(
 const (
 	endpointReplayPost            = "/timetravel"
 	endpointReplayDelete          = "/timetravel"
+	endpointReplayList            = "/timetravel/list"
 	endpointReplayGetStatus       = "/timetravel/%s"
 	endpointReplayGetAvailability = "/internal/timemachine/availability"
 	endpointGetSLO                = "/get/slo"
