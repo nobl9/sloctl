@@ -20,9 +20,10 @@ func DoRequest(
 	ctx context.Context,
 	method, endpoint string,
 	values url.Values,
+	body io.Reader,
 ) ([]byte, error) {
 	var err error
-	req, err := client.CreateRequest(ctx, method, endpoint, nil, values, nil)
+	req, err := client.CreateRequest(ctx, method, endpoint, nil, values, body)
 	if err != nil {
 		return nil, err
 	}
@@ -30,25 +31,25 @@ func DoRequest(
 	if err != nil {
 		return nil, err
 	}
-	var body []byte
+	var respBody []byte
 	if resp.Body != nil {
 		defer func() { _ = resp.Body.Close() }()
-		body, err = io.ReadAll(resp.Body)
+		respBody, err = io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, err
 		}
 	}
 	if resp.StatusCode >= 300 {
 		if !strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json") {
-			return nil, newUnexpectedError(string(bytes.TrimSpace(body)))
+			return nil, newUnexpectedError(string(bytes.TrimSpace(respBody)))
 		}
 		respErr := sdk.HTTPError{}
-		if err := json.Unmarshal(body, &respErr); err != nil {
-			return nil, newUnexpectedError(string(bytes.TrimSpace(body)))
+		if err := json.Unmarshal(respBody, &respErr); err != nil {
+			return nil, newUnexpectedError(string(bytes.TrimSpace(respBody)))
 		}
-		return body, errors.New(respErr.Error())
+		return respBody, errors.New(respErr.Error())
 	}
-	return body, nil
+	return respBody, nil
 }
 
 func newUnexpectedError(title string) error {

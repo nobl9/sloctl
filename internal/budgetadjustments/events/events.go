@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/nobl9/sloctl/internal/sdkclient"
+	"github.com/nobl9/sloctl/internal/budgetadjustments/sdkclient"
 )
 
 func NewRootCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {

@@ -16,8 +16,8 @@ import (
 
 	"github.com/nobl9/sloctl/internal/budgetadjustments/flags"
 	"github.com/nobl9/sloctl/internal/budgetadjustments/request"
+	"github.com/nobl9/sloctl/internal/budgetadjustments/sdkclient"
 	"github.com/nobl9/sloctl/internal/printer"
-	"github.com/nobl9/sloctl/internal/sdkclient"
 )
 
 type GetCmd struct {
