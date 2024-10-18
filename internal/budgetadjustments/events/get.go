@@ -98,7 +98,7 @@ func (g *GetCmd) run(cmd *cobra.Command) error {
 		values.Add("sloName", g.sloName)
 	}
 	if g.project != "" {
-		values.Add("project", g.project)
+		values.Add("sloProject", g.project)
 	}
 
 	resBody, err := request.DoRequest(
@@ -107,6 +107,7 @@ func (g *GetCmd) run(cmd *cobra.Command) error {
 		http.MethodGet,
 		fmt.Sprintf("%s/%s/events", request.BudgetAdjustmentAPI, g.adjustment),
 		values,
+		nil,
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to get events")
