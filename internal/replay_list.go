@@ -3,11 +3,12 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/mitchellh/colorstring"
 	"github.com/nobl9/sloctl/internal/printer"
 	"github.com/spf13/cobra"
-	"net/http"
-	"os"
 )
 
 // AddListCommand returns cobra command list, which allows to list all queued Replays.
