@@ -7,8 +7,9 @@ import (
 	"os"
 
 	"github.com/mitchellh/colorstring"
-	"github.com/nobl9/sloctl/internal/printer"
 	"github.com/spf13/cobra"
+
+	"github.com/nobl9/sloctl/internal/printer"
 )
 
 // AddListCommand returns cobra command list, which allows to list all queued Replays.
