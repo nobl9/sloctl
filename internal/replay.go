@@ -46,16 +46,13 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "replay",
 		Short: "Retrieve historical SLI data and recalculate their SLO error budgets.",
-		Long: "Replay pulls in the historical data while your SLO collects new data in real-time. " +
-			"The historical and current data are merged, producing an error budget calculated for the entire period. " +
-			"Refer to https://docs.nobl9.com/replay for more details on Replay.\n\n" +
-			"The 'replay' command allows you to import data for multiple SLOs in bulk. " +
-			"Before running the Replays it will verify if the SLOs you've provided are eligible for Replay. " +
-			"It will only run a single Replay simultaneously (current limit for concurrent Replays). " +
-			"When any Replay fails, it will attempt the import for the next SLO. " +
-			"Importing data takes time: Replay for a single SLO may take several minutes up to an hour. " +
-			"During that time, the command keeps on running, periodically checking the status of Replay. " +
-			"If you cancel the program execution at any time, the current Replay in progress will not be revoked.",
+		Long: "Replay provides the options to retrieve SLI data collected by the data source in the past. " +
+			"With it, you can restore missing or corrupted SLI data, create SLOs with historical data, without waiting days or weeks for natural data collection, backfill SLOs with historical data after editing its critical parameters, and more.\n " +
+			"Historical data retrieval period depends on your data source capabilities." +
+			"For long periods, historical data retrieval can consume significant resources and take time. " +
+			"During this time, the command keeps on running and checking the Replay status. " +
+			"Cancelling program execution doesn't revoke an ongoing Replay. " +
+			"Learn more about Replay: https://docs.nobl9.com/replay ",
 		Example: replayExample,
 		Args:    replay.arguments,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
