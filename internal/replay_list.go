@@ -54,7 +54,7 @@ func (r *ReplayCmd) listAllReplays(cmd *cobra.Command) error {
 	}
 
 	if len(replayQueueList) == 0 {
-		cmd.Println(colorstring.Color("[light_gray]No Replays found[reset]"))
+		cmd.Println(colorstring.Color("[light_gray]Replay not found[reset]"))
 		return nil
 	} else {
 		p, err := printer.New(os.Stdout, "yaml", "", "")
