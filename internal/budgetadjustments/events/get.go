@@ -38,7 +38,7 @@ type SLO struct {
 type Event struct {
 	EventStart time.Time `json:"eventStart"`
 	EventEnd   time.Time `json:"eventEnd"`
-	Slos       []SLO     `json:"slos"`
+	SLOs       []SLO     `json:"slos"`
 }
 
 //go:embed examples/get_example.sh
