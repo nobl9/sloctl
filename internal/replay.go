@@ -50,8 +50,8 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 			"The historical and current data are merged, producing an error budget calculated for the entire period. " +
 			"Refer to https://docs.nobl9.com/replay for more details on Replay.\n\n" +
 			"The 'replay' command allows you to import data for multiple SLOs in bulk. " +
-			"Before creating the Replays it will verify if the SLOs you've provided are eligible for Replay. " +
-			"It will only create a single Replay simultaneously (current limit for concurrent Replays). " +
+			"Before running the Replays it will verify if the SLOs you've provided are eligible for Replay. " +
+			"It will only run a single Replay simultaneously (current limit for concurrent Replays). " +
 			"Importing data takes time: Replay for a single SLO may take several minutes up to an hour. ",
 		Example: replayExample,
 		Args:    replay.arguments,
@@ -102,15 +102,15 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 			replay.From.Format(timeLayout), time.Now().In(replay.From.Location()).Format(timeLayout))))
 
 		if arePlaylistEnabled {
-			cmd.Println("Creating Replay...")
+			cmd.Println("Running Replay...")
 			err = r.runReplay(cmd.Context(), replay)
 
 			if err != nil {
-				cmd.Println(colorstring.Color("[red]Failed to create Replay:[reset] " + err.Error()))
+				cmd.Println(colorstring.Color("[red]Failed to run Replay:[reset] " + err.Error()))
 				failedIndexes = append(failedIndexes, i)
 				continue
 			}
-			cmd.Println(colorstring.Color("[green]Replay created successfully![reset]"))
+			cmd.Println(colorstring.Color("[green]Replay run successfully![reset]"))
 		} else {
 			spinner := NewSpinner("Importing data...")
 			spinner.Go()
