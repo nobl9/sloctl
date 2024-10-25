@@ -20,7 +20,7 @@ type ApplyCmd struct {
 	dryRun            bool
 	autoConfirm       bool
 	replay            bool
-	replayFrom        TimeValue
+	replayFrom        flags.TimeValue
 	project           string
 }
 

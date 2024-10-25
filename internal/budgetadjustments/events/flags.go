@@ -1,7 +1,9 @@
-package flags
+package events
 
 import (
 	"github.com/spf13/cobra"
+
+	"github.com/nobl9/sloctl/internal/flags"
 )
 
 const (
@@ -40,7 +42,7 @@ func RegisterSloNameFlag(cmd *cobra.Command, storeIn *string) {
 
 func MustRegisterFromFlag(
 	cmd *cobra.Command,
-	storeIn *TimeValue,
+	storeIn *flags.TimeValue,
 ) {
 	cmd.Flags().
 		Var(storeIn, FlagFrom, "Specifies the start date and time for the data range (in UTC).")
@@ -51,7 +53,7 @@ func MustRegisterFromFlag(
 
 func MustRegisterToFlag(
 	cmd *cobra.Command,
-	storeIn *TimeValue,
+	storeIn *flags.TimeValue,
 ) {
 	cmd.Flags().Var(storeIn, FlagTo, "Specifies the end date and time for the data range (in UTC).")
 	if err := cmd.MarkFlagRequired(FlagTo); err != nil {

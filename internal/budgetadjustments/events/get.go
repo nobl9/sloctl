@@ -14,9 +14,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	adjustmentFlags "github.com/nobl9/sloctl/internal/budgetadjustments/flags"
-	"github.com/nobl9/sloctl/internal/budgetadjustments/request"
 	"github.com/nobl9/sloctl/internal/budgetadjustments/sdkclient"
+	"github.com/nobl9/sloctl/internal/flags"
 	"github.com/nobl9/sloctl/internal/printer"
 )
 
@@ -27,7 +26,7 @@ type GetCmd struct {
 	recordSeparator  string
 	out              io.Writer
 	adjustment       string
-	from, to         adjustmentFlags.TimeValue
+	from, to         flags.TimeValue
 	project, sloName string
 }
 
@@ -61,15 +60,15 @@ func NewGetCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 		Example: getExample,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			get.client = clientProvider.GetClient()
-			project, _ := cmd.Flags().GetString(adjustmentFlags.FlagSloProject)
-			sloName, _ := cmd.Flags().GetString(adjustmentFlags.FlagSloName)
+			project, _ := cmd.Flags().GetString(FlagSloProject)
+			sloName, _ := cmd.Flags().GetString(FlagSloName)
 			if project != "" {
-				if err := cmd.MarkFlagRequired(adjustmentFlags.FlagSloName); err != nil {
+				if err := cmd.MarkFlagRequired(FlagSloName); err != nil {
 					panic(err)
 				}
 			}
 			if sloName != "" {
-				if err := cmd.MarkFlagRequired(adjustmentFlags.FlagSloProject); err != nil {
+				if err := cmd.MarkFlagRequired(FlagSloProject); err != nil {
 					panic(err)
 				}
 			}
@@ -83,11 +82,11 @@ func NewGetCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 		&get.fieldSeparator,
 		&get.recordSeparator,
 	)
-	adjustmentFlags.MustRegisterAdjustmentFlag(cmd, &get.adjustment)
-	adjustmentFlags.RegisterProjectFlag(cmd, &get.project)
-	adjustmentFlags.RegisterSloNameFlag(cmd, &get.sloName)
-	adjustmentFlags.MustRegisterFromFlag(cmd, &get.from)
-	adjustmentFlags.MustRegisterToFlag(cmd, &get.to)
+	MustRegisterAdjustmentFlag(cmd, &get.adjustment)
+	RegisterProjectFlag(cmd, &get.project)
+	RegisterSloNameFlag(cmd, &get.sloName)
+	MustRegisterFromFlag(cmd, &get.from)
+	MustRegisterToFlag(cmd, &get.to)
 
 	return cmd
 }
@@ -101,11 +100,11 @@ func (g *GetCmd) run(cmd *cobra.Command) error {
 		values.Add("sloProject", g.project)
 	}
 
-	resBody, err := request.DoRequest(
+	resBody, err := DoRequest(
 		g.client,
 		cmd.Context(),
 		http.MethodGet,
-		fmt.Sprintf("%s/%s/events", request.BudgetAdjustmentAPI, g.adjustment),
+		fmt.Sprintf("%s/%s/events", BudgetAdjustmentAPI, g.adjustment),
 		values,
 		nil,
 	)
