@@ -1,7 +1,6 @@
 package request
 
 import (
-	"bytes"
 	"context"
 	_ "embed"
 	"encoding/json"
@@ -41,19 +40,13 @@ func DoRequest(
 	}
 	if resp.StatusCode >= 300 {
 		if !strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json") {
-			return nil, newUnexpectedError(string(bytes.TrimSpace(respBody)))
+			return nil, errors.Errorf("unexpected response for API")
 		}
 		respErr := sdk.HTTPError{}
 		if err := json.Unmarshal(respBody, &respErr); err != nil {
-			return nil, newUnexpectedError(string(bytes.TrimSpace(respBody)))
+			return nil, err
 		}
 		return respBody, errors.New(respErr.Error())
 	}
 	return respBody, nil
-}
-
-func newUnexpectedError(title string) error {
-	return errors.New(sdk.HTTPError{
-		Errors: []sdk.APIError{{Title: title}},
-	}.Error())
 }

@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/nobl9/sloctl/internal/budgetadjustments/flags"
+	adjustmentFlags "github.com/nobl9/sloctl/internal/budgetadjustments/flags"
 	"github.com/nobl9/sloctl/internal/budgetadjustments/request"
 	"github.com/nobl9/sloctl/internal/budgetadjustments/sdkclient"
 	"github.com/nobl9/sloctl/internal/printer"
@@ -27,7 +27,7 @@ type GetCmd struct {
 	recordSeparator  string
 	out              io.Writer
 	adjustment       string
-	from, to         flags.TimeValue
+	from, to         adjustmentFlags.TimeValue
 	project, sloName string
 }
 
@@ -61,15 +61,15 @@ func NewGetCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 		Example: getExample,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			get.client = clientProvider.GetClient()
-			project, _ := cmd.Flags().GetString(flags.FlagSloProject)
-			sloName, _ := cmd.Flags().GetString(flags.FlagSloName)
+			project, _ := cmd.Flags().GetString(adjustmentFlags.FlagSloProject)
+			sloName, _ := cmd.Flags().GetString(adjustmentFlags.FlagSloName)
 			if project != "" {
-				if err := cmd.MarkFlagRequired(flags.FlagSloName); err != nil {
+				if err := cmd.MarkFlagRequired(adjustmentFlags.FlagSloName); err != nil {
 					panic(err)
 				}
 			}
 			if sloName != "" {
-				if err := cmd.MarkFlagRequired(flags.FlagSloProject); err != nil {
+				if err := cmd.MarkFlagRequired(adjustmentFlags.FlagSloProject); err != nil {
 					panic(err)
 				}
 			}
@@ -77,17 +77,17 @@ func NewGetCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error { return get.run(cmd) },
 	}
 
-	flags.MustRegisterOutputFormatFlags(
+	printer.MustRegisterOutputFormatFlags(
 		cmd,
 		&get.outputFormat,
 		&get.fieldSeparator,
 		&get.recordSeparator,
 	)
-	flags.MustRegisterAdjustmentFlag(cmd, &get.adjustment)
-	flags.RegisterProjectFlag(cmd, &get.project)
-	flags.RegisterSloNameFlag(cmd, &get.sloName)
-	flags.MustRegisterFromFlag(cmd, &get.from)
-	flags.MustRegisterToFlag(cmd, &get.to)
+	adjustmentFlags.MustRegisterAdjustmentFlag(cmd, &get.adjustment)
+	adjustmentFlags.RegisterProjectFlag(cmd, &get.project)
+	adjustmentFlags.RegisterSloNameFlag(cmd, &get.sloName)
+	adjustmentFlags.MustRegisterFromFlag(cmd, &get.from)
+	adjustmentFlags.MustRegisterToFlag(cmd, &get.to)
 
 	return cmd
 }
@@ -110,12 +110,12 @@ func (g *GetCmd) run(cmd *cobra.Command) error {
 		nil,
 	)
 	if err != nil {
-		return errors.Wrap(err, "failed to get events")
+		return err
 	}
 
 	var events []Event
 	if err := json.Unmarshal(resBody, &events); err != nil {
-		return errors.Wrap(err, "failed parse response")
+		return errors.Wrap(err, "failed to parse response")
 	}
 
 	if err := g.printObjects(events); err != nil {

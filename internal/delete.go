@@ -10,6 +10,8 @@ import (
 
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/sdk"
+
+	"github.com/nobl9/sloctl/internal/flags"
 )
 
 type DeleteCmd struct {
@@ -42,14 +44,14 @@ func (r *RootCmd) NewDeleteCmd() *cobra.Command {
 				deleteCmd.client.Config.Project = deleteCmd.project
 			}
 			if deleteCmd.dryRun {
-				notifyDryRunFlag()
+				flags.NotifyDryRunFlag()
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error { return deleteCmd.Run(cmd) },
 	}
 
 	registerFileFlag(cmd, false, &deleteCmd.definitionPaths)
-	registerDryRunFlag(cmd, &deleteCmd.dryRun)
+	flags.RegisterDryRunFlag(cmd, &deleteCmd.dryRun)
 	registerAutoConfirmationFlag(cmd, &deleteCmd.autoConfirm)
 	cmd.Flags().StringVarP(&deleteCmd.project, "project", "p", "",
 		`Assigns the provided Project to the resources if no Project is defined in the object's definition.`)
@@ -133,7 +135,7 @@ func newSubcommand(
 		sc.Flags().StringVarP(&deleteCmd.project, "project", "p", "",
 			`Specifies the Project from which to delete the resources. If not provided, the default Project will be used.`)
 	}
-	registerDryRunFlag(sc, &deleteCmd.dryRun)
+	flags.RegisterDryRunFlag(sc, &deleteCmd.dryRun)
 	return sc
 }
 

@@ -21,7 +21,7 @@ func (t *TimeValue) String() string {
 func (t *TimeValue) Set(s string) error {
 	var err error
 	if t.Time, err = time.Parse(timeFormat, s); err != nil {
-		return fmt.Errorf("to does not match %s format", timeFormat)
+		return fmt.Errorf("date does not match %s format", timeFormat)
 	}
 	return nil
 }

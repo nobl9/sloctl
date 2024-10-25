@@ -9,6 +9,8 @@ import (
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/manifest/v1alpha"
 	"github.com/nobl9/nobl9-go/sdk"
+
+	"github.com/nobl9/sloctl/internal/flags"
 )
 
 type ApplyCmd struct {
@@ -43,14 +45,14 @@ func (r *RootCmd) NewApplyCmd() *cobra.Command {
 				apply.client.Config.Project = apply.project
 			}
 			if apply.dryRun {
-				notifyDryRunFlag()
+				flags.NotifyDryRunFlag()
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error { return apply.Run(cmd) },
 	}
 
 	registerFileFlag(cmd, true, &apply.definitionPaths)
-	registerDryRunFlag(cmd, &apply.dryRun)
+	flags.RegisterDryRunFlag(cmd, &apply.dryRun)
 	registerAutoConfirmationFlag(cmd, &apply.autoConfirm)
 	cmd.Flags().StringVarP(&apply.project, "project", "p", "",
 		`Assigns the provided Project to the resources if no Project is defined in the object's definition.`)

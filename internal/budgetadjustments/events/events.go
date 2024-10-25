@@ -1,7 +1,6 @@
 package events
 
 import (
-	_ "embed"
 	"fmt"
 
 	"github.com/spf13/cobra"
