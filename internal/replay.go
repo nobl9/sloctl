@@ -50,12 +50,9 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 			"The historical and current data are merged, producing an error budget calculated for the entire period. " +
 			"Refer to https://docs.nobl9.com/replay for more details on Replay.\n\n" +
 			"The 'replay' command allows you to import data for multiple SLOs in bulk. " +
-			"Before running the Replays it will verify if the SLOs you've provided are eligible for Replay. " +
-			"It will only run a single Replay simultaneously (current limit for concurrent Replays). " +
-			"When any Replay fails, it will attempt the import for the next SLO. " +
-			"Importing data takes time: Replay for a single SLO may take several minutes up to an hour. " +
-			"During that time, the command keeps on running, periodically checking the status of Replay. " +
-			"If you cancel the program execution at any time, the current Replay in progress will not be revoked.",
+			"Before creating the Replays it will verify if the SLOs you've provided are eligible for Replay. " +
+			"It will only create a single Replay simultaneously (current limit for concurrent Replays). " +
+			"Importing data takes time: Replay for a single SLO may take several minutes up to an hour. ",
 		Example: replayExample,
 		Args:    replay.arguments,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -105,11 +102,11 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 			replay.From.Format(timeLayout), time.Now().In(replay.From.Location()).Format(timeLayout))))
 
 		if arePlaylistEnabled {
-			cmd.Println("Creating replay...")
+			cmd.Println("Creating Replay...")
 			err = r.runReplay(cmd.Context(), replay)
 
 			if err != nil {
-				cmd.Println(colorstring.Color("[red]Failed to create replay:[reset] " + err.Error()))
+				cmd.Println(colorstring.Color("[red]Failed to create Replay:[reset] " + err.Error()))
 				failedIndexes = append(failedIndexes, i)
 				continue
 			}
