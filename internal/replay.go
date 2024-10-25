@@ -413,7 +413,9 @@ func (r *ReplayCmd) runReplayWithStatusCheck(ctx context.Context, config ReplayC
 }
 
 func (r *ReplayCmd) runReplay(ctx context.Context, config ReplayConfig) error {
-	_, httpCode, err := r.doRequest(ctx, http.MethodPost, endpointReplayPost, config.Project, nil, config.ToReplay(time.Now()))
+	_, httpCode, err := r.doRequest(ctx, http.MethodPost, endpointReplayPost, config.Project,
+		nil, config.ToReplay(time.Now()),
+	)
 	if err != nil {
 		switch httpCode {
 		case 409:
@@ -484,7 +486,7 @@ func (r *ReplayCmd) doRequest(
 	method, endpoint, project string,
 	values url.Values,
 	payload interface{},
-) ([]byte, int, error) {
+) (data []byte, httpCode int, err error) {
 	var body io.Reader
 	if payload != nil {
 		buf := new(bytes.Buffer)
@@ -503,7 +505,7 @@ func (r *ReplayCmd) doRequest(
 		return nil, 0, err
 	}
 	defer func() { _ = resp.Body.Close() }()
-	data, err := io.ReadAll(resp.Body)
+	data, err = io.ReadAll(resp.Body)
 	if resp.StatusCode >= 300 {
 		return nil, resp.StatusCode, errors.Errorf("bad response (status: %d): %s", resp.StatusCode, string(data))
 	}
