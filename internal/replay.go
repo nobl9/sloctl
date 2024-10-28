@@ -49,10 +49,10 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 		Long: "Replay pulls in the historical data while your SLO collects new data in real-time. " +
 			"The historical and current data are merged, producing an error budget calculated for the entire period. " +
 			"Refer to https://docs.nobl9.com/replay for more details on Replay.\n\n" +
-			"The 'replay' command allows you to import data for multiple SLOs in bulk. " +
-			"Before running the Replays it will verify if the SLOs you've provided are eligible for Replay. " +
-			"It will only run a single Replay simultaneously (current limit for concurrent Replays). " +
-			"Importing data takes time: Replay for a single SLO may take several minutes up to an hour. ",
+			"Run 'sloctl replay' to import data for multiple SLOs in bulk. " +
+			"Before running Replays it verifies if it's possible to replay your SLOs, including data source " +
+			" compatibility check. " +
+			"Importing data is time-consuming: Replay for a single SLO may take several minutes up to an hour. ",
 		Example: replayExample,
 		Args:    replay.arguments,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
