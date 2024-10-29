@@ -42,11 +42,11 @@ func DoRequest(
 		if !strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json") {
 			return nil, errors.Errorf("unexpected response for API")
 		}
-		respErr := sdk.HTTPError{}
+		respErr := sdk.APIErrors{}
 		if err := json.Unmarshal(respBody, &respErr); err != nil {
 			return nil, err
 		}
-		return respBody, errors.New(respErr.Error())
+		return respBody, respErr
 	}
 	return respBody, nil
 }
