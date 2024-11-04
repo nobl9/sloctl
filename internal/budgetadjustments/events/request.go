@@ -2,7 +2,6 @@ package events
 
 import (
 	"context"
-	_ "embed"
 	"encoding/json"
 	"io"
 	"net/url"
