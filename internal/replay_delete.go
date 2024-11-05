@@ -78,11 +78,14 @@ func (r *ReplayCmd) deleteAllReplays(cmd *cobra.Command) error {
 
 func (r *ReplayCmd) deleteReplaysForSLO(cmd *cobra.Command, sloName string) error {
 	cmd.Println(
-		colorstring.Printf(
-			"[yellow]Deleting queued Replays for SLO '%s' in project '%s'[reset]",
-			sloName,
-			r.client.Config.Project,
-		))
+		colorstring.Color(
+			fmt.Sprintf(
+				"[yellow]Deleting queued Replays for SLO '%s' in project '%s'[reset]",
+				sloName,
+				r.client.Config.Project,
+			),
+		),
+	)
 
 	_, _, err := r.doRequest(
 		cmd.Context(),
