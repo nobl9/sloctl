@@ -5,6 +5,8 @@
 setup_file() {
   load "test_helper/load"
   load_lib "bats-assert"
+
+  generate_inputs "$BATS_FILE_TMPDIR"
 }
 
 # setup is run before each test.
@@ -19,6 +21,16 @@ setup() {
   assert_failure
   output="$stderr"
   assert_output 'Error: required flag(s) "adjustment-name", "from", "to" not set'
+
+	run_sloctl budgetadjustments events delete
+  assert_failure
+  output="$stderr"
+  assert_output 'Error: required flag(s) "adjustment-name", "file" not set'
+
+	run_sloctl budgetadjustments events update
+  assert_failure
+  output="$stderr"
+  assert_output 'Error: required flag(s) "adjustment-name", "file" not set'
 }
 
 @test "invalid date format" {
@@ -58,4 +70,11 @@ setup() {
   assert_failure
   output="$stderr"
   assert_output "Error: - adjustment 'foo' was not found"
+
+  for action in delete update; do
+    run_sloctl budgetadjustments events $action  --adjustment-name=foo -f "'$TEST_INPUTS/sample-events.yaml'"
+    assert_failure
+    output="$stderr"
+    assert_output "Error: - adjustment 'foo' was not found"
+  done
 }
