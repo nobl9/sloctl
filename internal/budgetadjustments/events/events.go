@@ -16,5 +16,6 @@ func NewRootCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 	}
 	cmd.PersistentFlags().BoolP("help", "h", false, fmt.Sprintf("Help for %s.", cmd.Name()))
 	cmd.AddCommand(NewGetCmd(clientProvider))
+	cmd.AddCommand(NewDeleteCmd(clientProvider))
 	return cmd
 }

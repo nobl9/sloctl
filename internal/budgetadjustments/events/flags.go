@@ -17,7 +17,7 @@ const (
 
 func MustRegisterFileFlag(cmd *cobra.Command, storeIn *string) {
 	cmd.Flags().StringVarP(storeIn, FlagFile, "f", "",
-		"File path, glob pattern or a URL to the configuration in YAML or JSON format.")
+		"File path to events definitions in YAML.")
 	if err := cmd.MarkFlagRequired(FlagFile); err != nil {
 		panic(err)
 	}

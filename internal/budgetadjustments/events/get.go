@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"time"
 
 	"github.com/nobl9/nobl9-go/sdk"
 	"github.com/pkg/errors"
@@ -28,17 +27,6 @@ type GetCmd struct {
 	adjustment       string
 	from, to         flags.TimeValue
 	project, sloName string
-}
-
-type SLO struct {
-	Project string `json:"project" validate:"required"`
-	Name    string `json:"name"    validate:"required"`
-}
-
-type Event struct {
-	EventStart time.Time `json:"eventStart"`
-	EventEnd   time.Time `json:"eventEnd"`
-	SLOs       []SLO     `json:"slos"`
 }
 
 //go:embed examples/get_example.sh
