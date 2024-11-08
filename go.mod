@@ -11,7 +11,7 @@ require (
 	github.com/schollz/progressbar/v3 v3.17.0
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
-	golang.org/x/sync v0.8.0
+	golang.org/x/sync v0.9.0
 )
 
 require (
