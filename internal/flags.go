@@ -1,13 +1,21 @@
 package internal
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/spf13/cobra"
 )
 
 const (
-	flagFile = "file"
+	flagFile   = "file"
+	flagDryRun = "dry-run"
 )
+
+func notifyDryRunFlag() {
+	_, _ = fmt.Fprintln(os.Stderr, "Running in dry run mode, changes will not be applied.")
+}
 
 func registerFileFlag(cmd *cobra.Command, required bool, storeIn *[]string) {
 	cmd.Flags().StringArrayVarP(storeIn, flagFile, "f", []string{},
@@ -16,6 +24,11 @@ func registerFileFlag(cmd *cobra.Command, required bool, storeIn *[]string) {
 	if required {
 		_ = cmd.MarkFlagRequired(flagFile)
 	}
+}
+
+func registerDryRunFlag(cmd *cobra.Command, storeIn *bool) {
+	cmd.Flags().BoolVarP(storeIn, flagDryRun, "", false,
+		"Submit server-side request without persisting the configured resources.")
 }
 
 func registerVerboseFlag(cmd *cobra.Command, storeIn *bool) {

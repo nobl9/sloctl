@@ -45,14 +45,14 @@ func (r *RootCmd) NewApplyCmd() *cobra.Command {
 				apply.client.Config.Project = apply.project
 			}
 			if apply.dryRun {
-				flags.NotifyDryRunFlag()
+				notifyDryRunFlag()
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error { return apply.Run(cmd) },
 	}
 
 	registerFileFlag(cmd, true, &apply.definitionPaths)
-	flags.RegisterDryRunFlag(cmd, &apply.dryRun)
+	registerDryRunFlag(cmd, &apply.dryRun)
 	registerAutoConfirmationFlag(cmd, &apply.autoConfirm)
 	cmd.Flags().StringVarP(&apply.project, "project", "p", "",
 		`Assigns the provided Project to the resources if no Project is defined in the object's definition.`)
