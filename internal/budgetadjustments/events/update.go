@@ -3,7 +3,6 @@ package events
 import (
 	"bytes"
 	_ "embed"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -48,13 +47,9 @@ func (g *UpdateCmd) run(cmd *cobra.Command) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to read input data")
 	}
-	var yamlData []UpdateEvent
-	if err := yaml.Unmarshal(data, &yamlData); err != nil {
-		return errors.Wrap(err, "failed to load input data")
-	}
-	jsonData, err := json.Marshal(yamlData)
+	body, err := yaml.YAMLToJSON(data)
 	if err != nil {
-		return errors.Wrap(err, "failed to load input data")
+		return errors.Wrap(err, "failed to convert input data to JSON")
 	}
 
 	_, err = DoRequest(
@@ -63,7 +58,7 @@ func (g *UpdateCmd) run(cmd *cobra.Command) error {
 		http.MethodPut,
 		fmt.Sprintf("%s/%s/events/update", BudgetAdjustmentAPI, g.adjustment),
 		nil,
-		bytes.NewReader(jsonData),
+		bytes.NewReader(body),
 	)
 	if err != nil {
 		return err

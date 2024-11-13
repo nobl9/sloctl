@@ -3,7 +3,6 @@ package events
 import (
 	"bytes"
 	_ "embed"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -48,11 +47,7 @@ func (g *DeleteCmd) run(cmd *cobra.Command) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to read input data")
 	}
-	var yamlData []Event
-	if err := yaml.Unmarshal(data, &yamlData); err != nil {
-		return errors.Wrap(err, "failed to load input data")
-	}
-	jsonData, err := json.Marshal(yamlData)
+	body, err := yaml.YAMLToJSON(data)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert input data to JSON")
 	}
@@ -63,7 +58,7 @@ func (g *DeleteCmd) run(cmd *cobra.Command) error {
 		http.MethodPost,
 		fmt.Sprintf("%s/%s/events/delete", BudgetAdjustmentAPI, g.adjustment),
 		nil,
-		bytes.NewReader(jsonData),
+		bytes.NewReader(body),
 	); err != nil {
 		return err
 	}

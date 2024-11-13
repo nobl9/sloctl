@@ -10,15 +10,3 @@ type Event struct {
 	EventEnd   string `json:"eventEnd,omitempty"   yaml:"eventEnd,omitempty"`
 	SLOs       []SLO  `json:"slos,omitempty"       yaml:"slos,omitempty"`
 }
-
-type Update struct {
-	EventStart string `json:"eventStart,omitempty" yaml:"eventStart,omitempty"`
-	EventEnd   string `json:"eventEnd,omitempty"   yaml:"eventEnd,omitempty"`
-}
-
-type UpdateEvent struct {
-	EventStart string  `json:"eventStart,omitempty" yaml:"eventStart,omitempty"`
-	EventEnd   string  `json:"eventEnd,omitempty"   yaml:"eventEnd,omitempty"`
-	SLOs       []SLO   `json:"slos,omitempty"       yaml:"slos,omitempty"`
-	Update     *Update `json:"update,omitempty"     yaml:"update,omitempty"`
-}
