@@ -4,6 +4,7 @@ go 1.23
 
 require (
 	github.com/go-playground/validator/v10 v10.22.1
+	github.com/goccy/go-yaml v1.12.0
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/nobl9/go-yaml v1.0.1
 	github.com/nobl9/nobl9-go v0.89.0-rc5
