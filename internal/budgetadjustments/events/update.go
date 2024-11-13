@@ -13,13 +13,11 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/nobl9/sloctl/internal/budgetadjustments/sdkclient"
-	"github.com/nobl9/sloctl/internal/flags"
 )
 
 type UpdateCmd struct {
 	client     *sdk.Client
 	filepath   string
-	dryRun     bool
 	adjustment string
 }
 
@@ -35,22 +33,18 @@ func NewUpdateCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 		Example: updateExample,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			update.client = clientProvider.GetClient()
-			if update.dryRun {
-				flags.NotifyDryRunFlag()
-			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error { return update.run(cmd) },
 	}
 
-	MustRegisterFileFlag(cmd, &update.filepath)
-	flags.RegisterDryRunFlag(cmd, &update.dryRun)
-	MustRegisterAdjustmentFlag(cmd, &update.adjustment)
+	mustRegisterFileFlag(cmd, &update.filepath)
+	mustRegisterAdjustmentFlag(cmd, &update.adjustment)
 
 	return cmd
 }
 
 func (g *UpdateCmd) run(cmd *cobra.Command) error {
-	data, err := read(g.filepath)
+	data, err := readFile(g.filepath)
 	if err != nil {
 		return errors.Wrap(err, "failed to read input data")
 	}
@@ -61,9 +55,6 @@ func (g *UpdateCmd) run(cmd *cobra.Command) error {
 	jsonData, err := json.Marshal(yamlData)
 	if err != nil {
 		return errors.Wrap(err, "failed to load input data")
-	}
-	if g.dryRun {
-		return nil
 	}
 
 	_, err = DoRequest(

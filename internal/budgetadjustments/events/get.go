@@ -70,11 +70,11 @@ func NewGetCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 		&get.fieldSeparator,
 		&get.recordSeparator,
 	)
-	MustRegisterAdjustmentFlag(cmd, &get.adjustment)
-	RegisterProjectFlag(cmd, &get.project)
-	RegisterSloNameFlag(cmd, &get.sloName)
-	MustRegisterFromFlag(cmd, &get.from)
-	MustRegisterToFlag(cmd, &get.to)
+	mustRegisterAdjustmentFlag(cmd, &get.adjustment)
+	registerProjectFlag(cmd, &get.project)
+	registerSloNameFlag(cmd, &get.sloName)
+	mustRegisterFromFlag(cmd, &get.from)
+	mustRegisterToFlag(cmd, &get.to)
 
 	return cmd
 }

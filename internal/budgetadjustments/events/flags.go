@@ -15,7 +15,7 @@ const (
 	FlagSloName    = "slo-name"
 )
 
-func MustRegisterFileFlag(cmd *cobra.Command, storeIn *string) {
+func mustRegisterFileFlag(cmd *cobra.Command, storeIn *string) {
 	cmd.Flags().StringVarP(storeIn, FlagFile, "f", "",
 		"File path to events definitions in YAML.")
 	if err := cmd.MarkFlagRequired(FlagFile); err != nil {
@@ -23,24 +23,24 @@ func MustRegisterFileFlag(cmd *cobra.Command, storeIn *string) {
 	}
 }
 
-func MustRegisterAdjustmentFlag(cmd *cobra.Command, storeIn *string) {
+func mustRegisterAdjustmentFlag(cmd *cobra.Command, storeIn *string) {
 	cmd.Flags().StringVar(storeIn, FlagAdjustment, "", "Name of the Adjustment.")
 	if err := cmd.MarkFlagRequired(FlagAdjustment); err != nil {
 		panic(err)
 	}
 }
 
-func RegisterProjectFlag(cmd *cobra.Command, storeIn *string) {
+func registerProjectFlag(cmd *cobra.Command, storeIn *string) {
 	cmd.Flags().StringVarP(storeIn, FlagSloProject, "", "",
 		"Name of the project. Required when sloName is defined.")
 }
 
-func RegisterSloNameFlag(cmd *cobra.Command, storeIn *string) {
+func registerSloNameFlag(cmd *cobra.Command, storeIn *string) {
 	cmd.Flags().StringVarP(storeIn, FlagSloName, "", "",
 		"Name of the SLO. Required when sloName is defined.")
 }
 
-func MustRegisterFromFlag(
+func mustRegisterFromFlag(
 	cmd *cobra.Command,
 	storeIn *flags.TimeValue,
 ) {
@@ -51,7 +51,7 @@ func MustRegisterFromFlag(
 	}
 }
 
-func MustRegisterToFlag(
+func mustRegisterToFlag(
 	cmd *cobra.Command,
 	storeIn *flags.TimeValue,
 ) {

@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-func read(path string) (data []byte, err error) {
+func readFile(path string) (data []byte, err error) {
 	if path == "" || path == "-" {
 		return io.ReadAll(os.Stdin)
 	}
