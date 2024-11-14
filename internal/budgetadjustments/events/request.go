@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const BudgetAdjustmentAPI = "/v1/budgetadjustments"
+const BudgetAdjustmentAPI = "/budgetadjustments/v1"
 
 func DoRequest(
 	client *sdk.Client,
