@@ -17,7 +17,7 @@ endif
 # renovate datasource=github-releases depName=securego/gosec
 GOSEC_VERSION := v2.21.4
 # renovate datasource=github-releases depName=golangci/golangci-lint
-GOLANGCI_LINT_VERSION := v1.62.0
+GOLANGCI_LINT_VERSION := v1.62.2
 # renovate datasource=go depName=golang.org/x/vuln/cmd/govulncheck
 GOVULNCHECK_VERSION := v1.1.3
 # renovate datasource=go depName=golang.org/x/tools/cmd/goimports
