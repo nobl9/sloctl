@@ -28,7 +28,7 @@ func NewDeleteCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "delete",
-		Short:   "Delete existing events.",
+		Short:   "Delete existing past events.",
 		Example: deleteExample,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			deleteCmd.client = clientProvider.GetClient()

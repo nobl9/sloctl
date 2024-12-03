@@ -28,7 +28,7 @@ func NewUpdateCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "update",
-		Short:   "Update existing events with new values. Values for eventStart and eventEnd are required.",
+		Short:   "Update existing past events with new values. Values for eventStart and eventEnd are required.",
 		Example: updateExample,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			update.client = clientProvider.GetClient()
