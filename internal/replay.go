@@ -71,8 +71,6 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 	cmd.AddCommand(replay.AddDeleteCommand())
 	cmd.AddCommand(replay.AddListCommand())
 
-	replay.arePlaylistEnabled(cmd.Context())
-
 	return cmd
 }
 
@@ -80,6 +78,7 @@ func (r *ReplayCmd) Run(cmd *cobra.Command) error {
 	if r.client.Config.Project == "*" {
 		return errProjectWildcardIsNotAllowed
 	}
+	r.arePlaylistEnabled(cmd.Context())
 	replays, err := r.prepareConfigs()
 	if err != nil {
 		return err
