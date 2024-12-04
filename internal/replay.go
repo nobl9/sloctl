@@ -29,12 +29,13 @@ import (
 )
 
 type ReplayCmd struct {
-	client      *sdk.Client
-	from        TimeValue
-	configPaths []string
-	sloName     string
-	project     string
-	deleteAll   bool
+	client             *sdk.Client
+	from               TimeValue
+	configPaths        []string
+	sloName            string
+	project            string
+	deleteAll          bool
+	playlistsAvailable bool
 }
 
 //go:embed replay_example.sh
@@ -70,6 +71,8 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 	cmd.AddCommand(replay.AddDeleteCommand())
 	cmd.AddCommand(replay.AddListCommand())
 
+	replay.arePlaylistEnabled(cmd.Context())
+
 	return cmd
 }
 
@@ -90,9 +93,7 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 		return 0, err
 	}
 
-	arePlaylistEnabled := r.arePlaylistEnabled(cmd.Context())
-
-	if arePlaylistEnabled {
+	if r.playlistsAvailable {
 		cmd.Println(colorstring.Color("[yellow]- Your organization has access to Replay queues!"))
 		cmd.Println(colorstring.Color("[yellow]- To learn more about Replay queues, follow this link: " +
 			"https://docs.nobl9.com/replay-canary/ [reset]"))
@@ -105,7 +106,7 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 			i+1, len(replays), replay.SLO, replay.Project,
 			replay.From.Format(timeLayout), time.Now().In(replay.From.Location()).Format(timeLayout))))
 
-		if arePlaylistEnabled {
+		if r.playlistsAvailable {
 			cmd.Println("Replay is added to the queue...")
 			err = r.runReplay(cmd.Context(), replay)
 
@@ -135,7 +136,12 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 	return len(failedIndexes), nil
 }
 
-func (r *ReplayCmd) arePlaylistEnabled(ctx context.Context) bool {
+type PlaylistConfiguration struct {
+	EnabledPlaylists bool `json:"enabledPlaylists"`
+}
+
+func (r *ReplayCmd) arePlaylistEnabled(ctx context.Context) {
+	r.playlistsAvailable = true
 	data, _, err := r.doRequest(
 		ctx,
 		http.MethodGet,
@@ -143,18 +149,12 @@ func (r *ReplayCmd) arePlaylistEnabled(ctx context.Context) bool {
 		"*",
 		nil,
 		nil)
-	if err != nil {
-		return true
+	if err == nil {
+		var pc PlaylistConfiguration
+		if err = json.Unmarshal(data, &pc); err == nil {
+			r.playlistsAvailable = pc.EnabledPlaylists
+		}
 	}
-	var pc PlaylistConfiguration
-	if err = json.Unmarshal(data, &pc); err != nil {
-		return true
-	}
-	return pc.EnabledPlaylists
-}
-
-type PlaylistConfiguration struct {
-	EnabledPlaylists bool `json:"enabledPlaylists"`
 }
 
 type ReplayConfig struct {
@@ -355,7 +355,10 @@ outer:
 			c := replays[i]
 			timeNow := time.Now()
 			tt := c.ToReplay(timeNow)
-			offset := i * int(averageReplayDuration.Minutes())
+			offset := 0
+			if !r.playlistsAvailable {
+				offset = i * int(averageReplayDuration.Minutes())
+			}
 			expectedDuration := offset + tt.Duration.Value
 			av, err := r.getReplayAvailability(ctx, c, tt.Duration.Unit, expectedDuration)
 			if err != nil {
