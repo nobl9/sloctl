@@ -345,10 +345,19 @@ outer:
 	}
 
 	// Check Replay availability.
+	if err := r.checkReplayAvailability(ctx, replays); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *ReplayCmd) checkReplayAvailability(ctx context.Context, replays []ReplayConfig) error {
 	notAvailable := make([]string, 0)
 	mu := sync.Mutex{}
 	eg, ctx := errgroup.WithContext(ctx)
 	eg.SetLimit(10)
+
 	for i := range replays {
 		eg.Go(func() error {
 			c := replays[i]
@@ -366,6 +375,7 @@ outer:
 			}
 			if !av.Available {
 				mu.Lock()
+				defer mu.Unlock()
 				notAvailable = append(notAvailable,
 					fmt.Sprintf("['%s' SLO in '%s' Project] %s",
 						c.SLO, c.Project, r.replayUnavailabilityReasonExplanation(
@@ -374,18 +384,20 @@ outer:
 							time.Duration(expectedDuration)*time.Minute,
 							time.Duration(offset)*time.Minute,
 							timeNow)))
-				mu.Unlock()
 			}
 			return nil
 		})
 	}
-	if err = eg.Wait(); err != nil {
+
+	if err := eg.Wait(); err != nil {
 		return err
 	}
+
 	if len(notAvailable) > 0 {
 		return errors.Errorf("The following SLOs are not available for Replay: \n - %s",
 			strings.Join(notAvailable, "\n - "))
 	}
+
 	return nil
 }
 
