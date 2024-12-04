@@ -545,7 +545,7 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 				" + %dm (start offset to ensure Replay covers the desired time window) %s."+
 				" Edit the Data Source and run Replay once again.",
 			replay.metricSource.Name, replay.metricSource.Project, expectedDuration.String(),
-			timeNow.Format(timeLayout), r.from.Format(timeLayout), startOffsetMinutes, offsetNotice)
+			timeNow.Format(timeLayout), replay.From.Format(timeLayout), startOffsetMinutes, offsetNotice)
 	case sdkModels.ReplayConcurrentReplayRunsLimitExhausted:
 		return "You've exceeded the limit of concurrent Replay runs. Wait until the current Replay(s) are done."
 	case sdkModels.ReplayUnknownAgentVersion:
