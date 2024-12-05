@@ -44,6 +44,7 @@ words:
   - slos
   - svcs
   - tpng
+  - unmarshalling
   - vuln
   - vulns
   - wrapf

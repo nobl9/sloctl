@@ -29,12 +29,13 @@ import (
 )
 
 type ReplayCmd struct {
-	client      *sdk.Client
-	from        TimeValue
-	configPaths []string
-	sloName     string
-	project     string
-	deleteAll   bool
+	client             *sdk.Client
+	from               TimeValue
+	configPaths        []string
+	sloName            string
+	project            string
+	deleteAll          bool
+	playlistsAvailable bool
 }
 
 //go:embed replay_example.sh
@@ -77,6 +78,7 @@ func (r *ReplayCmd) Run(cmd *cobra.Command) error {
 	if r.client.Config.Project == "*" {
 		return errProjectWildcardIsNotAllowed
 	}
+	r.arePlaylistEnabled(cmd.Context())
 	replays, err := r.prepareConfigs()
 	if err != nil {
 		return err
@@ -90,9 +92,7 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 		return 0, err
 	}
 
-	arePlaylistEnabled := r.arePlaylistEnabled(cmd.Context())
-
-	if arePlaylistEnabled {
+	if r.playlistsAvailable {
 		cmd.Println(colorstring.Color("[yellow]- Your organization has access to Replay queues!"))
 		cmd.Println(colorstring.Color("[yellow]- To learn more about Replay queues, follow this link: " +
 			"https://docs.nobl9.com/replay-canary/ [reset]"))
@@ -105,7 +105,7 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 			i+1, len(replays), replay.SLO, replay.Project,
 			replay.From.Format(timeLayout), time.Now().In(replay.From.Location()).Format(timeLayout))))
 
-		if arePlaylistEnabled {
+		if r.playlistsAvailable {
 			cmd.Println("Replay is added to the queue...")
 			err = r.runReplay(cmd.Context(), replay)
 
@@ -135,7 +135,12 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 	return len(failedIndexes), nil
 }
 
-func (r *ReplayCmd) arePlaylistEnabled(ctx context.Context) bool {
+type PlaylistConfiguration struct {
+	EnabledPlaylists bool `json:"enabledPlaylists"`
+}
+
+func (r *ReplayCmd) arePlaylistEnabled(ctx context.Context) {
+	r.playlistsAvailable = true
 	data, _, err := r.doRequest(
 		ctx,
 		http.MethodGet,
@@ -144,17 +149,13 @@ func (r *ReplayCmd) arePlaylistEnabled(ctx context.Context) bool {
 		nil,
 		nil)
 	if err != nil {
-		return true
+		fmt.Printf("error checking playlist availability: %v\n", err)
 	}
 	var pc PlaylistConfiguration
 	if err = json.Unmarshal(data, &pc); err != nil {
-		return true
+		fmt.Printf("error unmarshalling playlist configuration: %v\n", err)
 	}
-	return pc.EnabledPlaylists
-}
-
-type PlaylistConfiguration struct {
-	EnabledPlaylists bool `json:"enabledPlaylists"`
+	r.playlistsAvailable = pc.EnabledPlaylists
 }
 
 type ReplayConfig struct {
@@ -346,16 +347,28 @@ outer:
 	}
 
 	// Check Replay availability.
+	if err := r.checkReplayAvailability(ctx, replays); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *ReplayCmd) checkReplayAvailability(ctx context.Context, replays []ReplayConfig) error {
 	notAvailable := make([]string, 0)
 	mu := sync.Mutex{}
 	eg, ctx := errgroup.WithContext(ctx)
 	eg.SetLimit(10)
+
 	for i := range replays {
 		eg.Go(func() error {
 			c := replays[i]
 			timeNow := time.Now()
 			tt := c.ToReplay(timeNow)
-			offset := i * int(averageReplayDuration.Minutes())
+			offset := 0
+			if !r.playlistsAvailable {
+				offset = i * int(averageReplayDuration.Minutes())
+			}
 			expectedDuration := offset + tt.Duration.Value
 			av, err := r.getReplayAvailability(ctx, c, tt.Duration.Unit, expectedDuration)
 			if err != nil {
@@ -364,6 +377,7 @@ outer:
 			}
 			if !av.Available {
 				mu.Lock()
+				defer mu.Unlock()
 				notAvailable = append(notAvailable,
 					fmt.Sprintf("['%s' SLO in '%s' Project] %s",
 						c.SLO, c.Project, r.replayUnavailabilityReasonExplanation(
@@ -372,18 +386,20 @@ outer:
 							time.Duration(expectedDuration)*time.Minute,
 							time.Duration(offset)*time.Minute,
 							timeNow)))
-				mu.Unlock()
 			}
 			return nil
 		})
 	}
-	if err = eg.Wait(); err != nil {
+
+	if err := eg.Wait(); err != nil {
 		return err
 	}
+
 	if len(notAvailable) > 0 {
 		return errors.Errorf("The following SLOs are not available for Replay: \n - %s",
 			strings.Join(notAvailable, "\n - "))
 	}
+
 	return nil
 }
 
@@ -543,7 +559,7 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 				" + %dm (start offset to ensure Replay covers the desired time window) %s."+
 				" Edit the Data Source and run Replay once again.",
 			replay.metricSource.Name, replay.metricSource.Project, expectedDuration.String(),
-			timeNow.Format(timeLayout), r.from.Format(timeLayout), startOffsetMinutes, offsetNotice)
+			timeNow.Format(timeLayout), replay.From.Format(timeLayout), startOffsetMinutes, offsetNotice)
 	case sdkModels.ReplayConcurrentReplayRunsLimitExhausted:
 		return "You've exceeded the limit of concurrent Replay runs. Wait until the current Replay(s) are done."
 	case sdkModels.ReplayUnknownAgentVersion:
