@@ -148,12 +148,14 @@ func (r *ReplayCmd) arePlaylistEnabled(ctx context.Context) {
 		"*",
 		nil,
 		nil)
-	if err == nil {
-		var pc PlaylistConfiguration
-		if err = json.Unmarshal(data, &pc); err == nil {
-			r.playlistsAvailable = pc.EnabledPlaylists
-		}
+	if err != nil {
+		fmt.Printf("error checking playlist availability: %v\n", err)
 	}
+	var pc PlaylistConfiguration
+	if err = json.Unmarshal(data, &pc); err != nil {
+		fmt.Printf("error unmarshalling playlist configuration: %v\n", err)
+	}
+	r.playlistsAvailable = pc.EnabledPlaylists
 }
 
 type ReplayConfig struct {
