@@ -94,7 +94,7 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 	if arePlaylistEnabled {
 		cmd.Println(colorstring.Color("[yellow]- Your organization has access to Replay queues!"))
 		cmd.Println(colorstring.Color("[yellow]- To learn more about Replay queues, follow this link: " +
-			"https://docs.nobl9.com/replay-canary/ [reset]"))
+			"https://docs.nobl9.com/replay [reset]"))
 	}
 
 	failedIndexes := make([]int, 0)
