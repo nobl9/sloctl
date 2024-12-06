@@ -9,6 +9,8 @@ import (
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/manifest/v1alpha"
 	"github.com/nobl9/nobl9-go/sdk"
+
+	"github.com/nobl9/sloctl/internal/flags"
 )
 
 type ApplyCmd struct {
@@ -18,7 +20,7 @@ type ApplyCmd struct {
 	dryRun            bool
 	autoConfirm       bool
 	replay            bool
-	replayFrom        TimeValue
+	replayFrom        flags.TimeValue
 	project           string
 }
 
