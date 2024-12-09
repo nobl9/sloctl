@@ -105,6 +105,7 @@ func (a ApplyCmd) runReplay(cmd *cobra.Command, objects []manifest.Object) error
 		return nil
 	}
 	replayCmd := ReplayCmd{client: a.client}
+	replayCmd.arePlaylistEnabled(cmd.Context())
 	replays := make([]ReplayConfig, 0, len(slos))
 	for _, slo := range slos {
 		replays = append(replays, ReplayConfig{
