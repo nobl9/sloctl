@@ -52,8 +52,7 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 		Long: "`sloctl replay` creates Replays to retrieve historical data for SLOs. " +
 			"Use it to replay SLOs one-by-one or in bulk. Historical data retrieval is time-consuming: " +
 			"replaying a single SLO can take up to an hour. Considering the number of ongoing Replays is limited, " +
-			"`sloctl` queues Replays if the limit is exceeded. Replay queues is an experimental feature, currently " +
-			"unavailable to all organizations. We're working on improving and expanding its availability.",
+			"`sloctl` queues Replays if the limit is exceeded.",
 		Example: replayExample,
 		Args:    replay.arguments,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -97,7 +96,7 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 	if r.playlistsAvailable {
 		cmd.Println(colorstring.Color("[yellow]- Your organization has access to Replay queues!"))
 		cmd.Println(colorstring.Color("[yellow]- To learn more about Replay queues, follow this link: " +
-			"https://docs.nobl9.com/replay-canary/ [reset]"))
+			"https://docs.nobl9.com/replay/replay-sloctl [reset]"))
 	}
 
 	failedIndexes := make([]int, 0)
