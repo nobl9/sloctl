@@ -1,0 +1,10 @@
+- eventStart: 2024-10-25T04:07:04Z
+  eventEnd: 2024-10-25T05:27:04Z
+  slos:
+  - project: test-project
+    name: sample-slo-1
+- eventStart: 2024-10-25T04:07:04Z
+  eventEnd: 2024-10-25T05:27:04Z
+  slos:
+  - project: test-project
+    name: sample-slo-2

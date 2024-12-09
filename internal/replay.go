@@ -26,11 +26,13 @@ import (
 	"github.com/nobl9/nobl9-go/sdk"
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
 	sdkModels "github.com/nobl9/nobl9-go/sdk/models"
+
+	"github.com/nobl9/sloctl/internal/flags"
 )
 
 type ReplayCmd struct {
 	client             *sdk.Client
-	from               TimeValue
+	from               flags.TimeValue
 	configPaths        []string
 	sloName            string
 	project            string
@@ -102,7 +104,7 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 		cmd.Println(colorstring.Color(fmt.Sprintf(
 			"[cyan][%d/%d][reset] SLO: %s, Project: %s, From: %s, To: %s",
 			i+1, len(replays), replay.SLO, replay.Project,
-			replay.From.Format(timeLayout), time.Now().In(replay.From.Location()).Format(timeLayout))))
+			replay.From.Format(flags.TimeLayout), time.Now().In(replay.From.Location()).Format(flags.TimeLayout))))
 
 		if r.playlistsAvailable {
 			cmd.Println("Replay is added to the queue...")
@@ -246,29 +248,6 @@ func (r *ReplayCmd) arguments(cmd *cobra.Command, args []string) error {
 		r.sloName = args[0]
 	}
 	return nil
-}
-
-type TimeValue struct{ time.Time }
-
-const (
-	timeLayout       = time.RFC3339
-	timeLayoutString = "RFC3339"
-)
-
-func (t *TimeValue) String() string {
-	if t.IsZero() {
-		return ""
-	}
-	return t.Format(timeLayout)
-}
-
-func (t *TimeValue) Set(s string) (err error) {
-	t.Time, err = time.Parse(timeLayout, s)
-	return
-}
-
-func (t *TimeValue) Type() string {
-	return "time"
 }
 
 func (r *ReplayCmd) readConfigFile(path string) ([]ReplayConfig, error) {
@@ -558,7 +537,7 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 				" + %dm (start offset to ensure Replay covers the desired time window) %s."+
 				" Edit the Data Source and run Replay once again.",
 			replay.metricSource.Name, replay.metricSource.Project, expectedDuration.String(),
-			timeNow.Format(timeLayout), replay.From.Format(timeLayout), startOffsetMinutes, offsetNotice)
+			timeNow.Format(flags.TimeLayout), replay.From.Format(flags.TimeLayout), startOffsetMinutes, offsetNotice)
 	case sdkModels.ReplayConcurrentReplayRunsLimitExhausted:
 		return "You've exceeded the limit of concurrent Replay runs. Wait until the current Replay(s) are done."
 	case sdkModels.ReplayUnknownAgentVersion:

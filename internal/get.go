@@ -119,7 +119,12 @@ func (g *GetCmd) RegisterFlags(cmd *cobra.Command) {
 			panic(err)
 		}
 	}
-	registerOutputFormatFlags(cmd, &g.outputFormat, &g.fieldSeparator, &g.recordSeparator)
+	printer.MustRegisterOutputFormatFlags(
+		cmd,
+		&g.outputFormat,
+		&g.fieldSeparator,
+		&g.recordSeparator,
+	)
 	mustHide(csv.RecordSeparatorFlag)
 }
 
