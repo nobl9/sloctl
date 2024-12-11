@@ -4,11 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
-
 	"github.com/nobl9/nobl9-go/manifest"
-
-	"github.com/nobl9/sloctl/internal/csv"
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -43,17 +40,6 @@ func registerAutoConfirmationFlag(cmd *cobra.Command, storeIn *bool) {
 	cmd.Flags().BoolVarP(storeIn, "yes", "y", false,
 		"Auto confirm files threshold prompt."+
 			" Threshold can be changed or disabled in config.toml or via env variables.")
-}
-
-func registerOutputFormatFlags(cmd *cobra.Command, outputFormat, fieldSeparator, recordSeparator *string) {
-	cmd.PersistentFlags().StringVarP(outputFormat, "output", "o", "yaml",
-		`Output format: one of yaml|json|csv.`)
-
-	cmd.PersistentFlags().StringVarP(fieldSeparator, csv.FieldSeparatorFlag, "",
-		csv.DefaultFieldSeparator, "Field Separator for CSV.")
-
-	cmd.PersistentFlags().StringVarP(recordSeparator, csv.RecordSeparatorFlag, "",
-		csv.DefaultRecordSeparator, "Record Separator for CSV.")
 }
 
 var projectFlagSupportingKinds = map[manifest.Kind]struct{}{

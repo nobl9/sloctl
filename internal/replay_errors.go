@@ -1,6 +1,10 @@
 package internal
 
-import "github.com/pkg/errors"
+import (
+	"github.com/pkg/errors"
+
+	"github.com/nobl9/sloctl/internal/flags"
+)
 
 var (
 	errReplayInvalidOptions = errors.New("you must either run 'sloctl replay' for a single SLO," +
@@ -10,7 +14,7 @@ var (
 	errReplayTooManyArgs = errors.New("'replay' command accepts a single SLO name," +
 		" If you want to run it for multiple SLOs provide a configuration file instead using '-f' flag")
 	errReplayMissingFromArg = errors.Errorf("when running 'sloctl replay' for a single SLO,"+
-		" you must provide Replay window start time (%s layout) with '--from' flag", timeLayoutString)
+		" you must provide Replay window start time (%s layout) with '--from' flag", flags.TimeLayoutString)
 	errProjectWildcardIsNotAllowed = errors.New(
 		"wildcard Project is not allowed, you must provide specific Project name(s)")
 )

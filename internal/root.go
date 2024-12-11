@@ -6,10 +6,11 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/spf13/cobra"
-
 	v1alphaParser "github.com/nobl9/nobl9-go/manifest/v1alpha/parser"
 	"github.com/nobl9/nobl9-go/sdk"
+	"github.com/spf13/cobra"
+
+	"github.com/nobl9/sloctl/internal/budgetadjustments"
 )
 
 const programName = "sloctl"
@@ -54,6 +55,8 @@ For every command more detailed help is available.`,
 	rootCmd.AddCommand(root.NewConfigCmd())
 	rootCmd.AddCommand(root.NewReplayCmd())
 	rootCmd.AddCommand(root.NewAwsIamIds())
+	rootCmd.AddCommand(budgetadjustments.NewRootCmd(&root))
+
 	return rootCmd
 }
 
