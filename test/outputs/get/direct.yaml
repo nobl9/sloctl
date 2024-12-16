@@ -13,12 +13,6 @@
       maxDuration:
         unit: Day
         value: 0
-      triggeredBySloCreation:
-        unit: Day
-        value: 0
-      triggeredBySloEdit:
-        unit: Day
-        value: 0
     interval:
       unit: Minute
       value: 1
