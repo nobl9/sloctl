@@ -65,3 +65,35 @@
     alertPolicies:
       - trigger-alert-immediately
       - budget-will-be-burn-in-3days
+- apiVersion: n9/v1alpha
+  kind: SLO
+  metadata:
+    name: newrelic-rolling-timeslices-threshold-deputy-office
+    project: death-star
+  spec:
+    description: This SLO is just for the e2e 'sloctl get' tests, it's not supposed to work!
+    service: deputy-office
+    indicator:
+      metricSource:
+        kind: Direct
+        name: newrelic-direct
+    timeWindows:
+      - count: 1
+        isRolling: true
+        unit: Hour
+    budgetingMethod: Timeslices
+    objectives:
+      - target: 0.99
+        op: lte
+        rawMetric:
+          query:
+            newRelic:
+              nrql: SELECT average(duration) FROM Transaction TIMESERIES
+        displayName: stretched
+        timeSliceTarget: 0.99
+        value: 1.2
+        name: objective-1
+        primary: false
+    alertPolicies:
+      - trigger-alert-immediately
+      - budget-will-be-burn-in-3days
