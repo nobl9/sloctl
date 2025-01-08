@@ -328,21 +328,7 @@ func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 }
 
 func (g *GetCmd) newGetSLOCommand(cmd *cobra.Command) *cobra.Command {
-	cmd.Flags().StringVarP(&g.service, "service", "s", "", "Filter SLOs by service")
-
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		objects, err := g.getObjects(cmd.Context(), args, manifest.KindSLO)
-		if err != nil {
-			return err
-		}
-		if objects == nil {
-			return nil
-		}
-		if err = g.printObjects(objects); err != nil {
-			return err
-		}
-		return nil
-	}
+	cmd.Flags().StringVarP(&g.service, "service", "s", "", "Filter SLOs by service name.")
 	return cmd
 }
 
