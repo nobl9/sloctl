@@ -84,12 +84,12 @@ setup() {
   # Default project, no matches.
   run_sloctl get slo -s deputy-office
   assert_success_joined_output
-  assert_output "No resources found."
+  assert_output "No resources found in 'default' project."
 
   # Wrong name, no matches.
   run_sloctl get slo -s deputy-office -p death-star newrelic-rolling-timeslices-threshold-deputy-home
   assert_success_joined_output
-  assert_output "No resources found."
+  assert_output "No resources found in 'death-star' project."
 
   want=$(read_files "${TEST_OUTPUTS}/slo-by-service-name.yaml")
   for flag_alias in "-s" "--service"; do
