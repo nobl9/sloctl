@@ -26,13 +26,18 @@ import (
 	"github.com/nobl9/nobl9-go/sdk"
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
 	sdkModels "github.com/nobl9/nobl9-go/sdk/models"
+
+	"github.com/nobl9/sloctl/internal/flags"
 )
 
 type ReplayCmd struct {
-	client      *sdk.Client
-	from        TimeValue
-	configPaths []string
-	sloName     string
+	client             *sdk.Client
+	from               flags.TimeValue
+	configPaths        []string
+	sloName            string
+	project            string
+	deleteAll          bool
+	playlistsAvailable bool
 }
 
 //go:embed replay_example.sh
@@ -44,24 +49,28 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "replay",
 		Short: "Retrieve historical SLI data and recalculate their SLO error budgets.",
-		Long: "Replay pulls in the historical data while your SLO collects new data in real-time. " +
-			"The historical and current data are merged, producing an error budget calculated for the entire period. " +
-			"Refer to https://docs.nobl9.com/Features/replay?_highlight=replay for more details on Replay.\n\n" +
-			"The 'replay' command allows you to import data for multiple SLOs in bulk. " +
-			"Before running the Replays it will verify if the SLOs you've provided are eligible for Replay. " +
-			"It will only run a single Replay simultaneously (current limit for concurrent Replays). " +
-			"When any Replay fails, it will attempt the import for the next SLO. " +
-			"Importing data takes time: Replay for a single SLO may take several minutes up to an hour. " +
-			"During that time, the command keeps on running, periodically checking the status of Replay. " +
-			"If you cancel the program execution at any time, the current Replay in progress will not be revoked.",
-		Example:          replayExample,
-		Args:             replay.arguments,
-		PersistentPreRun: func(cmd *cobra.Command, args []string) { replay.client = r.GetClient() },
-		RunE:             func(cmd *cobra.Command, args []string) error { return replay.Run(cmd) },
+		Long: "`sloctl replay` creates Replays to retrieve historical data for SLOs. " +
+			"Use it to replay SLOs one-by-one or in bulk. Historical data retrieval is time-consuming: " +
+			"replaying a single SLO can take up to an hour. Considering the number of ongoing Replays is limited, " +
+			"`sloctl` queues Replays if the limit is exceeded.",
+		Example: replayExample,
+		Args:    replay.arguments,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			replay.client = r.GetClient()
+			if replay.project != "" {
+				replay.client.Config.Project = replay.project
+			}
+		},
+		RunE: func(cmd *cobra.Command, args []string) error { return replay.Run(cmd) },
 	}
 
-	RegisterFileFlag(cmd, false, &replay.configPaths)
+	registerFileFlag(cmd, false, &replay.configPaths)
+	cmd.Flags().StringVarP(&replay.project, "project", "p", "",
+		`Specifies the Project for the SLOs you want to Replay.`)
 	cmd.Flags().Var(&replay.from, "from", "Sets the start of Replay time window.")
+
+	cmd.AddCommand(replay.AddDeleteCommand())
+	cmd.AddCommand(replay.AddListCommand())
 
 	return cmd
 }
@@ -70,6 +79,7 @@ func (r *ReplayCmd) Run(cmd *cobra.Command) error {
 	if r.client.Config.Project == "*" {
 		return errProjectWildcardIsNotAllowed
 	}
+	r.arePlaylistEnabled(cmd.Context())
 	replays, err := r.prepareConfigs()
 	if err != nil {
 		return err
@@ -83,24 +93,42 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 		return 0, err
 	}
 
+	if r.playlistsAvailable {
+		cmd.Println(colorstring.Color("[yellow]- Your organization has access to Replay queues!"))
+		cmd.Println(colorstring.Color("[yellow]- To learn more about Replay queues, follow this link: " +
+			"https://docs.nobl9.com/replay/replay-sloctl [reset]"))
+	}
+
 	failedIndexes := make([]int, 0)
 	for i, replay := range replays {
 		cmd.Println(colorstring.Color(fmt.Sprintf(
 			"[cyan][%d/%d][reset] SLO: %s, Project: %s, From: %s, To: %s",
 			i+1, len(replays), replay.SLO, replay.Project,
-			replay.From.Format(timeLayout), time.Now().In(replay.From.Location()).Format(timeLayout))))
+			replay.From.Format(flags.TimeLayout), time.Now().In(replay.From.Location()).Format(flags.TimeLayout))))
 
-		spinner := NewSpinner("Importing data...")
-		spinner.Go()
-		err = r.runReplay(cmd.Context(), replay)
-		spinner.Stop()
+		if r.playlistsAvailable {
+			cmd.Println("Replay is added to the queue...")
+			err = r.runReplay(cmd.Context(), replay)
 
-		if err != nil {
-			cmd.Println(colorstring.Color("[red]Import failed:[reset] " + err.Error()))
-			failedIndexes = append(failedIndexes, i)
-			continue
+			if err != nil {
+				cmd.Println(colorstring.Color("[red]Failed to add Replay to the queue:[reset] " + err.Error()))
+				failedIndexes = append(failedIndexes, i)
+				continue
+			}
+			cmd.Println(colorstring.Color("[green]Replay has been successfully added to the queue![reset]"))
+		} else {
+			spinner := NewSpinner("Importing data...")
+			spinner.Go()
+			err = r.runReplayWithStatusCheck(cmd.Context(), replay)
+			spinner.Stop()
+
+			if err != nil {
+				cmd.Println(colorstring.Color("[red]Import failed:[reset] " + err.Error()))
+				failedIndexes = append(failedIndexes, i)
+				continue
+			}
+			cmd.Println(colorstring.Color("[green]Import succeeded![reset]"))
 		}
-		cmd.Println(colorstring.Color("[green]Import succeeded![reset]"))
 	}
 	if len(replays) > 0 {
 		r.printSummary(cmd, replays, failedIndexes)
@@ -108,10 +136,34 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 	return len(failedIndexes), nil
 }
 
+type PlaylistConfiguration struct {
+	EnabledPlaylists bool `json:"enabledPlaylists"`
+}
+
+func (r *ReplayCmd) arePlaylistEnabled(ctx context.Context) {
+	r.playlistsAvailable = true
+	data, _, err := r.doRequest(
+		ctx,
+		http.MethodGet,
+		endpointPlanInfo,
+		"*",
+		nil,
+		nil)
+	if err != nil {
+		fmt.Printf("error checking playlist availability: %v\n", err)
+	}
+	var pc PlaylistConfiguration
+	if err = json.Unmarshal(data, &pc); err != nil {
+		fmt.Printf("error unmarshalling playlist configuration: %v\n", err)
+	}
+	r.playlistsAvailable = pc.EnabledPlaylists
+}
+
 type ReplayConfig struct {
-	Project string    `json:"project" validate:"required"`
-	SLO     string    `json:"slo" validate:"required"`
-	From    time.Time `json:"from" validate:"required"`
+	Project   string                     `json:"project" validate:"required"`
+	SLO       string                     `json:"slo" validate:"required"`
+	From      time.Time                  `json:"from" validate:"required"`
+	SourceSLO *sdkModels.ReplaySourceSLO `json:"sourceSLO,omitempty"`
 
 	metricSource v1alphaSLO.MetricSourceSpec
 }
@@ -132,6 +184,7 @@ func (r ReplayConfig) ToReplay(timeNow time.Time) sdkModels.Replay {
 			Unit:  sdkModels.DurationUnitMinute,
 			Value: startOffsetMinutes + int(windowDuration.Minutes()),
 		},
+		SourceSLO: r.SourceSLO,
 	}
 }
 
@@ -177,17 +230,6 @@ func (r *ReplayCmd) prepareConfigs() ([]ReplayConfig, error) {
 	return replays, nil
 }
 
-var (
-	errReplayInvalidOptions = errors.New("you must either run 'sloctl replay' for a single SLO," +
-		" providing its name as an argument, or provide configuration file using '-f' flag, but not both")
-	errReplayTooManyArgs = errors.New("'replay' command accepts a single SLO name," +
-		" If you want to run it for multiple SLOs provide a configuration file instead using '-f' flag")
-	errReplayMissingFromArg = errors.Errorf("when running 'sloctl replay' for a single SLO,"+
-		" you must provide Replay window start time (%s layout) with '--from' flag", timeLayoutString)
-	errProjectWildcardIsNotAllowed = errors.New(
-		"wildcard Project is not allowed, you must provide specific Project name(s)")
-)
-
 func (r *ReplayCmd) arguments(cmd *cobra.Command, args []string) error {
 	if len(r.configPaths) == 0 && len(args) == 0 {
 		_ = cmd.Usage()
@@ -208,29 +250,6 @@ func (r *ReplayCmd) arguments(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-type TimeValue struct{ time.Time }
-
-const (
-	timeLayout       = time.RFC3339
-	timeLayoutString = "RFC3339"
-)
-
-func (t *TimeValue) String() string {
-	if t.IsZero() {
-		return ""
-	}
-	return t.Format(timeLayout)
-}
-
-func (t *TimeValue) Set(s string) (err error) {
-	t.Time, err = time.Parse(timeLayout, s)
-	return
-}
-
-func (t *TimeValue) Type() string {
-	return "time"
-}
-
 func (r *ReplayCmd) readConfigFile(path string) ([]ReplayConfig, error) {
 	data, err := os.ReadFile(path) // #nosec G304
 	if err != nil {
@@ -248,8 +267,12 @@ const averageReplayDuration = 20 * time.Minute
 
 func (r *ReplayCmd) verifySLOs(ctx context.Context, replays []ReplayConfig) error {
 	sloNames := make([]string, 0, len(replays))
-	for i := range replays {
-		sloNames = append(sloNames, replays[i].SLO)
+	for _, r := range replays {
+		sloNames = append(sloNames, r.SLO)
+		if r.SourceSLO != nil {
+			// Add source SLOs to the list of SLOs to check for existence and permissions.
+			sloNames = append(sloNames, r.SourceSLO.Slo)
+		}
 	}
 	if r.client.Config.Project == "" {
 		r.client.Config.Project = sdk.ProjectsWildcard
@@ -257,7 +280,7 @@ func (r *ReplayCmd) verifySLOs(ctx context.Context, replays []ReplayConfig) erro
 
 	// Find non-existent or RBAC protected SLOs.
 	// We're also filling the Data Source spec here for ReplayConfig.
-	data, err := r.doRequest(
+	data, _, err := r.doRequest(
 		ctx,
 		http.MethodGet,
 		endpointGetSLO,
@@ -302,17 +325,28 @@ outer:
 	}
 
 	// Check Replay availability.
+	if err := r.checkReplayAvailability(ctx, replays); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *ReplayCmd) checkReplayAvailability(ctx context.Context, replays []ReplayConfig) error {
 	notAvailable := make([]string, 0)
 	mu := sync.Mutex{}
 	eg, ctx := errgroup.WithContext(ctx)
 	eg.SetLimit(10)
+
 	for i := range replays {
-		i := i
 		eg.Go(func() error {
 			c := replays[i]
 			timeNow := time.Now()
 			tt := c.ToReplay(timeNow)
-			offset := i * int(averageReplayDuration.Minutes())
+			offset := 0
+			if !r.playlistsAvailable {
+				offset = i * int(averageReplayDuration.Minutes())
+			}
 			expectedDuration := offset + tt.Duration.Value
 			av, err := r.getReplayAvailability(ctx, c, tt.Duration.Unit, expectedDuration)
 			if err != nil {
@@ -321,6 +355,7 @@ outer:
 			}
 			if !av.Available {
 				mu.Lock()
+				defer mu.Unlock()
 				notAvailable = append(notAvailable,
 					fmt.Sprintf("['%s' SLO in '%s' Project] %s",
 						c.SLO, c.Project, r.replayUnavailabilityReasonExplanation(
@@ -329,27 +364,29 @@ outer:
 							time.Duration(expectedDuration)*time.Minute,
 							time.Duration(offset)*time.Minute,
 							timeNow)))
-				mu.Unlock()
 			}
 			return nil
 		})
 	}
-	if err = eg.Wait(); err != nil {
+
+	if err := eg.Wait(); err != nil {
 		return err
 	}
+
 	if len(notAvailable) > 0 {
 		return errors.Errorf("The following SLOs are not available for Replay: \n - %s",
 			strings.Join(notAvailable, "\n - "))
 	}
+
 	return nil
 }
 
 const replayStatusCheckInterval = 30 * time.Second
 
-func (r *ReplayCmd) runReplay(ctx context.Context, config ReplayConfig) error {
-	_, err := r.doRequest(ctx, http.MethodPost, endpointReplayPost, config.Project, nil, config.ToReplay(time.Now()))
+func (r *ReplayCmd) runReplayWithStatusCheck(ctx context.Context, config ReplayConfig) error {
+	err := r.runReplay(ctx, config)
 	if err != nil {
-		return errors.Wrap(err, "failed to start new Replay")
+		return err
 	}
 	ticker := time.NewTicker(replayStatusCheckInterval)
 	for {
@@ -373,6 +410,21 @@ func (r *ReplayCmd) runReplay(ctx context.Context, config ReplayConfig) error {
 	}
 }
 
+func (r *ReplayCmd) runReplay(ctx context.Context, config ReplayConfig) error {
+	_, httpCode, err := r.doRequest(ctx, http.MethodPost, endpointReplayPost, config.Project,
+		nil, config.ToReplay(time.Now()),
+	)
+	if err != nil {
+		switch httpCode {
+		case 409:
+			return errors.Errorf("Replay for SLO: '%s' in project: '%s' already exist", config.SLO, config.Project)
+		default:
+			return errors.Wrap(err, "failed to start new Replay")
+		}
+	}
+	return nil
+}
+
 func (r *ReplayCmd) getReplayAvailability(
 	ctx context.Context,
 	config ReplayConfig,
@@ -386,7 +438,7 @@ func (r *ReplayCmd) getReplayAvailability(
 		"durationUnit":      {durationUnit},
 		"durationValue":     {strconv.Itoa(durationValue)},
 	}
-	data, err := r.doRequest(ctx, http.MethodGet, endpointReplayGetAvailability, config.Project, values, nil)
+	data, _, err := r.doRequest(ctx, http.MethodGet, endpointReplayGetAvailability, config.Project, values, nil)
 	if err != nil {
 		return
 	}
@@ -400,7 +452,7 @@ func (r *ReplayCmd) getReplayStatus(
 	ctx context.Context,
 	config ReplayConfig,
 ) (string, error) {
-	data, err := r.doRequest(
+	data, _, err := r.doRequest(
 		ctx,
 		http.MethodGet,
 		fmt.Sprintf(endpointReplayGetStatus, config.SLO),
@@ -419,8 +471,11 @@ func (r *ReplayCmd) getReplayStatus(
 
 const (
 	endpointReplayPost            = "/timetravel"
+	endpointReplayDelete          = "/timetravel"
+	endpointReplayList            = "/timetravel/list"
 	endpointReplayGetStatus       = "/timetravel/%s"
 	endpointReplayGetAvailability = "/internal/timemachine/availability"
+	endpointPlanInfo              = "/internal/plan-info"
 	endpointGetSLO                = "/get/slo"
 )
 
@@ -429,30 +484,30 @@ func (r *ReplayCmd) doRequest(
 	method, endpoint, project string,
 	values url.Values,
 	payload interface{},
-) ([]byte, error) {
+) (data []byte, httpCode int, err error) {
 	var body io.Reader
 	if payload != nil {
 		buf := new(bytes.Buffer)
 		if err := json.NewEncoder(buf).Encode(payload); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		body = buf
 	}
 	header := http.Header{sdk.HeaderProject: []string{project}}
 	req, err := r.client.CreateRequest(ctx, method, endpoint, header, values, body)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	resp, err := r.client.HTTP.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer func() { _ = resp.Body.Close() }()
+	data, err = io.ReadAll(resp.Body)
 	if resp.StatusCode >= 300 {
-		data, _ := io.ReadAll(resp.Body)
-		return nil, errors.Errorf("bad response (status: %d): %s", resp.StatusCode, string(data))
+		return nil, resp.StatusCode, errors.Errorf("bad response (status: %d): %s", resp.StatusCode, string(data))
 	}
-	return io.ReadAll(resp.Body)
+	return data, resp.StatusCode, err
 }
 
 func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
@@ -482,7 +537,7 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 				" + %dm (start offset to ensure Replay covers the desired time window) %s."+
 				" Edit the Data Source and run Replay once again.",
 			replay.metricSource.Name, replay.metricSource.Project, expectedDuration.String(),
-			timeNow.Format(timeLayout), r.from.Format(timeLayout), startOffsetMinutes, offsetNotice)
+			timeNow.Format(flags.TimeLayout), replay.From.Format(flags.TimeLayout), startOffsetMinutes, offsetNotice)
 	case sdkModels.ReplayConcurrentReplayRunsLimitExhausted:
 		return "You've exceeded the limit of concurrent Replay runs. Wait until the current Replay(s) are done."
 	case sdkModels.ReplayUnknownAgentVersion:
@@ -494,14 +549,14 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 
 func (r *ReplayCmd) printSummary(cmd *cobra.Command, replays []ReplayConfig, failedIndexes []int) {
 	if len(failedIndexes) == 0 {
-		cmd.Printf("\nSuccessfully imported data for all %d SLOs.\n", len(replays))
+		cmd.Printf("\nSuccessfully finished operations for all %d SLOs.\n", len(replays))
 	} else {
 		failedDetails := make([]string, 0, len(failedIndexes))
 		for _, i := range failedIndexes {
 			fr, _ := json.Marshal(replays[i])
 			failedDetails = append(failedDetails, string(fr))
 		}
-		cmd.Printf("\nSuccessfully imported data for %d and failed for %d SLOs:\n - %s\n",
+		cmd.Printf("\nSuccessfully finished operations for %d and failed for %d SLOs:\n - %s\n",
 			len(replays)-len(failedIndexes), len(failedIndexes), strings.Join(failedDetails, "\n - "))
 	}
 }

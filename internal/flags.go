@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/spf13/cobra"
-
-	"github.com/nobl9/sloctl/internal/csv"
 )
 
 const (
@@ -14,11 +13,11 @@ const (
 	flagDryRun = "dry-run"
 )
 
-func NotifyDryRunFlag() {
+func notifyDryRunFlag() {
 	_, _ = fmt.Fprintln(os.Stderr, "Running in dry run mode, changes will not be applied.")
 }
 
-func RegisterFileFlag(cmd *cobra.Command, required bool, storeIn *[]string) {
+func registerFileFlag(cmd *cobra.Command, required bool, storeIn *[]string) {
 	cmd.Flags().StringArrayVarP(storeIn, flagFile, "f", []string{},
 		"File path, glob pattern or a URL to the configuration in YAML or JSON format."+
 			" This option can be used multiple times.")
@@ -27,29 +26,56 @@ func RegisterFileFlag(cmd *cobra.Command, required bool, storeIn *[]string) {
 	}
 }
 
-func RegisterDryRunFlag(cmd *cobra.Command, storeIn *bool) {
+func registerDryRunFlag(cmd *cobra.Command, storeIn *bool) {
 	cmd.Flags().BoolVarP(storeIn, flagDryRun, "", false,
 		"Submit server-side request without persisting the configured resources.")
 }
 
-func RegisterVerboseFlag(cmd *cobra.Command, storeIn *bool) {
+func registerVerboseFlag(cmd *cobra.Command, storeIn *bool) {
 	cmd.Flags().BoolVarP(storeIn, "verbose", "v", false,
 		"Display verbose information about configuration")
 }
 
-func RegisterAutoConfirmationFlag(cmd *cobra.Command, storeIn *bool) {
+func registerAutoConfirmationFlag(cmd *cobra.Command, storeIn *bool) {
 	cmd.Flags().BoolVarP(storeIn, "yes", "y", false,
 		"Auto confirm files threshold prompt."+
 			" Threshold can be changed or disabled in config.toml or via env variables.")
 }
 
-func RegisterOutputFormatFlags(cmd *cobra.Command, outputFormat, fieldSeparator, recordSeparator *string) {
-	cmd.PersistentFlags().StringVarP(outputFormat, "output", "o", "yaml",
-		`Output format: one of yaml|json|csv.`)
+var projectFlagSupportingKinds = map[manifest.Kind]struct{}{
+	manifest.KindSLO:          {},
+	manifest.KindService:      {},
+	manifest.KindAgent:        {},
+	manifest.KindAlertPolicy:  {},
+	manifest.KindAlertSilence: {},
+	manifest.KindAlertMethod:  {},
+	manifest.KindDirect:       {},
+	manifest.KindDataExport:   {},
+	manifest.KindRoleBinding:  {},
+	manifest.KindAnnotation:   {},
+	// While Alert itself is not Project scoped per-se,
+	// it does support Project filtering.
+	manifest.KindAlert: {},
+}
 
-	cmd.PersistentFlags().StringVarP(fieldSeparator, csv.FieldSeparatorFlag, "",
-		csv.DefaultFieldSeparator, "Field Separator for CSV.")
+func objectKindSupportsProjectFlag(kind manifest.Kind) bool {
+	_, ok := projectFlagSupportingKinds[kind]
+	return ok
+}
 
-	cmd.PersistentFlags().StringVarP(recordSeparator, csv.RecordSeparatorFlag, "",
-		csv.DefaultRecordSeparator, "Record Separator for CSV.")
+var labelSupportingKinds = map[manifest.Kind]struct{}{
+	manifest.KindProject:     {},
+	manifest.KindService:     {},
+	manifest.KindSLO:         {},
+	manifest.KindAlertPolicy: {},
+}
+
+func objectKindSupportsLabelsFlag(kind manifest.Kind) bool {
+	_, ok := labelSupportingKinds[kind]
+	return ok
+}
+
+func registerLabelsFlag(cmd *cobra.Command, storeIn *[]string) {
+	cmd.Flags().StringArrayVarP(storeIn, "label", "l", []string{},
+		`Filter resource by label. Example: key=value,key2=value2,key2=value3.`)
 }

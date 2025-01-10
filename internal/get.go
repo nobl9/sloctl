@@ -13,7 +13,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
@@ -35,6 +34,8 @@ type GetCmd struct {
 	labels          []string
 	fieldSeparator  string
 	recordSeparator string
+	project         string
+	allProjects     bool
 	out             io.Writer
 }
 
@@ -47,18 +48,26 @@ func (r *RootCmd) NewGetCmd() *cobra.Command {
 		Short: "Display one or more than one resource",
 		Long: `Prints a table of the most important information about the specified resources.
 To get more details in output use one of the available flags.`,
-		PersistentPreRun: func(cmd *cobra.Command, args []string) { get.client = r.GetClient() },
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			get.client = r.GetClient()
+			if get.allProjects {
+				get.client.Config.Project = "*"
+			} else if get.project != "" {
+				get.client.Config.Project = get.project
+			}
+		},
 	}
 
-	// All flags for 'get' and its subcommands.
+	// All shared flags for 'get' and its subcommands.
 	get.RegisterFlags(cmd)
 
 	// All subcommands for get.
 	for _, subCmd := range []struct {
-		Kind     manifest.Kind
-		Aliases  []string
-		Plural   string
-		Extender func(cmd *cobra.Command) *cobra.Command
+		Kind            manifest.Kind
+		Aliases         []string
+		Plural          string
+		Extender        func(cmd *cobra.Command) *cobra.Command
+		IsProjectScoped bool
 	}{
 		{Kind: manifest.KindAgent, Aliases: []string{"agent", "Agents", "Agent"}, Extender: get.newGetAgentCommand},
 		{Kind: manifest.KindAlertMethod},
@@ -74,6 +83,7 @@ To get more details in output use one of the available flags.`,
 		{Kind: manifest.KindSLO},
 		{Kind: manifest.KindUserGroup},
 		{Kind: manifest.KindBudgetAdjustment},
+		{Kind: manifest.KindReport},
 	} {
 		plural := subCmd.Kind.String() + "s"
 		if len(subCmd.Plural) > 0 {
@@ -87,6 +97,15 @@ To get more details in output use one of the available flags.`,
 		if subCmd.Extender != nil {
 			subCmd.Extender(sc)
 		}
+		if objectKindSupportsProjectFlag(subCmd.Kind) {
+			sc.Flags().StringVarP(&get.project, "project", "p", "",
+				`List the requested object(s) which belong to the specified Project (name).`)
+			sc.Flags().BoolVarP(&get.allProjects, "all-projects", "A", false,
+				`List the requested object(s) across all projects.`)
+		}
+		if objectKindSupportsLabelsFlag(subCmd.Kind) {
+			registerLabelsFlag(sc, &get.labels)
+		}
 		cmd.AddCommand(sc)
 	}
 
@@ -94,17 +113,18 @@ To get more details in output use one of the available flags.`,
 }
 
 func (g *GetCmd) RegisterFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringArrayVarP(&g.labels, "label", "l", []string{},
-		`Filter resource by label. Example: key=value,key2=value2,key2=value3.`)
-
 	// Hidden variables.
 	mustHide := func(f string) {
 		if err := cmd.PersistentFlags().MarkHidden(f); err != nil {
 			panic(err)
 		}
 	}
-
-	RegisterOutputFormatFlags(cmd, &g.outputFormat, &g.fieldSeparator, &g.recordSeparator)
+	printer.MustRegisterOutputFormatFlags(
+		cmd,
+		&g.outputFormat,
+		&g.fieldSeparator,
+		&g.recordSeparator,
+	)
 	mustHide(csv.RecordSeparatorFlag)
 }
 
@@ -237,6 +257,7 @@ func (g *GetCmd) newGetAlertCommand(cmd *cobra.Command) *cobra.Command {
 			return err
 		}
 		if len(objects) == 0 {
+			fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)
 			return nil
 		}
 		if err = g.printObjects(objects); err != nil {
@@ -311,7 +332,6 @@ func (g *GetCmd) getAgentsWithSecrets(ctx context.Context, objects []manifest.Ob
 	var mu sync.Mutex
 	eg, ctx := errgroup.WithContext(ctx)
 	for i := range objects {
-		i := i
 		eg.Go(func() error {
 			agent, ok := objects[i].(v1alpha.GenericObject)
 			if !ok {
@@ -355,10 +375,6 @@ func (g *GetCmd) enrichAgentWithSecrets(
 }
 
 func (g *GetCmd) getObjects(ctx context.Context, args []string, kind manifest.Kind) ([]manifest.Object, error) {
-	if kind == manifest.KindAlert && g.client.Config.Project != sdk.ProjectsWildcard {
-		return nil, errors.New("'sloctl get alerts' does not support Project filtering," +
-			" explicitly pass '-A' flag to fetch all Alerts.")
-	}
 	query := url.Values{objectsV1.QueryKeyName: args}
 	if len(g.labels) > 0 {
 		query.Set(objectsV1.QueryKeyLabels, parseFilterLabel(g.labels))
@@ -370,7 +386,7 @@ func (g *GetCmd) getObjects(ctx context.Context, args []string, kind manifest.Ki
 	}
 	if len(objects) == 0 {
 		switch kind {
-		case manifest.KindProject, manifest.KindUserGroup, manifest.KindBudgetAdjustment:
+		case manifest.KindProject, manifest.KindUserGroup, manifest.KindBudgetAdjustment, manifest.KindReport:
 			fmt.Printf("No resources found.\n")
 		default:
 			fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)

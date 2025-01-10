@@ -34,7 +34,12 @@ func (r *RootCmd) NewAwsIamIds() *cobra.Command {
 		PersistentPreRun: func(iamIdsCmd *cobra.Command, args []string) { awsIamIds.client = r.GetClient() },
 		RunE:             func(iamIdsCmd *cobra.Command, args []string) error { return awsIamIds.Direct(iamIdsCmd) },
 	}
-	RegisterOutputFormatFlags(direct, &awsIamIds.outputFormat, &awsIamIds.fieldSeparator, &awsIamIds.recordSeparator)
+	printer.MustRegisterOutputFormatFlags(
+		direct,
+		&awsIamIds.outputFormat,
+		&awsIamIds.fieldSeparator,
+		&awsIamIds.recordSeparator,
+	)
 	cobraCmd.AddCommand(direct)
 
 	dataExport := &cobra.Command{

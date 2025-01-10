@@ -9,6 +9,8 @@ import (
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/manifest/v1alpha"
 	"github.com/nobl9/nobl9-go/sdk"
+
+	"github.com/nobl9/sloctl/internal/flags"
 )
 
 type ApplyCmd struct {
@@ -18,7 +20,8 @@ type ApplyCmd struct {
 	dryRun            bool
 	autoConfirm       bool
 	replay            bool
-	replayFrom        TimeValue
+	replayFrom        flags.TimeValue
+	project           string
 }
 
 //go:embed apply_example.sh
@@ -37,19 +40,22 @@ func (r *RootCmd) NewApplyCmd() *cobra.Command {
 		Args:    positionalArgsCondition,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			apply.client = r.GetClient()
-			if r.Flags.Project != "" {
+			if apply.project != "" {
 				apply.projectFlagWasSet = true
+				apply.client.Config.Project = apply.project
 			}
 			if apply.dryRun {
-				NotifyDryRunFlag()
+				notifyDryRunFlag()
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error { return apply.Run(cmd) },
 	}
 
-	RegisterFileFlag(cmd, true, &apply.definitionPaths)
-	RegisterDryRunFlag(cmd, &apply.dryRun)
-	RegisterAutoConfirmationFlag(cmd, &apply.autoConfirm)
+	registerFileFlag(cmd, true, &apply.definitionPaths)
+	registerDryRunFlag(cmd, &apply.dryRun)
+	registerAutoConfirmationFlag(cmd, &apply.autoConfirm)
+	cmd.Flags().StringVarP(&apply.project, "project", "p", "",
+		`Assigns the provided Project to the resources if no Project is defined in the object's definition.`)
 
 	const (
 		replayFlagName     = "replay"
@@ -101,6 +107,7 @@ func (a ApplyCmd) runReplay(cmd *cobra.Command, objects []manifest.Object) error
 		return nil
 	}
 	replayCmd := ReplayCmd{client: a.client}
+	replayCmd.arePlaylistEnabled(cmd.Context())
 	replays := make([]ReplayConfig, 0, len(slos))
 	for _, slo := range slos {
 		replays = append(replays, ReplayConfig{

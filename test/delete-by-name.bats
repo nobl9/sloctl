@@ -74,6 +74,10 @@ setup() {
   test_delete_by_name "BudgetAdjustment" "${TEST_INPUTS}/budgetadjustment.yaml"
 }
 
+@test "report" {
+  test_delete_by_name "Report" "${TEST_INPUTS}/report.yaml"
+}
+
 # Currently we cannot apply user groups and DataExport has very strict
 # org limits making it impossible to test with applied objects.
 #
@@ -99,7 +103,7 @@ test_delete_by_name() {
 
   # Delete the object by name.
   args=(delete "$kind" "$object_name")
-  if [[ $kind != "Project" ]]; then
+  if [[ $kind != "Project" ]] && [[ $kind != "BudgetAdjustment" ]] && [[ $kind != "Report" ]]; then
     args+=("-p" "death-star")
   fi
   run_sloctl "${args[@]}"
