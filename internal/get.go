@@ -35,7 +35,7 @@ type GetCmd struct {
 	fieldSeparator  string
 	recordSeparator string
 	project         string
-	service         string
+	services        []string
 	allProjects     bool
 	out             io.Writer
 }
@@ -328,7 +328,7 @@ func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 }
 
 func (g *GetCmd) newGetSLOCommand(cmd *cobra.Command) *cobra.Command {
-	cmd.Flags().StringVarP(&g.service, "service", "s", "", "Filter SLOs by service name.")
+	cmd.Flags().StringArrayVarP(&g.services, "service", "s", nil, "Filter SLOs by service name.")
 	return cmd
 }
 
@@ -384,8 +384,8 @@ func (g *GetCmd) getObjects(ctx context.Context, args []string, kind manifest.Ki
 	if len(g.labels) > 0 {
 		query.Set(objectsV1.QueryKeyLabels, parseFilterLabel(g.labels))
 	}
-	if g.service != "" && kind == manifest.KindSLO {
-		query.Set(objectsV1.QueryKeyServiceName, g.service)
+	if len(g.services) > 0 && kind == manifest.KindSLO {
+		query[objectsV1.QueryKeyServiceName] = g.services
 	}
 	header := http.Header{sdk.HeaderProject: []string{g.client.Config.Project}}
 	objects, err := g.client.Objects().V1().Get(ctx, kind, header, query)

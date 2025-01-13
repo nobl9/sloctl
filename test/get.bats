@@ -100,6 +100,11 @@ setup() {
   # Combine all filters.
   run_sloctl get slo -s deputy-office -p death-star newrelic-rolling-timeslices-threshold-deputy-office
   verify_get_success "$output" "$want"
+
+  # Multiple services.
+  want=$(read_files "${TEST_INPUTS}/slos.yaml")
+  run_sloctl get slo -s deputy-office -s destroyer -p death-star
+  verify_get_success "$output" "$want"
 }
 
 @test "budget adjustments" {
