@@ -80,14 +80,41 @@ setup() {
   test_get "SLO" "$aliases" "${TEST_INPUTS}/slos.yaml" "$output"
 }
 
+@test "slos filtered by service name" {
+  # Default project, no matches.
+  run_sloctl get slo -s deputy-office
+  assert_success_joined_output
+  assert_output "No resources found in 'default' project."
+
+  # Wrong name, no matches.
+  run_sloctl get slo -s deputy-office -p death-star newrelic-rolling-timeslices-threshold-deputy-home
+  assert_success_joined_output
+  assert_output "No resources found in 'death-star' project."
+
+  want=$(read_files "${TEST_OUTPUTS}/slo-by-service-name.yaml")
+  for flag_alias in "-s" "--service"; do
+    run_sloctl get slo "$flag_alias" deputy-office -p death-star
+    verify_get_success "$output" "$want"
+  done
+
+  # Combine all filters.
+  run_sloctl get slo -s deputy-office -p death-star newrelic-rolling-timeslices-threshold-deputy-office
+  verify_get_success "$output" "$want"
+
+  # Multiple services.
+  want=$(read_files "${TEST_INPUTS}/slos.yaml")
+  run_sloctl get slo -s deputy-office -s destroyer -p death-star
+  verify_get_success "$output" "$want"
+}
+
 @test "budget adjustments" {
   aliases="budgetadjustment budgetadjustments"
   test_get "BudgetAdjustment" "$aliases" "${TEST_INPUTS}/budgetadjustments.yaml" "$output"
 }
 
 @test "reports" {
-	aliases="report reports"
-	test_get "Report" "$aliases" "${TEST_INPUTS}/reports.yaml" "$output"
+  aliases="report reports"
+  test_get "Report" "$aliases" "${TEST_INPUTS}/reports.yaml" "$output"
 }
 
 @test "agent" {
