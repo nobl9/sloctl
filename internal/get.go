@@ -35,6 +35,7 @@ type GetCmd struct {
 	fieldSeparator  string
 	recordSeparator string
 	project         string
+	services        []string
 	allProjects     bool
 	out             io.Writer
 }
@@ -63,11 +64,10 @@ To get more details in output use one of the available flags.`,
 
 	// All subcommands for get.
 	for _, subCmd := range []struct {
-		Kind            manifest.Kind
-		Aliases         []string
-		Plural          string
-		Extender        func(cmd *cobra.Command) *cobra.Command
-		IsProjectScoped bool
+		Kind     manifest.Kind
+		Aliases  []string
+		Plural   string
+		Extender func(cmd *cobra.Command) *cobra.Command
 	}{
 		{Kind: manifest.KindAgent, Aliases: []string{"agent", "Agents", "Agent"}, Extender: get.newGetAgentCommand},
 		{Kind: manifest.KindAlertMethod},
@@ -80,7 +80,7 @@ To get more details in output use one of the available flags.`,
 		{Kind: manifest.KindProject},
 		{Kind: manifest.KindRoleBinding},
 		{Kind: manifest.KindService, Aliases: []string{"svc", "svcs"}},
-		{Kind: manifest.KindSLO},
+		{Kind: manifest.KindSLO, Extender: get.newGetSLOCommand},
 		{Kind: manifest.KindUserGroup},
 		{Kind: manifest.KindBudgetAdjustment},
 		{Kind: manifest.KindReport},
@@ -327,6 +327,11 @@ func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 	return cmd
 }
 
+func (g *GetCmd) newGetSLOCommand(cmd *cobra.Command) *cobra.Command {
+	cmd.Flags().StringArrayVarP(&g.services, "service", "s", nil, "Filter SLOs by service name.")
+	return cmd
+}
+
 func (g *GetCmd) getAgentsWithSecrets(ctx context.Context, objects []manifest.Object) ([]v1alpha.GenericObject, error) {
 	agents := make([]v1alpha.GenericObject, 0, len(objects))
 	var mu sync.Mutex
@@ -378,6 +383,9 @@ func (g *GetCmd) getObjects(ctx context.Context, args []string, kind manifest.Ki
 	query := url.Values{objectsV1.QueryKeyName: args}
 	if len(g.labels) > 0 {
 		query.Set(objectsV1.QueryKeyLabels, parseFilterLabel(g.labels))
+	}
+	if len(g.services) > 0 && kind == manifest.KindSLO {
+		query[objectsV1.QueryKeyServiceName] = g.services
 	}
 	header := http.Header{sdk.HeaderProject: []string{g.client.Config.Project}}
 	objects, err := g.client.Objects().V1().Get(ctx, kind, header, query)
