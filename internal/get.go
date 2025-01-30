@@ -257,8 +257,7 @@ func (g *GetCmd) newGetAlertCommand(cmd *cobra.Command) *cobra.Command {
 			return err
 		}
 		if len(objects) == 0 {
-			fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)
-			return nil
+			fmt.Fprintf(os.Stderr, "No resources found in '%s' project.\n", g.client.Config.Project)
 		}
 		if err = g.printObjects(objects); err != nil {
 			return err
@@ -395,9 +394,9 @@ func (g *GetCmd) getObjects(ctx context.Context, args []string, kind manifest.Ki
 	if len(objects) == 0 {
 		switch kind {
 		case manifest.KindProject, manifest.KindUserGroup, manifest.KindBudgetAdjustment, manifest.KindReport:
-			fmt.Printf("No resources found.\n")
+			fmt.Fprintf(os.Stderr, "No resources found.\n")
 		default:
-			fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)
+			fmt.Fprintf(os.Stderr, "No resources found in '%s' project.\n", g.client.Config.Project)
 		}
 		return nil, nil
 	}
