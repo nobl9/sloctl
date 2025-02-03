@@ -14,7 +14,6 @@ dist/
 
 # Code generation binaries
 bin/
-/sloctl
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
@@ -27,9 +26,3 @@ bin/
 node_modules/
 yarn.lock
 yarn-error.log
-
-# Other editor or OS-specific files we don't want to commit by accident!
-*~
-*.bak
-**/.envrc
-**/.DS_Store
