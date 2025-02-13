@@ -20,7 +20,8 @@ builds:
   binary: '{{ .ProjectName }}'
 
 archives:
-- format: binary
+- formats:
+    - binary
   name_template: '{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}'
 
 checksum:
