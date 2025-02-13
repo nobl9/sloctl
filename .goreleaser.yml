@@ -16,14 +16,15 @@ builds:
     - darwin
   goarch:
     - amd64
+    - arm64
   binary: '{{ .ProjectName }}'
 
 archives:
 - format: binary
-  name_template: '{{ .ProjectName }}-{{ if eq .Os "darwin" }}macos{{ else }}{{ .Os }}{{ end }}-{{ .Version }}'
+  name_template: '{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}'
 
 checksum:
-  name_template: '{{ .ProjectName }}-{{ .Version }}-SHA256SUMS'
+  name_template: '{{ .ProjectName }}-{{ .Version }}.sha256'
   algorithm: sha256
 
 release:
