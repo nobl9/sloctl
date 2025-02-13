@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
 # The install script is based off of the Apache 2.0 licensed script from Helm,
-# the Kubernetes resouce manager: https://github.com/helm/helm.
+# the Kubernetes resource manager: https://github.com/helm/helm.
 
-GITHUB_REPOSITORY="nobl9/sloctl"
+PROGRAM_NAME="sloctl"
+GITHUB_REPOSITORY="nobl9/$PROGRAM_NAME"
 
-: "${BINARY_NAME:="sloctl"}"
+: "${BINARY_NAME:=$PROGRAM_NAME}"
 : "${USE_SUDO:="true"}"
 : "${DEBUG:="false"}"
 : "${VERIFY_CHECKSUM:="true"}"
-: "${VERIFY_SIGNATURES:="false"}"
 : "${SLOCTL_INSTALL_DIR:="/usr/local/bin"}"
 
 HAS_CURL="$(type "curl" &>/dev/null && echo true || echo false)"
@@ -197,33 +197,48 @@ testVersion() {
   set -e
 }
 
-# help provides possible cli installation arguments
+# help provides possible cli installation arguments.
 help() {
-  echo "Accepted cli arguments are:"
-  echo -e "\t[--help|-h ] ->> prints this help"
-  echo -e "\t[--version|-v <desired_version>] . When not defined it fetches the latest release from GitHub"
-  echo -e "\te.g. --version v0.10.0"
-  echo -e "\t[--no-sudo]  ->> install without sudo"
+  local script_name
+  script_name=$(basename "$0")
+  cat >&2 <<EOF
+  Usage: ${script_name} [OPTS]
+An installer script for ${PROGRAM_NAME}!
+It can be used to both install the binary and upgrade an existing ${PROGRAM_NAME} version.
+OPTS:
+  -h, --help                          Print this message
+  --version, -v <desired_version>     When not defined it fetches the latest release from GitHub
+  --no-sudo                           Install without sudo
+ENV VARIABLES:
+  BINARY_NAME           Installed binary name, defaults to ${PROGRAM_NAME}
+  USE_SUDO              Whether to install with sudo, defaults to true
+  DEBUG                 Print additional debug information, defaults to false
+  VERIFY_CHECKSUM       Verify the SHA256 checksum of the binary, defaults to true
+  SLOCTL_INSTALL_DIR    Install directory, defaults to /usr/local/bin
+Examples:
+  SLOCTL_INSTALL_DIR=/home/me/go/bin ${script_name} --no-sudo --version=v0.10.0
+EOF
 }
 
+# cleanup temporary files.
 cleanup() {
   if [[ -d "${SLOCTL_TMP_ROOT:-}" ]]; then
     rm -rf "$SLOCTL_TMP_ROOT"
   fi
 }
 
-# Execution
+# Execution.
 
-#Stop execution on any error
+# Stop execution on any error.
 trap "fail_trap" EXIT
 set -e
 
-# Set debug if desired
+# Set debug if desired.
 if [ "${DEBUG}" == "true" ]; then
   set -x
 fi
 
-# Parsing input arguments (if any)
+# Parsing input arguments (if any).
 export INPUT_ARGUMENTS="${*}"
 set -u
 while [[ $# -gt 0 ]]; do
@@ -256,6 +271,7 @@ while [[ $# -gt 0 ]]; do
 done
 set +u
 
+# Run.
 initArch
 initOS
 verifySupported
