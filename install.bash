@@ -6,15 +6,22 @@
 PROGRAM_NAME="sloctl"
 GITHUB_REPOSITORY="nobl9/$PROGRAM_NAME"
 
-: "${BINARY_NAME:=$PROGRAM_NAME}"
-: "${USE_SUDO:="true"}"
-: "${DEBUG:="false"}"
-: "${VERIFY_CHECKSUM:="true"}"
-: "${SLOCTL_INSTALL_DIR:="/usr/local/bin"}"
+DESIRED_VERSION=""
+USE_SUDO="true"
+DEBUG="false"
+VERIFY_CHECKSUM="true"
+SLOCTL_INSTALL_DIR="/usr/local/bin"
 
 HAS_CURL="$(type "curl" &>/dev/null && echo true || echo false)"
 HAS_WGET="$(type "wget" &>/dev/null && echo true || echo false)"
 HAS_OPENSSL="$(type "openssl" &>/dev/null && echo true || echo false)"
+
+initVersion() {
+  if [[ "$DESIRED_VERSION" != "" ]] && [[ "$DESIRED_VERSION" != "v"* ]]; then
+    echo "Expected version arg ('${DESIRED_VERSION}') to begin with 'v', fixing..."
+    export DESIRED_VERSION="v${DESIRED_VERSION}"
+  fi
+}
 
 # initArch discovers the architecture for this system.
 initArch() {
@@ -98,9 +105,9 @@ checkLatestVersion() {
 # checkSloctlInstalledVersion checks which version of sloctl is installed and
 # if it needs to be changed.
 checkSloctlInstalledVersion() {
-  if [[ -f "${SLOCTL_INSTALL_DIR}/${BINARY_NAME}" ]]; then
+  if [[ -f "${SLOCTL_INSTALL_DIR}/${PROGRAM_NAME}" ]]; then
     local version
-    version=$("${SLOCTL_INSTALL_DIR}/${BINARY_NAME}" version)
+    version=$("${SLOCTL_INSTALL_DIR}/${PROGRAM_NAME}" version)
     if [[ $version =~ sloctl/([0-9]+\.[0-9]+\.[0-9]+) ]]; then
       version="${BASH_REMATCH[1]}"
     fi
@@ -119,19 +126,25 @@ checkSloctlInstalledVersion() {
 # downloadFile downloads the latest binary package and also the checksum
 # for that binary.
 downloadFile() {
-  SLOCTL_DIST="sloctl-$TAG-$OS-$ARCH"
+  VERSION="${TAG#v}"
+
+  SLOCTL_DIST="sloctl-$VERSION-$OS-$ARCH"
   DOWNLOAD_BASE_URL="https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG"
+
   DOWNLOAD_URL="$DOWNLOAD_BASE_URL/$SLOCTL_DIST"
-  CHECKSUM_URL="$DOWNLOAD_BASE_URL/sloctl-$TAG.sha256"
+  CHECKSUM_URL="$DOWNLOAD_BASE_URL/sloctl-$VERSION.sha256"
+
   SLOCTL_TMP_ROOT="$(mktemp -dt sloctl-installer-XXXXXX)"
   SLOCTL_TMP_BIN="$SLOCTL_TMP_ROOT/sloctl"
-  SLOCTL_SUM_FILE="$SLOCTL_TMP_ROOT/sloctl-$TAG.sha256"
+  SLOCTL_SUM_FILE="$SLOCTL_TMP_ROOT/sloctl-$VERSION.sha256"
+
   echo "Downloading $DOWNLOAD_URL"
   if [ "${HAS_CURL}" == "true" ]; then
     curl -SsL --fail "$DOWNLOAD_URL" -o "$SLOCTL_TMP_BIN"
   elif [ "${HAS_WGET}" == "true" ]; then
     wget -q -O "$SLOCTL_TMP_BIN" "$DOWNLOAD_URL"
   fi
+
   echo "Downloading checksum $CHECKSUM_URL"
   if [ "${HAS_CURL}" == "true" ]; then
     curl -SsL --fail "$CHECKSUM_URL" -o "$SLOCTL_SUM_FILE"
@@ -140,20 +153,11 @@ downloadFile() {
   fi
 }
 
-# verifyFile verifies the SHA256 checksum of the binary package
-# and the GPG signatures for both the package and checksum file
-# (depending on settings in environment).
-verifyFile() {
-  if [ "${VERIFY_CHECKSUM}" == "true" ]; then
-    verifyChecksum
-  fi
-}
-
 # installFile installs the sloctl binary.
 installFile() {
-  echo "Preparing to install $BINARY_NAME into ${SLOCTL_INSTALL_DIR}"
-  runAsRoot cp "$SLOCTL_TMP_BIN" "$SLOCTL_INSTALL_DIR/$BINARY_NAME"
-  echo "$BINARY_NAME installed into $SLOCTL_INSTALL_DIR/$BINARY_NAME"
+  echo "Preparing to install $PROGRAM_NAME into ${SLOCTL_INSTALL_DIR}"
+  runAsRoot cp "$SLOCTL_TMP_BIN" "$SLOCTL_INSTALL_DIR/$PROGRAM_NAME"
+  echo "$PROGRAM_NAME installed into $SLOCTL_INSTALL_DIR/$PROGRAM_NAME"
 }
 
 # verifyChecksum verifies the SHA256 checksum of the binary package.
@@ -162,7 +166,7 @@ verifyChecksum() {
   local actual_sum
   local expected_sum
   actual_sum=$(openssl sha1 -sha256 "${SLOCTL_TMP_BIN}" | awk '{print $2}')
-  expected_sum=$(cat "${SLOCTL_SUM_FILE}")
+  expected_sum=$(awk "/$SLOCTL_DIST/ {print \$1}" "${SLOCTL_SUM_FILE}")
   if [ "$actual_sum" != "$expected_sum" ]; then
     echo "SHA sum of ${SLOCTL_TMP_BIN} does not match. Aborting."
     exit 1
@@ -175,12 +179,12 @@ fail_trap() {
   result=$?
   if [ "$result" != "0" ]; then
     if [[ -n "$INPUT_ARGUMENTS" ]]; then
-      echo "Failed to install $BINARY_NAME with the arguments provided: $INPUT_ARGUMENTS"
+      echo -e "Failed to install $PROGRAM_NAME with the arguments provided: $INPUT_ARGUMENTS\n"
       help
     else
-      echo "Failed to install $BINARY_NAME"
+      echo "Failed to install $PROGRAM_NAME"
     fi
-    echo -e "\tFor support, go to https://github.com/nobl9/sloctl."
+    echo -e "\nFor support, go to https://github.com/nobl9/sloctl."
   fi
   cleanup
   exit $result
@@ -189,9 +193,9 @@ fail_trap() {
 # testVersion tests the installed client to make sure it is working.
 testVersion() {
   set +e
-  command -v "$BINARY_NAME"
+  command -v "$PROGRAM_NAME"
   if [ "$?" = "1" ]; then
-    echo "$BINARY_NAME not found. Is $SLOCTL_INSTALL_DIR on your '\$PATH?'"
+    echo "$PROGRAM_NAME not found. Is $SLOCTL_INSTALL_DIR on your '\$PATH?'"
     exit 1
   fi
   set -e
@@ -202,21 +206,20 @@ help() {
   local script_name
   script_name=$(basename "$0")
   cat >&2 <<EOF
-  Usage: ${script_name} [OPTS]
+Usage: ${script_name} [OPTS]
+
 An installer script for ${PROGRAM_NAME}!
 It can be used to both install the binary and upgrade an existing ${PROGRAM_NAME} version.
+
 OPTS:
-  -h, --help                          Print this message
-  --version, -v <desired_version>     When not defined it fetches the latest release from GitHub
-  --no-sudo                           Install without sudo
-ENV VARIABLES:
-  BINARY_NAME           Installed binary name, defaults to ${PROGRAM_NAME}
-  USE_SUDO              Whether to install with sudo, defaults to true
-  DEBUG                 Print additional debug information, defaults to false
-  VERIFY_CHECKSUM       Verify the SHA256 checksum of the binary, defaults to true
-  SLOCTL_INSTALL_DIR    Install directory, defaults to /usr/local/bin
+  -h, --help            Print this message
+  -v, --version         ${PROGRAM_NAME} version, when not defined it fetches the latest release from GitHub
+  -d, --dir             Install directory, defaults to /usr/local/bin
+  --no-sudo             Do not use sudo for installation
+  --no-verify-checksum  Do not verify the checksum of the binary
+  --debug               Print additional debug information
 Examples:
-  SLOCTL_INSTALL_DIR=/home/me/go/bin ${script_name} --no-sudo --version=v0.10.0
+  ${script_name} --no-sudo --version=v0.10.0 -d /home/me/go/bin
 EOF
 }
 
@@ -238,47 +241,76 @@ if [ "${DEBUG}" == "true" ]; then
   set -x
 fi
 
+# Normalize args.
+# Step 1: Preprocess arguments to split any --option=value pairs.
+normalized_args=()
+for arg in "$@"; do
+  if [[ $arg == --*=* ]]; then
+    # Split at the first '=': key gets the part before, value gets the part after.
+    normalized_args+=("${arg%%=*}" "${arg#*=}")
+  else
+    normalized_args+=("$arg")
+  fi
+done
+# Step 2: Reset the positional parameters with our normalized arguments.
+set -- "${normalized_args[@]}"
+
 # Parsing input arguments (if any).
 export INPUT_ARGUMENTS="${*}"
 set -u
-while [[ $# -gt 0 ]]; do
-  case $1 in
-  '--version' | -v)
+while (("$#")); do
+  case "$1" in
+  --version | -v)
     shift
     if [[ $# -ne 0 ]]; then
-      export DESIRED_VERSION="${1}"
+      DESIRED_VERSION="$1"
       if [[ "$1" != "v"* ]]; then
         echo "Expected version arg ('${DESIRED_VERSION}') to begin with 'v', fixing..."
-        export DESIRED_VERSION="v${1}"
+        DESIRED_VERSION="v${1}"
       fi
+      shift # Shift again to remove the version argument.
     else
-      echo -e "Please provide the desired version. e.g. --version v0.10.0"
+      echo "Please provide the desired version. e.g. --version v0.10.0"
       exit 0
     fi
     ;;
+  --dir | -d)
+    shift
+    SLOCTL_INSTALL_DIR="$1"
+    shift
+    ;;
   '--no-sudo')
     USE_SUDO="false"
+    ;;
+  '--no-verify-checksum')
+    VERIFY_CHECKSUM="false"
+    ;;
+  '--debug')
+    DEBUG="false"
     ;;
   '--help' | -h)
     help
     exit 0
     ;;
   *)
+    echo "Invalid option: $1"
     exit 1
     ;;
   esac
-  shift
 done
 set +u
 
 # Run.
+initVersion
 initArch
 initOS
 verifySupported
 checkLatestVersion
 if ! checkSloctlInstalledVersion; then
   downloadFile
-  verifyFile
+  if [ "${VERIFY_CHECKSUM}" == "true" ]; then
+    verifyChecksum
+  fi
   installFile
 fi
 testVersion
