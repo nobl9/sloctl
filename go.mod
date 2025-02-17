@@ -9,7 +9,7 @@ require (
 	github.com/nobl9/nobl9-go v0.95.0
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.18.0
-	github.com/spf13/cobra v1.9.0
+	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/sync v0.11.0
 )
