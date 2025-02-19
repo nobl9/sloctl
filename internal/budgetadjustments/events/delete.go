@@ -43,24 +43,26 @@ func NewDeleteCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 }
 
 func (g *DeleteCmd) run(cmd *cobra.Command) error {
-	data, err := readFile(g.filepath)
+	docs, err := getEventsStringsFromFile(g.filepath)
 	if err != nil {
-		return errors.Wrap(err, "failed to read input data")
-	}
-	body, err := yaml.YAMLToJSON(data)
-	if err != nil {
-		return errors.Wrap(err, "failed to convert input data to JSON")
+		return errors.Wrap(err, "failed to read events form file")
 	}
 
-	if _, err = DoRequest(
-		g.client,
-		cmd.Context(),
-		http.MethodPost,
-		fmt.Sprintf("%s/%s/events/delete", BudgetAdjustmentAPI, g.adjustment),
-		nil,
-		bytes.NewReader(body),
-	); err != nil {
-		return err
+	for _, doc := range docs {
+		jsonString, err := yaml.YAMLToJSON([]byte(doc))
+		if err != nil {
+			return errors.Wrap(err, "failed to convert input data to JSON")
+		}
+		if _, err = DoRequest(
+			g.client,
+			cmd.Context(),
+			http.MethodPost,
+			fmt.Sprintf("%s/%s/events/delete", BudgetAdjustmentAPI, g.adjustment),
+			nil,
+			bytes.NewReader(jsonString),
+		); err != nil {
+			return err
+		}
 	}
 
 	return nil

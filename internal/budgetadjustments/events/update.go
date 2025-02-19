@@ -43,25 +43,27 @@ func NewUpdateCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 }
 
 func (g *UpdateCmd) run(cmd *cobra.Command) error {
-	data, err := readFile(g.filepath)
+	docs, err := getEventsStringsFromFile(g.filepath)
 	if err != nil {
-		return errors.Wrap(err, "failed to read input data")
-	}
-	body, err := yaml.YAMLToJSON(data)
-	if err != nil {
-		return errors.Wrap(err, "failed to convert input data to JSON")
+		return errors.Wrap(err, "failed to read events form file")
 	}
 
-	_, err = DoRequest(
-		g.client,
-		cmd.Context(),
-		http.MethodPut,
-		fmt.Sprintf("%s/%s/events/update", BudgetAdjustmentAPI, g.adjustment),
-		nil,
-		bytes.NewReader(body),
-	)
-	if err != nil {
-		return err
+	for _, doc := range docs {
+		jsonString, err := yaml.YAMLToJSON([]byte(doc))
+		if err != nil {
+			return errors.Wrap(err, "failed to convert input data to JSON")
+		}
+		_, err = DoRequest(
+			g.client,
+			cmd.Context(),
+			http.MethodPut,
+			fmt.Sprintf("%s/%s/events/update", BudgetAdjustmentAPI, g.adjustment),
+			nil,
+			bytes.NewReader(jsonString),
+		)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
