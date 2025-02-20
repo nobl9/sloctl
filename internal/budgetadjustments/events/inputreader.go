@@ -28,7 +28,7 @@ func getEventsStringsFromFile(path string) ([]string, error) {
 func splitYAMLDocs(data []byte) []string {
 	re := regexp.MustCompile("(?m)^---$\n?")
 	split := re.Split(string(data), -1)
-	docs := make([]string, len(split))
+	docs := make([]string, 0, len(split))
 	for _, docStr := range split {
 		if len(docStr) < 1 {
 			continue
