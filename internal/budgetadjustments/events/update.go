@@ -49,7 +49,7 @@ func (g *UpdateCmd) run(cmd *cobra.Command) error {
 	}
 
 	for _, doc := range docs {
-		jsonString, err := yaml.YAMLToJSON([]byte(doc))
+		jsonBytes, err := yaml.YAMLToJSON([]byte(doc))
 		if err != nil {
 			return errors.Wrap(err, "failed to convert input data to JSON")
 		}
@@ -59,7 +59,7 @@ func (g *UpdateCmd) run(cmd *cobra.Command) error {
 			http.MethodPut,
 			fmt.Sprintf("%s/%s/events/update", BudgetAdjustmentAPI, g.adjustment),
 			nil,
-			bytes.NewReader(jsonString),
+			bytes.NewReader(jsonBytes),
 		)
 		if err != nil {
 			return err

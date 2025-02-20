@@ -49,7 +49,7 @@ func (g *DeleteCmd) run(cmd *cobra.Command) error {
 	}
 
 	for _, doc := range docs {
-		jsonString, err := yaml.YAMLToJSON([]byte(doc))
+		jsonBytes, err := yaml.YAMLToJSON([]byte(doc))
 		if err != nil {
 			return errors.Wrap(err, "failed to convert input data to JSON")
 		}
@@ -59,7 +59,7 @@ func (g *DeleteCmd) run(cmd *cobra.Command) error {
 			http.MethodPost,
 			fmt.Sprintf("%s/%s/events/delete", BudgetAdjustmentAPI, g.adjustment),
 			nil,
-			bytes.NewReader(jsonString),
+			bytes.NewReader(jsonBytes),
 		); err != nil {
 			return err
 		}

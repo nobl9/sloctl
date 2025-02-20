@@ -109,7 +109,7 @@ parent:
 ----
 ---
  ---
- --- 
+ ---
 `,
 			expected: []string{
 				"parent:\n  child: \"foo---bar\"",
