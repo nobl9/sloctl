@@ -2,7 +2,7 @@
 
 # The install script is based on the Apache 2.0 licensed script from Helm,
 # the Kubernetes resource manager: https://github.com/helm/helm.
-# Original script from Helm: 
+# Original script from Helm:
 #   https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
 
 PROGRAM_NAME="sloctl"
@@ -158,7 +158,7 @@ downloadFile() {
   fi
 }
 
-# installFile installs the prgoram binary.
+# installFile installs the program binary.
 installFile() {
   echo "Preparing to install ${PROGRAM_NAME} into ${PROGRAM_INSTALL_DIR}"
   runAsRoot cp "$PROGRAM_TMP_BIN" "${PROGRAM_INSTALL_DIR}/${PROGRAM_NAME}"
@@ -197,7 +197,7 @@ fail_trap() {
 
 # testVersion tests the installed client to make sure it is working.
 testVersion() {
-  if ! command -v "$PROGRAM_NAME" &> /dev/null; then
+  if ! command -v "$PROGRAM_NAME" &>/dev/null; then
     echo "${PROGRAM_NAME} not found. Is ${PROGRAM_INSTALL_DIR} on your '\$PATH?'"
     exit 1
   fi
