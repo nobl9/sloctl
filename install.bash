@@ -5,6 +5,7 @@
 
 PROGRAM_NAME="sloctl"
 GITHUB_REPOSITORY="nobl9/$PROGRAM_NAME"
+VERSION_CMD="version"
 
 DESIRED_VERSION=""
 USE_SUDO="true"
@@ -81,44 +82,46 @@ verifySupported() {
 
 # checkLatestVersion checks if the desired version is available.
 checkLatestVersion() {
-  if [ "$DESIRED_VERSION" == "" ]; then
-    # Get tag from release URL
-    local latest_release_url="https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest"
-    local response=""
-    if [ "${HAS_CURL}" == "true" ]; then
-      response=$(curl -L --silent --show-error --fail "$latest_release_url" 2>&1 || true)
-    elif [ "${HAS_WGET}" == "true" ]; then
-      response=$(wget "$latest_release_url" -q -O - 2>&1 || true)
-    fi
-    if [[ $response =~ \"tag_name\":\ \"([^\"]+)\" ]]; then
-      TAG="${BASH_REMATCH[1]}"
-    fi
-    if [ "$TAG" == "" ]; then
-      printf "Could not retrieve the latest release tag information from %s: %s\n" "${latest_release_url}" "${response}"
-      exit 1
-    fi
-  else
+  if [ "$DESIRED_VERSION" != "" ]; then
     TAG=$DESIRED_VERSION
+    return 0
+  fi
+  # Get tag from release URL
+  local latest_release_url="https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest"
+  local response=""
+  if [ "${HAS_CURL}" == "true" ]; then
+    response=$(curl -L --silent --show-error --fail "$latest_release_url" 2>&1 || true)
+  elif [ "${HAS_WGET}" == "true" ]; then
+    response=$(wget "$latest_release_url" -q -O - 2>&1 || true)
+  fi
+  if [[ $response =~ \"tag_name\":\ \"([^\"]+)\" ]]; then
+    TAG="${BASH_REMATCH[1]}"
+  fi
+  if [ "$TAG" == "" ]; then
+    printf "Could not retrieve the latest release tag information from %s: %s\n" "${latest_release_url}" "${response}"
+    exit 1
   fi
 }
 
 # checkInstalledVersion checks which version of program is installed and
 # if it needs to be changed.
 checkInstalledVersion() {
-  if [[ -f "${PROGRAM_INSTALL_DIR}/${PROGRAM_NAME}" ]]; then
-    local version
-    version=$("${PROGRAM_INSTALL_DIR}/${PROGRAM_NAME}" version)
-    if [[ $version =~ "${PROGRAM_NAME}"/([0-9]+\.[0-9]+\.[0-9]+) ]]; then
-      version="${BASH_REMATCH[1]}"
-    fi
-    if [[ "$version" == "$TAG" ]]; then
-      echo "${PROGRAM_NAME} ${version} is already ${DESIRED_VERSION:-latest}"
-      return 0
-    else
-      echo "${PROGRAM_NAME} ${TAG} is available. Changing from version ${version}."
-      return 1
-    fi
+  if ! [[ -f "${PROGRAM_INSTALL_DIR}/${PROGRAM_NAME}" ]]; then
+    return 1
+  fi
+  local version
+  version=$("${PROGRAM_INSTALL_DIR}/${PROGRAM_NAME}" "$VERSION_CMD")
+  # Remove the program name before the first '/'.
+  version="${version#*/}"
+  # Remove the segment after the last '-' (git revision).
+  version="${version%-*}"
+  # Remove the segment after the second last '-' (git branch).
+  version="${version%-*}"
+  if [[ "v${version}" == "$TAG" ]]; then
+    echo "${PROGRAM_NAME} ${version} is already installed, skipping installation"
+    return 0
   else
+    echo "${PROGRAM_NAME} ${TAG} is available. Changing from version ${version}."
     return 1
   fi
 }
@@ -192,13 +195,10 @@ fail_trap() {
 
 # testVersion tests the installed client to make sure it is working.
 testVersion() {
-  set +e
-  command -v "$PROGRAM_NAME"
-  if [ "$?" = "1" ]; then
+  if ! command -v "$PROGRAM_NAME" &> /dev/null; then
     echo "${PROGRAM_NAME} not found. Is ${PROGRAM_INSTALL_DIR} on your '\$PATH?'"
     exit 1
   fi
-  set -e
 }
 
 # help provides possible cli installation arguments.
@@ -280,12 +280,15 @@ while (("$#")); do
     shift
     ;;
   '--no-sudo')
+    shift
     USE_SUDO="false"
     ;;
   '--no-verify-checksum')
+    shift
     VERIFY_CHECKSUM="false"
     ;;
   '--debug')
+    shift
     DEBUG="false"
     ;;
   '--help' | -h)
