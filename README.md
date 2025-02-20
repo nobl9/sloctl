@@ -52,6 +52,30 @@ If you want to learn how to fully tame the sloctl's potential, see
 
 ## Install
 
+### Script
+
+The script requires bash and a minimal set of GNU utilities.
+On Windows it will work with either MinGW or Cygwin.
+You can either pipe it directly into bash or download the file and run it manually.
+
+```bash
+# Using curl:
+curl -fsSL https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash | bash
+
+# On systems where curl is not available:
+wget -O - -q https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash | bash
+
+# If you prefer to first download the script, inspect it and then run it:
+curl -fsSL -o install.bash https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash
+# Or with wget:
+wget -O install.bash -q https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash
+# Once downloaded, set execution permissions:
+chmod 700 install.bash
+# The script is well documented and comes with additional options.
+# You can display the help message by running:
+./install.bash --help
+```
+
 ### Prebuilt Binaries
 
 The binaries are available at

@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
-# The install script is based off of the Apache 2.0 licensed script from Helm,
+# The install script is based on the Apache 2.0 licensed script from Helm,
 # the Kubernetes resource manager: https://github.com/helm/helm.
+# Original script from Helm: 
+#   https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
 
 PROGRAM_NAME="sloctl"
 GITHUB_REPOSITORY="nobl9/$PROGRAM_NAME"
@@ -277,7 +279,7 @@ while (("$#")); do
   --dir | -d)
     shift
     PROGRAM_INSTALL_DIR="$1"
-    shift
+    shift # Shift again to remove the directory argument.
     ;;
   '--no-sudo')
     shift
