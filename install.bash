@@ -10,7 +10,7 @@ DESIRED_VERSION=""
 USE_SUDO="true"
 DEBUG="false"
 VERIFY_CHECKSUM="true"
-SLOCTL_INSTALL_DIR="/usr/local/bin"
+PROGRAM_INSTALL_DIR="/usr/local/bin"
 
 HAS_CURL="$(type "curl" &>/dev/null && echo true || echo false)"
 HAS_WGET="$(type "wget" &>/dev/null && echo true || echo false)"
@@ -61,9 +61,9 @@ runAsRoot() {
 # binary builds, as well whether or not necessary tools are present.
 verifySupported() {
   local supported="darwin-amd64\ndarwin-arm64\nlinux-amd64\nlinux-arm64\nwindows-amd64\nwindows-arm64"
-  if ! echo "${supported}" | grep -q "${OS}-${ARCH}"; then
+  if ! echo "$supported" | grep -q "${OS}-${ARCH}"; then
     echo "No prebuilt binary for ${OS}-${ARCH}."
-    echo "To build from source, go to https://github.com/$GITHUB_REPOSITORY"
+    echo "To build from source, go to https://github.com/${GITHUB_REPOSITORY}"
     exit 1
   fi
 
@@ -74,7 +74,7 @@ verifySupported() {
 
   if [ "${VERIFY_CHECKSUM}" == "true" ] && [ "${HAS_OPENSSL}" != "true" ]; then
     echo "In order to verify checksum, openssl must first be installed."
-    echo "Please install openssl or set VERIFY_CHECKSUM=false in your environment."
+    echo "Please install openssl or set --no-verify-checksum flag."
     exit 1
   fi
 }
@@ -83,7 +83,7 @@ verifySupported() {
 checkLatestVersion() {
   if [ "$DESIRED_VERSION" == "" ]; then
     # Get tag from release URL
-    local latest_release_url="https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest"
+    local latest_release_url="https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest"
     local response=""
     if [ "${HAS_CURL}" == "true" ]; then
       response=$(curl -L --silent --show-error --fail "$latest_release_url" 2>&1 || true)
@@ -102,20 +102,20 @@ checkLatestVersion() {
   fi
 }
 
-# checkSloctlInstalledVersion checks which version of sloctl is installed and
+# checkInstalledVersion checks which version of program is installed and
 # if it needs to be changed.
-checkSloctlInstalledVersion() {
-  if [[ -f "${SLOCTL_INSTALL_DIR}/${PROGRAM_NAME}" ]]; then
+checkInstalledVersion() {
+  if [[ -f "${PROGRAM_INSTALL_DIR}/${PROGRAM_NAME}" ]]; then
     local version
-    version=$("${SLOCTL_INSTALL_DIR}/${PROGRAM_NAME}" version)
-    if [[ $version =~ sloctl/([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+    version=$("${PROGRAM_INSTALL_DIR}/${PROGRAM_NAME}" version)
+    if [[ $version =~ "${PROGRAM_NAME}"/([0-9]+\.[0-9]+\.[0-9]+) ]]; then
       version="${BASH_REMATCH[1]}"
     fi
     if [[ "$version" == "$TAG" ]]; then
-      echo "Sloctl ${version} is already ${DESIRED_VERSION:-latest}"
+      echo "${PROGRAM_NAME} ${version} is already ${DESIRED_VERSION:-latest}"
       return 0
     else
-      echo "Sloctl ${TAG} is available. Changing from version ${version}."
+      echo "${PROGRAM_NAME} ${TAG} is available. Changing from version ${version}."
       return 1
     fi
   else
@@ -123,41 +123,41 @@ checkSloctlInstalledVersion() {
   fi
 }
 
-# downloadFile downloads the latest binary package and also the checksum
+# downloadFile downloads the latest program package and also the checksum
 # for that binary.
 downloadFile() {
   VERSION="${TAG#v}"
 
-  SLOCTL_DIST="sloctl-$VERSION-$OS-$ARCH"
-  DOWNLOAD_BASE_URL="https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG"
+  PROGRAM_DIST="${PROGRAM_NAME}-${VERSION}-${OS}-${ARCH}"
+  DOWNLOAD_BASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/$TAG"
 
-  DOWNLOAD_URL="$DOWNLOAD_BASE_URL/$SLOCTL_DIST"
-  CHECKSUM_URL="$DOWNLOAD_BASE_URL/sloctl-$VERSION.sha256"
+  DOWNLOAD_URL="${DOWNLOAD_BASE_URL}/${PROGRAM_DIST}"
+  CHECKSUM_URL="${DOWNLOAD_BASE_URL}/${PROGRAM_NAME}-${VERSION}.sha256"
 
-  SLOCTL_TMP_ROOT="$(mktemp -dt sloctl-installer-XXXXXX)"
-  SLOCTL_TMP_BIN="$SLOCTL_TMP_ROOT/sloctl"
-  SLOCTL_SUM_FILE="$SLOCTL_TMP_ROOT/sloctl-$VERSION.sha256"
+  PROGRAM_TMP_ROOT="$(mktemp -dt "${PROGRAM_NAME}-installer-XXXXXX")"
+  PROGRAM_TMP_BIN="${PROGRAM_TMP_ROOT}/${PROGRAM_NAME}"
+  PROGRAM_SUM_FILE="${PROGRAM_TMP_ROOT}/${PROGRAM_NAME}-${VERSION}.sha256"
 
-  echo "Downloading $DOWNLOAD_URL"
-  if [ "${HAS_CURL}" == "true" ]; then
-    curl -SsL --fail "$DOWNLOAD_URL" -o "$SLOCTL_TMP_BIN"
-  elif [ "${HAS_WGET}" == "true" ]; then
-    wget -q -O "$SLOCTL_TMP_BIN" "$DOWNLOAD_URL"
+  echo "Downloading ${DOWNLOAD_URL}"
+  if [ "$HAS_CURL" == "true" ]; then
+    curl -SsL --fail "$DOWNLOAD_URL" -o "$PROGRAM_TMP_BIN"
+  elif [ "$HAS_WGET" == "true" ]; then
+    wget -q -O "$PROGRAM_TMP_BIN" "$DOWNLOAD_URL"
   fi
 
   echo "Downloading checksum $CHECKSUM_URL"
-  if [ "${HAS_CURL}" == "true" ]; then
-    curl -SsL --fail "$CHECKSUM_URL" -o "$SLOCTL_SUM_FILE"
-  elif [ "${HAS_WGET}" == "true" ]; then
-    wget -q -O "$SLOCTL_SUM_FILE" "$CHECKSUM_URL"
+  if [ "$HAS_CURL" == "true" ]; then
+    curl -SsL --fail "$CHECKSUM_URL" -o "$PROGRAM_SUM_FILE"
+  elif [ "$HAS_WGET" == "true" ]; then
+    wget -q -O "$PROGRAM_SUM_FILE" "$CHECKSUM_URL"
   fi
 }
 
-# installFile installs the sloctl binary.
+# installFile installs the prgoram binary.
 installFile() {
-  echo "Preparing to install $PROGRAM_NAME into ${SLOCTL_INSTALL_DIR}"
-  runAsRoot cp "$SLOCTL_TMP_BIN" "$SLOCTL_INSTALL_DIR/$PROGRAM_NAME"
-  echo "$PROGRAM_NAME installed into $SLOCTL_INSTALL_DIR/$PROGRAM_NAME"
+  echo "Preparing to install ${PROGRAM_NAME} into ${PROGRAM_INSTALL_DIR}"
+  runAsRoot cp "$PROGRAM_TMP_BIN" "${PROGRAM_INSTALL_DIR}/${PROGRAM_NAME}"
+  echo "${PROGRAM_NAME} installed into ${PROGRAM_INSTALL_DIR}/${PROGRAM_NAME}"
 }
 
 # verifyChecksum verifies the SHA256 checksum of the binary package.
@@ -165,10 +165,10 @@ verifyChecksum() {
   printf "Verifying checksum... "
   local actual_sum
   local expected_sum
-  actual_sum=$(openssl sha1 -sha256 "${SLOCTL_TMP_BIN}" | awk '{print $2}')
-  expected_sum=$(awk "/$SLOCTL_DIST/ {print \$1}" "${SLOCTL_SUM_FILE}")
+  actual_sum=$(openssl sha1 -sha256 "$PROGRAM_TMP_BIN" | awk '{print $2}')
+  expected_sum=$(awk "/${PROGRAM_DIST}/ {print \$1}" "$PROGRAM_SUM_FILE")
   if [ "$actual_sum" != "$expected_sum" ]; then
-    echo "SHA sum of ${SLOCTL_TMP_BIN} does not match. Aborting."
+    echo "SHA sum of ${PROGRAM_TMP_BIN} does not match. Aborting."
     exit 1
   fi
   echo "Done."
@@ -179,12 +179,12 @@ fail_trap() {
   result=$?
   if [ "$result" != "0" ]; then
     if [[ -n "$INPUT_ARGUMENTS" ]]; then
-      echo -e "Failed to install $PROGRAM_NAME with the arguments provided: $INPUT_ARGUMENTS\n"
+      echo -e "Failed to install ${PROGRAM_NAME} with the arguments provided: ${INPUT_ARGUMENTS}\n"
       help
     else
-      echo "Failed to install $PROGRAM_NAME"
+      echo "Failed to install ${PROGRAM_NAME}"
     fi
-    echo -e "\nFor support, go to https://github.com/nobl9/sloctl."
+    echo -e "\nFor support, go to https://github.com/${GITHUB_REPOSITORY}."
   fi
   cleanup
   exit $result
@@ -195,7 +195,7 @@ testVersion() {
   set +e
   command -v "$PROGRAM_NAME"
   if [ "$?" = "1" ]; then
-    echo "$PROGRAM_NAME not found. Is $SLOCTL_INSTALL_DIR on your '\$PATH?'"
+    echo "${PROGRAM_NAME} not found. Is ${PROGRAM_INSTALL_DIR} on your '\$PATH?'"
     exit 1
   fi
   set -e
@@ -209,7 +209,7 @@ help() {
 Usage: ${script_name} [OPTS]
 
 An installer script for ${PROGRAM_NAME}!
-It can be used to both install the binary and upgrade an existing ${PROGRAM_NAME} version.
+It can be used to both install ${PROGRAM_NAME} for the first time and upgrade an existing version.
 
 OPTS:
   -h, --help            Print this message
@@ -225,8 +225,8 @@ EOF
 
 # cleanup temporary files.
 cleanup() {
-  if [[ -d "${SLOCTL_TMP_ROOT:-}" ]]; then
-    rm -rf "$SLOCTL_TMP_ROOT"
+  if [[ -d "${PROGRAM_TMP_ROOT:-}" ]]; then
+    rm -rf "$PROGRAM_TMP_ROOT"
   fi
 }
 
@@ -237,7 +237,7 @@ trap "fail_trap" EXIT
 set -e
 
 # Set debug if desired.
-if [ "${DEBUG}" == "true" ]; then
+if [ "$DEBUG" == "true" ]; then
   set -x
 fi
 
@@ -276,7 +276,7 @@ while (("$#")); do
     ;;
   --dir | -d)
     shift
-    SLOCTL_INSTALL_DIR="$1"
+    PROGRAM_INSTALL_DIR="$1"
     shift
     ;;
   '--no-sudo')
@@ -306,9 +306,9 @@ initArch
 initOS
 verifySupported
 checkLatestVersion
-if ! checkSloctlInstalledVersion; then
+if ! checkInstalledVersion; then
   downloadFile
-  if [ "${VERIFY_CHECKSUM}" == "true" ]; then
+  if [ "$VERIFY_CHECKSUM" == "true" ]; then
     verifyChecksum
   fi
   installFile
