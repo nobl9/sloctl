@@ -76,12 +76,13 @@ chmod 700 install.bash
 ./install.bash --help
 ```
 
-*NOTE:* If you install sloctl outside of your PATH you must also
-change its permissions for the binary to be executable!
-
-```bash
-chmod +x <PATH_TO_SLOCTL>
-```
+> [!NOTE]
+> If you install sloctl outside of your PATH you must also
+> change its permissions for the binary to be executable!
+>
+> ```bash
+> chmod +x <PATH_TO_SLOCTL>
+> ```
 
 ### Prebuilt Binaries
 
