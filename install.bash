@@ -167,7 +167,8 @@ downloadFile() {
 installFile() {
   local destination="${PROGRAM_INSTALL_DIR}/${PROGRAM_NAME}${PROGRAM_EXTENSION}"
   echo "Preparing to install ${PROGRAM_NAME} into ${PROGRAM_INSTALL_DIR}"
-  runAsRoot cp "$PROGRAM_TMP_BIN" "$destination" 
+  runAsRoot cp "$PROGRAM_TMP_BIN" "$destination"
+  runAsRoot chmod +x "$destination"
   echo "${PROGRAM_NAME} installed into ${destination}"
 }
 
@@ -284,7 +285,7 @@ while (("$#")); do
     ;;
   --dir | -d)
     shift
-    PROGRAM_INSTALL_DIR="$1"
+    PROGRAM_INSTALL_DIR="${1%/}" # Remove extra slash from the path if present.
     shift # Shift again to remove the directory argument.
     ;;
   '--no-sudo')
