@@ -14,6 +14,7 @@ USE_SUDO="true"
 DEBUG="false"
 VERIFY_CHECKSUM="true"
 PROGRAM_INSTALL_DIR="/usr/local/bin"
+PROGRAM_EXTENSION=""
 
 HAS_CURL="$(type "curl" &>/dev/null && echo true || echo false)"
 HAS_WGET="$(type "wget" &>/dev/null && echo true || echo false)"
@@ -49,6 +50,10 @@ initOS() {
   # Minimalist GNU for Windows
   mingw* | cygwin*) OS='windows' ;;
   esac
+
+  if [[ "$OS" == "windows" ]]; then
+    PROGRAM_EXTENSION=".exe"
+  fi
 }
 
 # runs the given command as root (detects if we are root already)
@@ -133,14 +138,14 @@ checkInstalledVersion() {
 downloadFile() {
   VERSION="${TAG#v}"
 
-  PROGRAM_DIST="${PROGRAM_NAME}-${VERSION}-${OS}-${ARCH}"
+  PROGRAM_DIST="${PROGRAM_NAME}-${VERSION}-${OS}-${ARCH}${PROGRAM_EXTENSION}"
   DOWNLOAD_BASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/$TAG"
 
   DOWNLOAD_URL="${DOWNLOAD_BASE_URL}/${PROGRAM_DIST}"
   CHECKSUM_URL="${DOWNLOAD_BASE_URL}/${PROGRAM_NAME}-${VERSION}.sha256"
 
   PROGRAM_TMP_ROOT="$(mktemp -dt "${PROGRAM_NAME}-installer-XXXXXX")"
-  PROGRAM_TMP_BIN="${PROGRAM_TMP_ROOT}/${PROGRAM_NAME}"
+  PROGRAM_TMP_BIN="${PROGRAM_TMP_ROOT}/${PROGRAM_NAME}${PROGRAM_EXTENSION}"
   PROGRAM_SUM_FILE="${PROGRAM_TMP_ROOT}/${PROGRAM_NAME}-${VERSION}.sha256"
 
   echo "Downloading ${DOWNLOAD_URL}"
@@ -160,9 +165,10 @@ downloadFile() {
 
 # installFile installs the program binary.
 installFile() {
+  local destination="${PROGRAM_INSTALL_DIR}/${PROGRAM_NAME}${PROGRAM_EXTENSION}"
   echo "Preparing to install ${PROGRAM_NAME} into ${PROGRAM_INSTALL_DIR}"
-  runAsRoot cp "$PROGRAM_TMP_BIN" "${PROGRAM_INSTALL_DIR}/${PROGRAM_NAME}"
-  echo "${PROGRAM_NAME} installed into ${PROGRAM_INSTALL_DIR}/${PROGRAM_NAME}"
+  runAsRoot cp "$PROGRAM_TMP_BIN" "$destination" 
+  echo "${PROGRAM_NAME} installed into ${destination}"
 }
 
 # verifyChecksum verifies the SHA256 checksum of the binary package.
