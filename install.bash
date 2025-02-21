@@ -150,16 +150,16 @@ downloadFile() {
 
   echo "Downloading ${DOWNLOAD_URL}"
   if [ "$HAS_CURL" == "true" ]; then
-    curl -SsL --fail "$DOWNLOAD_URL" -o "$PROGRAM_TMP_BIN"
+    curl -SsL --fail "$DOWNLOAD_URL" -o - > "$PROGRAM_TMP_BIN"
   elif [ "$HAS_WGET" == "true" ]; then
-    wget -q -O "$PROGRAM_TMP_BIN" "$DOWNLOAD_URL"
+    wget -q -O - "$DOWNLOAD_URL" > "$PROGRAM_TMP_BIN"
   fi
 
   echo "Downloading checksum $CHECKSUM_URL"
   if [ "$HAS_CURL" == "true" ]; then
-    curl -SsL --fail "$CHECKSUM_URL" -o "$PROGRAM_SUM_FILE"
+    curl -SsL --fail "$CHECKSUM_URL" -o - > "$PROGRAM_SUM_FILE"
   elif [ "$HAS_WGET" == "true" ]; then
-    wget -q -O "$PROGRAM_SUM_FILE" "$CHECKSUM_URL"
+    wget -q -O - "$CHECKSUM_URL" > "$PROGRAM_SUM_FILE"
   fi
 }
 
