@@ -50,7 +50,7 @@ brews:
       assert_predicate bin/"{{ .ProjectName }}", :exist?
       system "{{ .ProjectName }}", "--help"
     install: |
-      bin.install Dir['{{ .ProjectName }}-*-{{ .Version }}'].first()  => "{{ .ProjectName }}"
+      bin.install Dir['{{ .ProjectName }}-{{ .Version }}-*'].first()  => "{{ .ProjectName }}"
     caveats: |
       Thank you for installing the command-line client for Nobl9!
 
