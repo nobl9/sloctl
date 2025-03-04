@@ -28,6 +28,7 @@ ignorePaths:
   - "**/test_data/**"
   - dist/**
 words:
+  - armv
   - distroless
   - dynatrace
   - endef
