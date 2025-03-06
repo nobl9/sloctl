@@ -9,6 +9,6 @@ WORKDIR /sloctl
 COPY ./test ./test
 COPY --from=sloctl-e2e-test-bin /usr/bin/sloctl /usr/bin/sloctl
 
-ENV SLOCTL_NO_CONFIG_FILE=true
+ENV SLOCTL_NO_CONFIG_FILE=false
 # Required for bats pretty printing.
 ENV TERM=linux
