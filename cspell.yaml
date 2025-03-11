@@ -29,6 +29,7 @@ ignorePaths:
   - dist/**
 words:
   - armv
+  - devel
   - distroless
   - dynatrace
   - endef

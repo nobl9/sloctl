@@ -30,6 +30,9 @@ checksum:
 
 release:
   make_latest: false
+  draft: true
+  replace_existing_draft: false
+  prerelease: auto
   github:
     owner: nobl9
     name: sloctl
