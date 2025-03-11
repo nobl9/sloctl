@@ -64,6 +64,10 @@ build:
 docker:
 	$(call _build_docker,sloctl,$(VERSION),$(BRANCH),$(REVISION))
 
+.PHONY: test
+## Run all tests.
+test: test/unit test/e2e
+
 .PHONY: test/unit test/go/unit test/bats/%
 ## Run all unit tests.
 test/unit: test/go/unit test/bats/unit
