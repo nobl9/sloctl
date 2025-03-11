@@ -3,6 +3,7 @@ package internal
 import (
 	_ "embed"
 	"fmt"
+	"runtime/debug"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -16,6 +17,17 @@ func NewVersionCmd() *cobra.Command {
 		Use:   versionCmdName,
 		Short: "Print the sloctl version",
 		Run: func(*cobra.Command, []string) {
+			if bi, ok := debug.ReadBuildInfo(); ok {
+				fmt.Printf("Path: %s\n", bi.Path)
+				fmt.Printf("GoVersion: %s\n", bi.GoVersion)
+				fmt.Printf("Version: %s\n", bi.Main.Version)
+				fmt.Printf("Version: %s\n", bi.Main.Sum)
+				for i, setting := range bi.Settings {
+					fmt.Printf("Setting [%d]: %s = %s\n", i, setting.Key, setting.Value)
+				}
+			} else {
+				fmt.Println("No build info available")
+			}
 			fmt.Println(getUserAgent())
 		},
 	}
