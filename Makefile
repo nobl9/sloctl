@@ -7,7 +7,7 @@ APP_NAME := sloctl
 VERSION_PKG := "$(shell go list -m)/internal"
 
 ifndef VERSION
-  VERSION := $(shell ./scripts/find-latest-version.sh)
+  VERSION := $(shell ./scripts/get-test-version.sh)
 endif
 ifndef BRANCH
   BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
