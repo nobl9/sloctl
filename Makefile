@@ -6,15 +6,9 @@ TEST_DIR := ./test
 APP_NAME := sloctl
 VERSION_PKG := "$(shell go list -m)/internal"
 
-ifndef VERSION
-  VERSION := $(shell ./scripts/get-test-version.sh)
-endif
-ifndef BRANCH
-  BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
-endif
-ifndef REVISION
-  REVISION := $(shell git rev-parse --short=8 HEAD)
-endif
+VERSION ?= 1.0.0-test
+BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
+REVISION ?= $(shell git rev-parse --short=8 HEAD)
 
 LDFLAGS := -s -w \
 	-X $(VERSION_PKG).BuildVersion=$(VERSION) \
