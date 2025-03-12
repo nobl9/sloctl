@@ -4,15 +4,22 @@ MAKEFLAGS += --silent --no-print-directory
 BIN_DIR := ./bin
 TEST_DIR := ./test
 APP_NAME := sloctl
-LDFLAGS += -s -w
 VERSION_PKG := "$(shell go list -m)/internal"
 
+ifndef VERSION
+  VERSION := $(shell ./scripts/find-latest-version.sh)
+endif
 ifndef BRANCH
   BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 endif
 ifndef REVISION
   REVISION := $(shell git rev-parse --short=8 HEAD)
 endif
+
+LDFLAGS := -s -w \
+	-X $(VERSION_PKG).BuildVersion=$(VERSION) \
+	-X $(VERSION_PKG).BuildGitBranch=$(BRANCH) \
+	-X $(VERSION_PKG).BuildGitRevision=$(REVISION)
 
 # renovate datasource=github-releases depName=securego/gosec
 GOSEC_VERSION := v2.22.2
@@ -58,6 +65,11 @@ endef
 ## Build sloctl binary.
 build:
 	go build -ldflags="$(LDFLAGS)" -o $(BIN_DIR)/$(APP_NAME) ./cmd/$(APP_NAME)/
+
+.PHONY: install
+## Install sloctl binary.
+install:
+	go install -ldflags="$(LDFLAGS)" ./cmd/$(APP_NAME)/
 
 .PHONY: docker
 ## Build sloctl Docker image.
@@ -189,9 +201,9 @@ format/cspell:
 	$(call _ensure_installed,yarn,yaml)
 	yarn --silent format-cspell-config
 
-.PHONY: install install/yarn install/golangci-lint install/gosec install/govulncheck install/goimports
+.PHONY: install/tools install/yarn install/golangci-lint install/gosec install/govulncheck install/goimports
 ## Install all dev dependencies.
-install: install/yarn install/golangci-lint install/gosec install/govulncheck install/goimports
+install/tools: install/yarn install/golangci-lint install/gosec install/govulncheck install/goimports
 
 ## Install JS dependencies with yarn.
 install/yarn:
