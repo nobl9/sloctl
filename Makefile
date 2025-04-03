@@ -37,8 +37,7 @@ define _install_go_binary
 	GOBIN=$(realpath $(BIN_DIR)) go install "${1}"
 endef
 
-# Print Makefile target step description for check.
-# Only print top level steps this way, and not dependent steps, like 'install'.
+# Print Makefile target step description.
 # ${1} - step description
 define _print_step
 	printf -- '------\n%s...\n' "${1}"
@@ -58,16 +57,19 @@ endef
 .PHONY: build
 ## Build sloctl binary.
 build:
+	$(call _print_step,Building sloctl binary)
 	go build -ldflags="$(LDFLAGS)" -o $(BIN_DIR)/$(APP_NAME) ./cmd/$(APP_NAME)/
 
 .PHONY: install
 ## Install sloctl binary.
 install:
+	$(call _print_step,Installing sloctl binary)
 	go install -ldflags="$(LDFLAGS)" ./cmd/$(APP_NAME)/
 
 .PHONY: docker
 ## Build sloctl Docker image.
 docker:
+	$(call _print_step,Building sloctl Docker image)
 	$(call _build_docker,sloctl,$(VERSION),$(BRANCH),$(REVISION))
 
 .PHONY: test
