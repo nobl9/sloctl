@@ -4,7 +4,7 @@ apiVersion: openslo/v1
 kind: Service
 metadata:
   annotations:
-    nobl9.com/metadata.project: my-project 
+    nobl9.com/metadata.project: my-project
   name: example-service
 spec:
   description: Example service description
