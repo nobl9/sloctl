@@ -78,12 +78,15 @@ func (c ConvertCmd) convertOpenSLO(cmd *cobra.Command) error {
 
 func (c ConvertCmd) convertOpenSLODefinitions(cmd *cobra.Command) ([]manifest.Object, error) {
 	containsStdin := false
-	for i := range c.definitionPaths {
-		if c.definitionPaths[i] == "" || c.definitionPaths[i] == "-" {
-			c.definitionPaths = append(c.definitionPaths[:i], c.definitionPaths[i+1:]...)
+	filteredPaths := make([]string, 0, len(c.definitionPaths))
+	for _, path := range c.definitionPaths {
+		if path == "" || path == "-" {
 			containsStdin = true
+			continue
 		}
+		filteredPaths = append(filteredPaths, path)
 	}
+	c.definitionPaths = filteredPaths
 	sources, err := sdk.ResolveObjectSources(c.definitionPaths...)
 	if err != nil {
 		return nil, err
