@@ -4,10 +4,8 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
-	"os"
 
 	"github.com/nobl9/nobl9-go/sdk"
 	"github.com/pkg/errors"
@@ -20,10 +18,7 @@ import (
 
 type GetCmd struct {
 	client           *sdk.Client
-	outputFormat     string
-	fieldSeparator   string
-	recordSeparator  string
-	out              io.Writer
+	printer          *printer.Printer
 	adjustment       string
 	from, to         flags.TimeValue
 	project, sloName string
@@ -33,7 +28,9 @@ type GetCmd struct {
 var getExample string
 
 func NewGetCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
-	get := &GetCmd{out: os.Stdout}
+	get := &GetCmd{
+		printer: printer.NewPrinter(printer.Config{}),
+	}
 
 	cmd := &cobra.Command{
 		Use:   "get",
@@ -64,12 +61,7 @@ func NewGetCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error { return get.run(cmd) },
 	}
 
-	printer.MustRegisterOutputFormatFlags(
-		cmd,
-		&get.outputFormat,
-		&get.fieldSeparator,
-		&get.recordSeparator,
-	)
+	get.printer.MustRegisterFlags(cmd)
 	mustRegisterAdjustmentFlag(cmd, &get.adjustment)
 	registerProjectFlag(cmd, &get.project)
 	registerSloNameFlag(cmd, &get.sloName)
@@ -105,25 +97,9 @@ func (g *GetCmd) run(cmd *cobra.Command) error {
 		return errors.Wrap(err, "failed to parse response")
 	}
 
-	if err := g.printObjects(events); err != nil {
+	if err := g.printer.Print(events); err != nil {
 		return errors.Wrap(err, "failed to print objects")
 	}
 
-	return nil
-}
-
-func (g *GetCmd) printObjects(objects interface{}) error {
-	p, err := printer.New(
-		g.out,
-		printer.Format(g.outputFormat),
-		g.fieldSeparator,
-		g.recordSeparator,
-	)
-	if err != nil {
-		return err
-	}
-	if err = p.Print(objects); err != nil {
-		return err
-	}
 	return nil
 }

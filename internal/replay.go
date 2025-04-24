@@ -28,10 +28,12 @@ import (
 	sdkModels "github.com/nobl9/nobl9-go/sdk/models"
 
 	"github.com/nobl9/sloctl/internal/flags"
+	"github.com/nobl9/sloctl/internal/printer"
 )
 
 type ReplayCmd struct {
 	client             *sdk.Client
+	printer            *printer.Printer
 	from               flags.TimeValue
 	configPaths        []string
 	sloName            string
@@ -44,7 +46,9 @@ type ReplayCmd struct {
 var replayExample string
 
 func (r *RootCmd) NewReplayCmd() *cobra.Command {
-	replay := &ReplayCmd{}
+	replay := &ReplayCmd{
+		printer: printer.NewPrinter(printer.Config{OutputFormat: printer.YAMLFormat}),
+	}
 
 	cmd := &cobra.Command{
 		Use:   "replay",
@@ -64,6 +68,7 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error { return replay.Run(cmd) },
 	}
 
+	replay.printer.MustRegisterFlags(cmd)
 	registerFileFlag(cmd, false, &replay.configPaths)
 	cmd.Flags().StringVarP(&replay.project, "project", "p", "",
 		`Specifies the Project for the SLOs you want to Replay.`)

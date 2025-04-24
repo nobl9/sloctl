@@ -4,12 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/mitchellh/colorstring"
 	"github.com/spf13/cobra"
-
-	"github.com/nobl9/sloctl/internal/printer"
 )
 
 // AddListCommand returns cobra command list, which allows to list all queued Replays.
@@ -56,14 +53,6 @@ func (r *ReplayCmd) listAllReplays(cmd *cobra.Command) error {
 	if len(replayQueueList) == 0 {
 		cmd.Println(colorstring.Color("[light_gray]Replay not found[reset]"))
 		return nil
-	} else {
-		p, err := printer.New(os.Stdout, "yaml", "", "")
-		if err != nil {
-			return err
-		}
-		if err = p.Print(replayQueueList); err != nil {
-			return err
-		}
 	}
-	return nil
+	return r.printer.Print(replayQueueList)
 }

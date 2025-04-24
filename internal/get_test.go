@@ -14,6 +14,8 @@ import (
 
 	authDataV1 "github.com/nobl9/nobl9-go/sdk/endpoints/authdata/v1"
 
+	"github.com/nobl9/sloctl/internal/printer"
+
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -63,9 +65,11 @@ func TestGet_AgentKeys(t *testing.T) {
 	client.HTTP = &http.Client{Transport: rt}
 	var out bytes.Buffer
 	g := GetCmd{
-		client:       client,
-		outputFormat: "yaml",
-		out:          &out,
+		client: client,
+		printer: printer.NewPrinter(printer.Config{
+			Output:       &out,
+			OutputFormat: printer.YAMLFormat,
+		}),
 	}
 
 	cmd := cobra.Command{}

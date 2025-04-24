@@ -56,6 +56,7 @@ For every command more detailed help is available.`,
 	rootCmd.AddCommand(root.NewReplayCmd())
 	rootCmd.AddCommand(root.NewAwsIamIds())
 	rootCmd.AddCommand(budgetadjustments.NewRootCmd(&root))
+	rootCmd.AddCommand(root.NewConvertCmd())
 
 	return rootCmd
 }
