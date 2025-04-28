@@ -1,0 +1,26 @@
+- apiVersion: openslo/v1
+  kind: AlertPolicy
+  metadata:
+    name: low-priority-2
+    displayName: Low Priority
+    labels:
+      env:
+        - prod
+      team:
+        - team-a
+        - team-b
+  spec:
+    description: Alert policy for low priority notifications, notifies on-call via email
+    alertWhenBreaching: true
+    conditions:
+      - conditionRef: memory-usage-breach
+    notificationTargets:
+      - kind: AlertNotificationTarget
+        metadata:
+          name: on-call-mail-notification
+          annotations:
+            nobl9.com/metadata.project: non-default
+            nobl9.com/spec.email.to.0: example-email@nobl9-test.com
+        spec:
+          description: Notifies by a mail message to the on-call devops mailing group
+          target: email

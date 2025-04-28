@@ -1,0 +1,44 @@
+- apiVersion: n9/v1alpha
+  kind: Service
+  metadata:
+    name: example-service
+    project: my-project
+    annotations:
+      openslo.com/apiVersion: openslo/v1
+  spec:
+    description: Example service description
+  manifestSrc: /convert-openslo/nested/service.json
+- apiVersion: n9/v1alpha
+  kind: SLO
+  metadata:
+    name: annotator-throughput
+    project: default
+    annotations:
+      openslo.com/apiVersion: openslo/v1
+      openslo.com/spec.indicator.metadata.name: annotator-throughput
+  spec:
+    description: Example Prometheus SLO
+    indicator:
+      metricSource:
+        name: my-prometheus
+    budgetingMethod: Occurrences
+    objectives:
+    - displayName: Good
+      value: 1.0
+      name: ""
+      target: 0.95
+      rawMetric:
+        query:
+          prometheus:
+            promql: |
+              sum(min_over_time(kafka_consumergroup_lag{k8s_cluster="prod", consumergroup="annotator", topic="annotator-in"}[2m]))
+      op: gte
+    service: annotator
+    timeWindows:
+    - unit: Week
+      count: 1
+      isRolling: false
+      calendar:
+        startTime: "2022-01-01 12:00:00"
+        timeZone: America/New_York
+  manifestSrc: /convert-openslo/nested/slos.yaml

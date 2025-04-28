@@ -5,7 +5,7 @@ sloctl apply -f ./slo.yaml
 sloctl apply -f ./slo.yaml -f test/config.yaml -f https://nobl9.com/slo.yaml
 
 # Apply the YAML or JSON passed directly into stdin.
-cat slo.yaml | sloctl apply -f -
+sloctl apply -f - <slo.yaml
 
 # Apply the configuration from slo.yaml and set project if it is not defined in file.
 sloctl apply -f ./slo.yaml -p slo

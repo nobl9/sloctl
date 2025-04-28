@@ -25,12 +25,15 @@ func readObjectsDefinitions(
 	projectFlagWasSet bool,
 ) ([]manifest.Object, error) {
 	containsStdin := false
-	for i := range definitionPaths {
-		if definitionPaths[i] == "" || definitionPaths[i] == "-" {
-			definitionPaths = append(definitionPaths[:i], definitionPaths[i+1:]...)
+	filteredPaths := make([]string, 0, len(definitionPaths))
+	for _, path := range definitionPaths {
+		if path == "" || path == "-" {
 			containsStdin = true
+			continue
 		}
+		filteredPaths = append(filteredPaths, path)
 	}
+	definitionPaths = filteredPaths
 	sources, err := sdk.ResolveObjectSources(definitionPaths...)
 	if err != nil {
 		return nil, err

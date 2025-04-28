@@ -41,7 +41,11 @@ words:
   - govulncheck
   - ldflags
   - nobl
+  - openslo
+  - openslosdk
+  - openslotonobl9
   - plantuml
+  - sjson
   - sloctl
   - slos
   - svcs

@@ -10,22 +10,23 @@ import (
 )
 
 type AwsIamIdsCmd struct {
-	client          *sdk.Client
-	fieldSeparator  string
-	recordSeparator string
-	outputFormat    string
-	resourceName    string
+	client       *sdk.Client
+	printer      *printer.Printer
+	resourceName string
 }
 
 func (r *RootCmd) NewAwsIamIds() *cobra.Command {
-	awsIamIds := &AwsIamIdsCmd{}
+	awsIamIds := &AwsIamIdsCmd{
+		printer: printer.NewPrinter(printer.Config{}),
+	}
 
 	cobraCmd := &cobra.Command{
 		Use:   "aws-iam-ids",
 		Short: "Returns IAM IDs used in AWS integrations",
 	}
+	awsIamIds.printer.MustRegisterFlags(cobraCmd)
 
-	direct := &cobra.Command{
+	directCmd := &cobra.Command{
 		Use:   "direct [direct-name]",
 		Short: "Returns external ID and AWS account ID for given direct name",
 		Long: "Returns external ID and AWS account ID that can be used to create cross-account IAM roles." +
@@ -34,22 +35,16 @@ func (r *RootCmd) NewAwsIamIds() *cobra.Command {
 		PersistentPreRun: func(iamIdsCmd *cobra.Command, args []string) { awsIamIds.client = r.GetClient() },
 		RunE:             func(iamIdsCmd *cobra.Command, args []string) error { return awsIamIds.Direct(iamIdsCmd) },
 	}
-	printer.MustRegisterOutputFormatFlags(
-		direct,
-		&awsIamIds.outputFormat,
-		&awsIamIds.fieldSeparator,
-		&awsIamIds.recordSeparator,
-	)
-	cobraCmd.AddCommand(direct)
+	cobraCmd.AddCommand(directCmd)
 
-	dataExport := &cobra.Command{
+	dataExportCmd := &cobra.Command{
 		Use: "dataexport",
 		Short: "Returns AWS external ID, which will be used by Nobl9 to assume the IAM role when" +
 			" performing data export",
 		PersistentPreRun: func(iamIdsCmd *cobra.Command, args []string) { awsIamIds.client = r.GetClient() },
 		RunE:             func(iamIdsCmd *cobra.Command, args []string) error { return awsIamIds.DataExport(iamIdsCmd) },
 	}
-	cobraCmd.AddCommand(dataExport)
+	cobraCmd.AddCommand(dataExportCmd)
 
 	return cobraCmd
 }
@@ -72,15 +67,7 @@ func (a *AwsIamIdsCmd) Direct(cmd *cobra.Command) error {
 	if err != nil {
 		return errors.Wrap(err, "unable to get AWS IAM role auth external IDs")
 	}
-
-	p, err := printer.New(cmd.OutOrStdout(), printer.Format(a.outputFormat), a.fieldSeparator, a.recordSeparator)
-	if err != nil {
-		return err
-	}
-	if err = p.Print(response); err != nil {
-		return err
-	}
-	return nil
+	return a.printer.Print(response)
 }
 
 func (a *AwsIamIdsCmd) DataExport(cmd *cobra.Command) error {
@@ -89,13 +76,5 @@ func (a *AwsIamIdsCmd) DataExport(cmd *cobra.Command) error {
 	if err != nil {
 		return errors.Wrap(err, "unable to get AWS external ID")
 	}
-
-	p, err := printer.New(cmd.OutOrStdout(), printer.Format(a.outputFormat), a.fieldSeparator, a.recordSeparator)
-	if err != nil {
-		return err
-	}
-	if err = p.Print(response.ExternalID); err != nil {
-		return err
-	}
-	return nil
+	return a.printer.Print(response)
 }

@@ -3,6 +3,7 @@ package internal
 import (
 	_ "embed"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -85,7 +86,7 @@ func (a ApplyCmd) Run(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	printSourcesDetails("Applying", objects)
+	printSourcesDetails("Applying", objects, os.Stdout)
 	if err = a.client.Objects().V1().Apply(cmd.Context(), objects); err != nil {
 		return err
 	}

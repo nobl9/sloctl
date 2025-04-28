@@ -3,6 +3,7 @@ package internal
 import (
 	_ "embed"
 	"fmt"
+	"io"
 	"sort"
 	"strings"
 	"text/template"
@@ -34,7 +35,7 @@ func positionalArgsCondition(_ *cobra.Command, args []string) error {
 		" the glob pattern to prevent shell from doing it for you", len(args))
 }
 
-func printSourcesDetails(verb string, objects []manifest.Object) {
+func printSourcesDetails(verb string, objects []manifest.Object, out io.Writer) {
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("%s %d objects from the following sources: \n", verb, len(objects)))
 	uniq := make(map[string]struct{}, len(objects)/2) // Rough estimation of the objects from provided sources.
@@ -55,7 +56,7 @@ func printSourcesDetails(verb string, objects []manifest.Object) {
 	if len(uniq) == 1 && isStdin {
 		return
 	}
-	fmt.Print(b.String())
+	_, _ = fmt.Fprint(out, b.String())
 }
 
 func printCommandResult(message string, dryRun bool) {
