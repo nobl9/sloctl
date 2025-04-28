@@ -6,11 +6,12 @@ require (
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/nobl9/go-yaml v1.0.1
-	github.com/nobl9/nobl9-go v0.101.1-0.20250424142428-b9e51be99de6
+	github.com/nobl9/nobl9-go v0.102.0
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
+	github.com/tidwall/sjson v1.2.5
 	golang.org/x/sync v0.13.0
 )
 
@@ -18,7 +19,6 @@ require (
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
-	github.com/tidwall/sjson v1.2.5 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
