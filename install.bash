@@ -58,7 +58,7 @@ initOS() {
 
 # runs the given command as root (detects if we are root already)
 runAsRoot() {
-  if [ $EUID -ne 0 ] && [ "$USE_SUDO" = "true" ]; then
+  if [ "$OS" != "windows" ] && [ $EUID -ne 0 ] && [ "$USE_SUDO" = "true" ]; then
     sudo "${@}"
   else
     "${@}"
