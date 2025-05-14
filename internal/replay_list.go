@@ -21,13 +21,14 @@ func (r *ReplayCmd) AddListCommand() *cobra.Command {
 	return cmd
 }
 
-type ReplayQueueItem struct {
+type ReplayListItem struct {
 	Slo            string `json:"slo,omitempty"`
 	Project        string `json:"project"`
 	ElapsedTime    string `json:"elapsedTime,omitempty"`
 	RetrievedScope string `json:"retrievedScope,omitempty"`
 	RetrievedFrom  string `json:"retrievedFrom,omitempty"`
 	Status         string `json:"status"`
+	Cancellation   string `json:"cancellation,omitempty"`
 }
 
 func (r *ReplayCmd) listAllReplays(cmd *cobra.Command) error {
@@ -45,7 +46,7 @@ func (r *ReplayCmd) listAllReplays(cmd *cobra.Command) error {
 		return err
 	}
 
-	var replayQueueList []ReplayQueueItem
+	var replayQueueList []ReplayListItem
 	if err := json.Unmarshal(response, &replayQueueList); err != nil {
 		fmt.Printf("err: %v\n", err)
 	}
