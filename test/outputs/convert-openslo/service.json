@@ -1,0 +1,17 @@
+[
+  {
+    "apiVersion": "n9/v1alpha",
+    "kind": "Service",
+    "metadata": {
+      "name": "example-service",
+      "project": "my-project",
+      "annotations": {
+        "openslo.com/apiVersion": "openslo/v1"
+      }
+    },
+    "spec": {
+      "description": "Example service description"
+    },
+    "manifestSrc": "/convert-openslo/nested/service.json"
+  }
+]

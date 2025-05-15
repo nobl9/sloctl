@@ -5,7 +5,7 @@ sloctl delete -f ./slo.yaml
 sloctl delete -f ./slo.yaml -f test/config.yaml -f https://nobl9.com/slo.yaml
 
 # Delete the YAML or JSON passed directly into stdin.
-cat slo.yaml | sloctl delete -f -
+sloctl delete -f - <slo.yaml
 
 # Delete by passing in one or more resource names.
 sloctl delete slo my-slo-name

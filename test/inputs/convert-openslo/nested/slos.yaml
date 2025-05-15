@@ -1,0 +1,30 @@
+- apiVersion: openslo/v1
+  kind: SLO
+  metadata:
+    name: annotator-throughput
+  spec:
+    description: Example Prometheus SLO
+    service: annotator
+    budgetingMethod: Occurrences
+    indicator:
+      metadata:
+        name: annotator-throughput
+      spec:
+        thresholdMetric:
+          metricSource:
+            metricSourceRef: my-prometheus
+            type: prometheus
+            spec:
+              promql: |
+                sum(min_over_time(kafka_consumergroup_lag{k8s_cluster="prod", consumergroup="annotator", topic="annotator-in"}[2m]))
+    objectives:
+      - displayName: Good
+        target: 0.95
+        op: gte
+        value: 1
+    timeWindow:
+      - duration: 1w
+        isRolling: false
+        calendar:
+          startTime: 2022-01-01 12:00:00
+          timeZone: America/New_York

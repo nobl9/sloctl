@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -21,7 +20,6 @@ import (
 	"github.com/nobl9/nobl9-go/sdk"
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
 
-	"github.com/nobl9/sloctl/internal/csv"
 	"github.com/nobl9/sloctl/internal/printer"
 )
 
@@ -29,20 +27,19 @@ import (
 var getAlertExample string
 
 type GetCmd struct {
-	client          *sdk.Client
-	outputFormat    string
-	labels          []string
-	fieldSeparator  string
-	recordSeparator string
-	project         string
-	services        []string
-	allProjects     bool
-	out             io.Writer
+	client      *sdk.Client
+	printer     *printer.Printer
+	labels      []string
+	project     string
+	services    []string
+	allProjects bool
 }
 
 // NewGetCmd returns cobra command get with all flags for it.
 func (r *RootCmd) NewGetCmd() *cobra.Command {
-	get := &GetCmd{out: os.Stdout}
+	get := &GetCmd{
+		printer: printer.NewPrinter(printer.Config{}),
+	}
 
 	cmd := &cobra.Command{
 		Use:   "get",
@@ -60,7 +57,7 @@ To get more details in output use one of the available flags.`,
 	}
 
 	// All shared flags for 'get' and its subcommands.
-	get.RegisterFlags(cmd)
+	get.printer.MustRegisterFlags(cmd)
 
 	// All subcommands for get.
 	for _, subCmd := range []struct {
@@ -112,22 +109,6 @@ To get more details in output use one of the available flags.`,
 	return cmd
 }
 
-func (g *GetCmd) RegisterFlags(cmd *cobra.Command) {
-	// Hidden variables.
-	mustHide := func(f string) {
-		if err := cmd.PersistentFlags().MarkHidden(f); err != nil {
-			panic(err)
-		}
-	}
-	printer.MustRegisterOutputFormatFlags(
-		cmd,
-		&g.outputFormat,
-		&g.fieldSeparator,
-		&g.recordSeparator,
-	)
-	mustHide(csv.RecordSeparatorFlag)
-}
-
 func (g *GetCmd) newGetObjectsCommand(
 	kind manifest.Kind,
 	short, use string,
@@ -145,7 +126,7 @@ func (g *GetCmd) newGetObjectsCommand(
 			if objects == nil {
 				return nil
 			}
-			if err = g.printObjects(objects); err != nil {
+			if err = g.printer.Print(objects); err != nil {
 				return err
 			}
 			return nil
@@ -260,7 +241,7 @@ func (g *GetCmd) newGetAlertCommand(cmd *cobra.Command) *cobra.Command {
 			fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)
 			return nil
 		}
-		if err = g.printObjects(objects); err != nil {
+		if err = g.printer.Print(objects); err != nil {
 			return err
 		}
 		if truncatedMax > 0 {
@@ -319,7 +300,7 @@ func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 		} else {
 			agents = objects
 		}
-		if err = g.printObjects(agents); err != nil {
+		if err = g.printer.Print(agents); err != nil {
 			return err
 		}
 		return nil
@@ -430,15 +411,4 @@ func parseFilterLabel(filterLabels []string) string {
 		}
 	}
 	return strings.Join(strLabels, ",")
-}
-
-func (g *GetCmd) printObjects(objects interface{}) error {
-	p, err := printer.New(g.out, printer.Format(g.outputFormat), g.fieldSeparator, g.recordSeparator)
-	if err != nil {
-		return err
-	}
-	if err = p.Print(objects); err != nil {
-		return err
-	}
-	return nil
 }

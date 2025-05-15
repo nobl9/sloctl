@@ -181,14 +181,29 @@ Prerequisites:
 
 1. Filter out SLOs with specific integration (_prometheus_ in this example):
 
-```shell
-sloctl get slos -A |
-  yq -Y \
-  --arg source_type "prometheus" \
-  '[ .[] | select(
-    .spec.objectives[] |
-      (.rawMetric and .rawMetric.query[$source_type])
-      or
-      (.countMetrics and .countMetrics.total[$source_type])
-  )]'
-```
+    ```shell
+    sloctl get slos -A |
+      yq -Y \
+      --arg source_type "prometheus" \
+      '[ .[] | select(
+        .spec.objectives[] |
+          (.rawMetric and .rawMetric.query[$source_type])
+          or
+          (.countMetrics and .countMetrics.total[$source_type])
+      )]'
+    ```
+
+2. Count SLOs per integration:
+
+    ```shell
+    sloctl get slo -A -o json |
+      jq -r '
+        .[] |
+        first(.. | (.query? // .total?) |
+        select(type == "object") |
+        keys[0])
+      ' |
+      sort |
+      uniq -c |
+      sort -nr
+    ```

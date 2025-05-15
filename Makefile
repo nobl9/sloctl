@@ -4,24 +4,25 @@ MAKEFLAGS += --silent --no-print-directory
 BIN_DIR := ./bin
 TEST_DIR := ./test
 APP_NAME := sloctl
-LDFLAGS += -s -w
 VERSION_PKG := "$(shell go list -m)/internal"
 
-ifndef BRANCH
-  BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
-endif
-ifndef REVISION
-  REVISION := $(shell git rev-parse --short=8 HEAD)
-endif
+VERSION ?= 1.0.0-test
+BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
+REVISION ?= $(shell git rev-parse --short=8 HEAD)
+
+LDFLAGS := -s -w \
+	-X $(VERSION_PKG).BuildVersion=$(VERSION) \
+	-X $(VERSION_PKG).BuildGitBranch=$(BRANCH) \
+	-X $(VERSION_PKG).BuildGitRevision=$(REVISION)
 
 # renovate datasource=github-releases depName=securego/gosec
-GOSEC_VERSION := v2.22.2
+GOSEC_VERSION := v2.22.4
 # renovate datasource=github-releases depName=golangci/golangci-lint
-GOLANGCI_LINT_VERSION := v1.64.6
+GOLANGCI_LINT_VERSION := v1.64.8
 # renovate datasource=go depName=golang.org/x/vuln/cmd/govulncheck
 GOVULNCHECK_VERSION := v1.1.4
 # renovate datasource=go depName=golang.org/x/tools/cmd/goimports
-GOIMPORTS_VERSION := v0.30.0
+GOIMPORTS_VERSION := v0.33.0
 
 # Check if the program is present in $PATH and install otherwise.
 # ${1} - oneOf{binary,yarn}
@@ -36,8 +37,7 @@ define _install_go_binary
 	GOBIN=$(realpath $(BIN_DIR)) go install "${1}"
 endef
 
-# Print Makefile target step description for check.
-# Only print top level steps this way, and not dependent steps, like 'install'.
+# Print Makefile target step description.
 # ${1} - step description
 define _print_step
 	printf -- '------\n%s...\n' "${1}"
@@ -57,12 +57,24 @@ endef
 .PHONY: build
 ## Build sloctl binary.
 build:
+	$(call _print_step,Building sloctl binary)
 	go build -ldflags="$(LDFLAGS)" -o $(BIN_DIR)/$(APP_NAME) ./cmd/$(APP_NAME)/
+
+.PHONY: install
+## Install sloctl binary.
+install:
+	$(call _print_step,Installing sloctl binary)
+	go install -ldflags="$(LDFLAGS)" ./cmd/$(APP_NAME)/
 
 .PHONY: docker
 ## Build sloctl Docker image.
 docker:
+	$(call _print_step,Building sloctl Docker image)
 	$(call _build_docker,sloctl,$(VERSION),$(BRANCH),$(REVISION))
+
+.PHONY: test
+## Run all tests.
+test: test/unit test/e2e
 
 .PHONY: test/unit test/go/unit test/bats/%
 ## Run all unit tests.
@@ -185,9 +197,9 @@ format/cspell:
 	$(call _ensure_installed,yarn,yaml)
 	yarn --silent format-cspell-config
 
-.PHONY: install install/yarn install/golangci-lint install/gosec install/govulncheck install/goimports
+.PHONY: install/tools install/yarn install/golangci-lint install/gosec install/govulncheck install/goimports
 ## Install all dev dependencies.
-install: install/yarn install/golangci-lint install/gosec install/govulncheck install/goimports
+install/tools: install/yarn install/golangci-lint install/gosec install/govulncheck install/goimports
 
 ## Install JS dependencies with yarn.
 install/yarn:

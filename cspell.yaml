@@ -29,6 +29,7 @@ ignorePaths:
   - dist/**
 words:
   - armv
+  - devel
   - distroless
   - dynatrace
   - endef
@@ -40,7 +41,11 @@ words:
   - govulncheck
   - ldflags
   - nobl
+  - openslo
+  - openslosdk
+  - openslotonobl9
   - plantuml
+  - sjson
   - sloctl
   - slos
   - svcs

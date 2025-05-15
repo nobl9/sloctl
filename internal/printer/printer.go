@@ -1,94 +1,183 @@
-// Package printer provides utilities for printing standard structures from api in convenient formats
+// Package printer provides utilities for printing standard structures from api in convenient formats.
 package printer
 
 import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 
-	"github.com/nobl9/go-yaml"
+	"github.com/goccy/go-yaml"
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/sdk"
+	"github.com/spf13/cobra"
 
 	"github.com/nobl9/sloctl/internal/csv"
 )
 
-// Format represents supported printing outputs
-type Format string
+type Config struct {
+	Output             io.Writer
+	OutputFormat       Format
+	CSVFieldSeparator  string
+	CSVRecordSeparator string
+}
 
-// All supported output formats by a Printer
+func NewPrinter(config Config) *Printer {
+	if config.Output == nil {
+		config.Output = os.Stdout
+	}
+	if config.OutputFormat == "" {
+		config.OutputFormat = YAMLFormat
+	}
+	if config.CSVFieldSeparator == "" {
+		config.CSVFieldSeparator = csv.DefaultFieldSeparator
+	}
+	if config.CSVRecordSeparator == "" {
+		config.CSVRecordSeparator = csv.DefaultRecordSeparator
+	}
+	return &Printer{config: config}
+}
+
+type Printer struct {
+	config Config
+}
+
+func (o *Printer) Print(v any) error {
+	p, err := newPrinter(o.config.Output, o.config.OutputFormat, o.config.CSVFieldSeparator, o.config.CSVRecordSeparator)
+	if err != nil {
+		return err
+	}
+	if err = p.Print(v); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (o *Printer) MustRegisterFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().VarP(
+		&o.config.OutputFormat,
+		"output",
+		"o",
+		`Output format: one of yaml|json|csv.`,
+	)
+
+	cmd.PersistentFlags().StringVarP(
+		&o.config.CSVFieldSeparator,
+		csv.FieldSeparatorFlag,
+		"",
+		csv.DefaultFieldSeparator,
+		"Field Separator for CSV.",
+	)
+	if err := cmd.PersistentFlags().MarkHidden(csv.FieldSeparatorFlag); err != nil {
+		panic(err)
+	}
+
+	cmd.PersistentFlags().StringVarP(
+		&o.config.CSVRecordSeparator,
+		csv.RecordSeparatorFlag,
+		"",
+		csv.DefaultRecordSeparator,
+		"Record Separator for CSV.",
+	)
+	if err := cmd.PersistentFlags().MarkHidden(csv.RecordSeparatorFlag); err != nil {
+		panic(err)
+	}
+}
+
+// All supported output formats by [Printer].
 const (
 	YAMLFormat Format = "yaml"
 	JSONFormat Format = "json"
 	CSVFormat  Format = "csv"
 )
 
-// Printer represents generic printer for cli
-type Printer interface {
-	Print(interface{}) error
+// Format represents supported printing outputs.
+type Format string
+
+func (f *Format) String() string {
+	return string(*f)
 }
 
-// New returns an instance of a proper printer based on format parameter
-func New(out io.Writer, format Format, fieldSeparator, recordSeparator string) (Printer, error) {
+func (f *Format) Set(value string) error {
+	switch value {
+	case "yaml", "json", "csv":
+		*f = Format(value)
+		return nil
+	default:
+		return fmt.Errorf("invalid value for Format: %s", value)
+	}
+}
+
+func (f *Format) Type() string {
+	return "format"
+}
+
+// printerInterface represents generic printer for cli
+type printerInterface interface {
+	Print(any) error
+}
+
+// newPrinter returns an instance of a proper [printerInterface] based on format parameter
+func newPrinter(out io.Writer, format Format, fieldSeparator, recordSeparator string) (printerInterface, error) {
 	switch format {
 	case JSONFormat:
-		return &jsonPrinter{Out: out}, nil
+		return &jsonPrinter{out: out}, nil
 	case YAMLFormat:
-		return &yamlPrinter{Out: out}, nil
+		return &yamlPrinter{out: out}, nil
 	case CSVFormat:
-		return &csvPrinter{Out: out, fieldSeparator: fieldSeparator, recordSeparator: recordSeparator}, nil
+		return &csvPrinter{out: out, fieldSeparator: fieldSeparator, recordSeparator: recordSeparator}, nil
 	default:
 		return nil, fmt.Errorf("unknown output format %q", format)
 	}
 }
 
 type jsonPrinter struct {
-	Out io.Writer
+	out io.Writer
 }
 
-func (p *jsonPrinter) Print(content interface{}) error {
+func (p *jsonPrinter) Print(content any) error {
 	switch v := content.(type) {
 	case []manifest.Object:
-		return sdk.PrintObjects(v, p.Out, manifest.ObjectFormatJSON)
+		return sdk.PrintObjects(v, p.out, manifest.ObjectFormatJSON)
 	default:
 		b, err := json.MarshalIndent(content, "", "  ")
 		if err != nil {
 			return err
 		}
-		_, err = p.Out.Write(b)
+		_, err = p.out.Write(b)
 		return err
 	}
 }
 
 type yamlPrinter struct {
-	Out io.Writer
+	out io.Writer
 }
 
-func (p *yamlPrinter) Print(content interface{}) error {
+func (p *yamlPrinter) Print(content any) error {
 	switch v := content.(type) {
 	case []manifest.Object:
-		return sdk.PrintObjects(v, p.Out, manifest.ObjectFormatYAML)
+		return sdk.PrintObjects(v, p.out, manifest.ObjectFormatYAML)
 	default:
 		b, err := yaml.Marshal(content)
 		if err != nil {
 			return err
 		}
-		_, err = p.Out.Write(b)
+		_, err = p.out.Write(b)
 		return err
 	}
 }
 
 type csvPrinter struct {
-	Out             io.Writer
+	out             io.Writer
 	fieldSeparator  string
 	recordSeparator string
 }
 
-func (p *csvPrinter) Print(content interface{}) error {
+func (p *csvPrinter) Print(content any) error {
 	b, err := csv.Marshal(content, p.fieldSeparator, p.recordSeparator)
 	if err != nil {
 		return err
 	}
-	_, err = p.Out.Write(b)
+	_, err = p.out.Write(b)
 	return err
 }

@@ -15,6 +15,7 @@ DEBUG="false"
 VERIFY_CHECKSUM="true"
 PROGRAM_INSTALL_DIR="/usr/local/bin"
 PROGRAM_EXTENSION=""
+EXECUTABLE_NAME="$PROGRAM_NAME"
 
 HAS_CURL="$(type "curl" &>/dev/null && echo true || echo false)"
 HAS_WGET="$(type "wget" &>/dev/null && echo true || echo false)"
@@ -53,12 +54,13 @@ initOS() {
 
   if [[ "$OS" == "windows" ]]; then
     PROGRAM_EXTENSION=".exe"
+    EXECUTABLE_NAME+="$PROGRAM_EXTENSION"
   fi
 }
 
 # runs the given command as root (detects if we are root already)
 runAsRoot() {
-  if [ $EUID -ne 0 ] && [ "$USE_SUDO" = "true" ]; then
+  if [ "$OS" != "windows" ] && [ $EUID -ne 0 ] && [ "$USE_SUDO" = "true" ]; then
     sudo "${@}"
   else
     "${@}"
@@ -113,11 +115,11 @@ checkLatestVersion() {
 # checkInstalledVersion checks which version of program is installed and
 # if it needs to be changed.
 checkInstalledVersion() {
-  if ! [[ -f "${PROGRAM_INSTALL_DIR}/${PROGRAM_NAME}" ]]; then
+  if ! [[ -f "${PROGRAM_INSTALL_DIR}/${EXECUTABLE_NAME}" ]]; then
     return 1
   fi
   local version
-  version=$("${PROGRAM_INSTALL_DIR}/${PROGRAM_NAME}" "$VERSION_CMD")
+  version=$("${PROGRAM_INSTALL_DIR}/${EXECUTABLE_NAME}" "$VERSION_CMD")
   # Remove the program name before the first '/'.
   version="${version#*/}"
   # Remove the segment after the last '-' (git revision).
@@ -125,10 +127,10 @@ checkInstalledVersion() {
   # Remove the segment after the second last '-' (git branch).
   version="${version%-*}"
   if [[ "v${version}" == "$TAG" ]]; then
-    echo "${PROGRAM_NAME} ${version} is already installed, skipping installation"
+    echo "${EXECUTABLE_NAME} ${version} is already installed, skipping installation"
     return 0
   else
-    echo "${PROGRAM_NAME} ${TAG} is available. Changing from version ${version}."
+    echo "${EXECUTABLE_NAME} ${TAG} is available. Changing from version ${version}."
     return 1
   fi
 }
@@ -145,31 +147,31 @@ downloadFile() {
   CHECKSUM_URL="${DOWNLOAD_BASE_URL}/${PROGRAM_NAME}-${VERSION}.sha256"
 
   PROGRAM_TMP_ROOT="$(mktemp -dt "${PROGRAM_NAME}-installer-XXXXXX")"
-  PROGRAM_TMP_BIN="${PROGRAM_TMP_ROOT}/${PROGRAM_NAME}${PROGRAM_EXTENSION}"
+  PROGRAM_TMP_BIN="${PROGRAM_TMP_ROOT}/${EXECUTABLE_NAME}"
   PROGRAM_SUM_FILE="${PROGRAM_TMP_ROOT}/${PROGRAM_NAME}-${VERSION}.sha256"
 
   echo "Downloading ${DOWNLOAD_URL}"
   if [ "$HAS_CURL" == "true" ]; then
-    curl -SsL --fail "$DOWNLOAD_URL" -o - > "$PROGRAM_TMP_BIN"
+    curl -SsL --fail "$DOWNLOAD_URL" -o - >"$PROGRAM_TMP_BIN"
   elif [ "$HAS_WGET" == "true" ]; then
-    wget -q -O - "$DOWNLOAD_URL" > "$PROGRAM_TMP_BIN"
+    wget -q -O - "$DOWNLOAD_URL" >"$PROGRAM_TMP_BIN"
   fi
 
   echo "Downloading checksum $CHECKSUM_URL"
   if [ "$HAS_CURL" == "true" ]; then
-    curl -SsL --fail "$CHECKSUM_URL" -o - > "$PROGRAM_SUM_FILE"
+    curl -SsL --fail "$CHECKSUM_URL" -o - >"$PROGRAM_SUM_FILE"
   elif [ "$HAS_WGET" == "true" ]; then
-    wget -q -O - "$CHECKSUM_URL" > "$PROGRAM_SUM_FILE"
+    wget -q -O - "$CHECKSUM_URL" >"$PROGRAM_SUM_FILE"
   fi
 }
 
 # installFile installs the program binary.
 installFile() {
-  local destination="${PROGRAM_INSTALL_DIR}/${PROGRAM_NAME}${PROGRAM_EXTENSION}"
-  echo "Preparing to install ${PROGRAM_NAME} into ${PROGRAM_INSTALL_DIR}"
+  local destination="${PROGRAM_INSTALL_DIR}/${EXECUTABLE_NAME}"
+  echo "Preparing to install ${EXECUTABLE_NAME} into ${PROGRAM_INSTALL_DIR}"
   runAsRoot cp "$PROGRAM_TMP_BIN" "$destination"
   runAsRoot chmod +x "$destination"
-  echo "${PROGRAM_NAME} installed into ${destination}"
+  echo "${EXECUTABLE_NAME} installed into ${destination}"
 }
 
 # verifyChecksum verifies the SHA256 checksum of the binary package.
@@ -191,10 +193,10 @@ fail_trap() {
   result=$?
   if [ "$result" != "0" ]; then
     if [[ -n "$INPUT_ARGUMENTS" ]]; then
-      echo -e "Failed to install ${PROGRAM_NAME} with the arguments provided: ${INPUT_ARGUMENTS}\n"
+      echo -e "Failed to install ${EXECUTABLE_NAME} with the arguments provided: ${INPUT_ARGUMENTS}\n"
       help
     else
-      echo "Failed to install ${PROGRAM_NAME}"
+      echo "Failed to install ${EXECUTABLE_NAME}"
     fi
     echo -e "\nFor support, go to https://github.com/${GITHUB_REPOSITORY}."
   fi
@@ -204,8 +206,8 @@ fail_trap() {
 
 # testVersion tests the installed client to make sure it is working.
 testVersion() {
-  if ! command -v "$PROGRAM_NAME" &>/dev/null; then
-    echo "${PROGRAM_NAME} not found. Is ${PROGRAM_INSTALL_DIR} on your '\$PATH?'"
+  if ! command -v "$EXECUTABLE_NAME" &>/dev/null; then
+    echo "${EXECUTABLE_NAME} not found. Is ${PROGRAM_INSTALL_DIR} on your '\$PATH?'"
     exit 1
   fi
 }
@@ -286,7 +288,7 @@ while (("$#")); do
   --dir | -d)
     shift
     PROGRAM_INSTALL_DIR="${1%/}" # Remove extra slash from the path if present.
-    shift # Shift again to remove the directory argument.
+    shift                        # Shift again to remove the directory argument.
     ;;
   '--no-sudo')
     shift

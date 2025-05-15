@@ -1,0 +1,13 @@
+apiVersion: openslo/v1
+kind: AlertCondition
+metadata:
+  name: memory-usage-breach
+  displayName: Memory Usage breaching
+spec:
+  description: SLO burn rate for memory-usage-breach exceeds 2
+  severity: High
+  condition:
+    kind: burnrate
+    op: gte
+    threshold: 4.0
+    lookbackWindow: 1h

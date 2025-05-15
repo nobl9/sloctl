@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -106,7 +107,7 @@ func (d DeleteCmd) Run(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	printSourcesDetails("Deleting", objects)
+	printSourcesDetails("Deleting", objects, os.Stdout)
 	if err = d.client.Objects().V1().Delete(cmd.Context(), objects); err != nil {
 		return err
 	}
