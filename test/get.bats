@@ -131,8 +131,7 @@ setup() {
     client_secret="$(yq -r .[].metadata.client_secret <<<"$output")"
 
     # Assert that client_id length is either 16 or 20
-    [[ "${#client_id}" -eq 16 || "${#client_id}" -eq 20 ]]
-    assert_success "client_id length is not 16 or 20"
+    assert [ "${#client_id}" -eq 16 ] || [ "${#client_id}" -eq 20 ]
 
     assert_regex "${#client_secret}" "[a-zA-Z0-9_-]+"
     # Finally make sure the whole Agent definition is being presented.
