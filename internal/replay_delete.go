@@ -39,7 +39,7 @@ func (r *ReplayCmd) deleteArguments(cmd *cobra.Command, args []string) error {
 		return errReplayDeleteInvalidOptions
 	}
 	if len(args) > 1 {
-		return errReplayTooManyArgs
+		return errReplayDeleteTooManyArgs
 	}
 	if len(args) == 1 {
 		r.sloName = args[0]
@@ -80,7 +80,7 @@ func (r *ReplayCmd) deleteReplaysForSLO(cmd *cobra.Command, sloName string) erro
 	cmd.Println(
 		colorstring.Color(
 			fmt.Sprintf(
-				"[yellow]Deleting queued Replays for SLO '%s' in project '%s'[reset]",
+				"[yellow]Deleting queued Replay for SLO '%s' in project '%s'[reset]",
 				sloName,
 				r.client.Config.Project,
 			),
