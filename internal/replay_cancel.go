@@ -24,7 +24,7 @@ func (r *ReplayCmd) AddCancelCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&r.project, "project", "p", "",
-		`Specifies the Project of the SLO you want to cancel importing Replays for.`)
+		`Specifies the Project of the SLO you want to cancel importing Replay for.`)
 
 	return cmd
 }
@@ -52,7 +52,7 @@ func (r *ReplayCmd) cancelReplaysForSLO(cmd *cobra.Command, sloName string) erro
 	cmd.Println(
 		colorstring.Color(
 			fmt.Sprintf(
-				"[yellow]Canceling importing Replay for SLO '%s' in project '%s'[reset]",
+				"[yellow]Canceling importing phase of Replay for SLO '%s' in project '%s'[reset]",
 				sloName,
 				r.client.Config.Project,
 			),
@@ -70,16 +70,14 @@ func (r *ReplayCmd) cancelReplaysForSLO(cmd *cobra.Command, sloName string) erro
 			Slo:     sloName,
 		},
 	)
-
 	if err != nil {
 		return err
 	}
 
 	cmd.Println(
 		colorstring.Color(
-			fmt.Sprintf("[green]Cancellation of Replay for SLO '%s' in project '%s' successfully requested."+
-				"[reset]\nRun sloctl replay list and check the ‘cancellation’ field—‘denied’ means the request came "+
-				"after import finished, and absence from the list means the Replay was canceled.",
+			fmt.Sprintf(
+				"[green]Cancellation of Replay for SLO '%s' in project '%s' successfully requested.[reset]",
 				sloName,
 				r.client.Config.Project,
 			),
