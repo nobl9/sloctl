@@ -27,7 +27,7 @@ func (r *ReplayCmd) AddDeleteCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&r.project, "project", "p", "",
-		`Specifies the Project of the SLO you want to remove queued Replays for.`)
+		`Specifies the Project of the SLO you want to remove queued Replay for.`)
 	cmd.Flags().BoolVar(&r.deleteAll, "all", false, "Delete ALL queued Replays.")
 
 	return cmd
