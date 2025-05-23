@@ -6,7 +6,7 @@ require (
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/nobl9/go-yaml v1.0.1
-	github.com/nobl9/nobl9-go v0.102.0
+	github.com/nobl9/nobl9-go v0.106.0
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/spf13/cobra v1.9.1
@@ -14,8 +14,6 @@ require (
 	github.com/tidwall/sjson v1.2.5
 	golang.org/x/sync v0.14.0
 )
-
-replace github.com/nobl9/nobl9-go v0.102.0 => github.com/nobl9/nobl9-go v0.105.1-0.20250523125112-abc3c96e5a5a
 
 require (
 	github.com/tidwall/gjson v1.18.0 // indirect
