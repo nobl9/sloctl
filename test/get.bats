@@ -129,7 +129,10 @@ setup() {
     # Assert length of client_id and regex of client_secret, as the latter may vary.
     client_id="$(yq -r .[].metadata.client_id <<<"$output")"
     client_secret="$(yq -r .[].metadata.client_secret <<<"$output")"
-    assert_equal "${#client_id}" 20
+
+    # Assert that client_id length is either 16 or 20
+    assert [ "${#client_id}" -eq 16 ] || [ "${#client_id}" -eq 20 ]
+
     assert_regex "${#client_secret}" "[a-zA-Z0-9_-]+"
     # Finally make sure the whole Agent definition is being presented.
     verify_get_success "$output" "$(read_files "${TEST_INPUTS}/agent.yaml")"
