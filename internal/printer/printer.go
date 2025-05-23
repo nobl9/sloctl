@@ -2,15 +2,9 @@
 package printer
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
-
-	"github.com/goccy/go-yaml"
-	"github.com/nobl9/nobl9-go/manifest"
-	"github.com/nobl9/nobl9-go/sdk"
-	"github.com/spf13/cobra"
 
 	"github.com/nobl9/sloctl/internal/csv"
 )
@@ -51,37 +45,6 @@ func (o *Printer) Print(v any) error {
 		return err
 	}
 	return nil
-}
-
-func (o *Printer) MustRegisterFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().VarP(
-		&o.config.OutputFormat,
-		"output",
-		"o",
-		`Output format: one of yaml|json|csv.`,
-	)
-
-	cmd.PersistentFlags().StringVarP(
-		&o.config.CSVFieldSeparator,
-		csv.FieldSeparatorFlag,
-		"",
-		csv.DefaultFieldSeparator,
-		"Field Separator for CSV.",
-	)
-	if err := cmd.PersistentFlags().MarkHidden(csv.FieldSeparatorFlag); err != nil {
-		panic(err)
-	}
-
-	cmd.PersistentFlags().StringVarP(
-		&o.config.CSVRecordSeparator,
-		csv.RecordSeparatorFlag,
-		"",
-		csv.DefaultRecordSeparator,
-		"Record Separator for CSV.",
-	)
-	if err := cmd.PersistentFlags().MarkHidden(csv.RecordSeparatorFlag); err != nil {
-		panic(err)
-	}
 }
 
 // All supported output formats by [Printer].
@@ -129,55 +92,4 @@ func newPrinter(out io.Writer, format Format, fieldSeparator, recordSeparator st
 	default:
 		return nil, fmt.Errorf("unknown output format %q", format)
 	}
-}
-
-type jsonPrinter struct {
-	out io.Writer
-}
-
-func (p *jsonPrinter) Print(content any) error {
-	switch v := content.(type) {
-	case []manifest.Object:
-		return sdk.PrintObjects(v, p.out, manifest.ObjectFormatJSON)
-	default:
-		b, err := json.MarshalIndent(content, "", "  ")
-		if err != nil {
-			return err
-		}
-		_, err = p.out.Write(b)
-		return err
-	}
-}
-
-type yamlPrinter struct {
-	out io.Writer
-}
-
-func (p *yamlPrinter) Print(content any) error {
-	switch v := content.(type) {
-	case []manifest.Object:
-		return sdk.PrintObjects(v, p.out, manifest.ObjectFormatYAML)
-	default:
-		b, err := yaml.Marshal(content)
-		if err != nil {
-			return err
-		}
-		_, err = p.out.Write(b)
-		return err
-	}
-}
-
-type csvPrinter struct {
-	out             io.Writer
-	fieldSeparator  string
-	recordSeparator string
-}
-
-func (p *csvPrinter) Print(content any) error {
-	b, err := csv.Marshal(content, p.fieldSeparator, p.recordSeparator)
-	if err != nil {
-		return err
-	}
-	_, err = p.out.Write(b)
-	return err
 }
