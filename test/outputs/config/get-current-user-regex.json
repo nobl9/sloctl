@@ -1,0 +1,6 @@
+\{
+  "userId": ".+",
+  "firstName": ".+",
+  "lastName": ".+",
+  "email": ".+"
+\}
