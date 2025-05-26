@@ -312,7 +312,7 @@ func (c *ConfigCmd) CurrentUserCommand() *cobra.Command {
 	currentUserCmd := &cobra.Command{
 		Use:   "current-user",
 		Short: "Display current user details",
-		Long:  "Display extended details for the current user, which the access keys are associated with.",
+		Long:  "Display extended details for the user associated with the current context's access key.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client := c.clientGetter.GetClient()
 			ctx := cmd.Context()
