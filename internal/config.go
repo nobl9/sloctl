@@ -27,23 +27,27 @@ Example: sloctl config rename-context [oldContext] [newContext]`)
 Example: sloctl config delete-context [contextName]`)
 )
 
+type clientGetter interface {
+	GetClient() *sdk.Client
+}
+
 type ConfigCmd struct {
-	client  *sdk.Client
-	config  *sdk.FileConfig
-	printer *printer.Printer
-	verbose bool
+	clientGetter clientGetter
+	config       *sdk.FileConfig
+	printer      *printer.Printer
+	verbose      bool
 }
 
 func (r *RootCmd) NewConfigCmd() *cobra.Command {
 	configCmd := &ConfigCmd{
-		printer: printer.NewPrinter(printer.Config{}),
+		clientGetter: r,
+		printer:      printer.NewPrinter(printer.Config{}),
 	}
 	cmd := &cobra.Command{
 		Use:   "config",
 		Short: "Configuration management",
 		Long:  `Manage configurations stored in configuration file.`,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			configCmd.client = r.GetClient()
 			return configCmd.loadFileConfig(r.Flags.ConfigFile)
 		},
 	}
@@ -59,20 +63,16 @@ func (r *RootCmd) NewConfigCmd() *cobra.Command {
 	return cmd
 }
 
-func (c *ConfigCmd) loadFileConfig(configFilePath string) error {
-	c.config = c.client.Config.GetFileConfig()
-	if c.config != nil {
-		return nil
-	}
-	if configFilePath == "" {
+func (c *ConfigCmd) loadFileConfig(configPath string) error {
+	if configPath == "" {
 		var err error
-		configFilePath, err = sdk.GetDefaultConfigPath()
+		configPath, err = sdk.GetDefaultConfigPath()
 		if err != nil {
 			return err
 		}
 	}
 	c.config = new(sdk.FileConfig)
-	return c.config.Load(configFilePath)
+	return c.config.Load(configPath)
 }
 
 // AddContextCommand returns cobra command add-context, allows to add context to your configuration file.
@@ -314,12 +314,13 @@ func (c *ConfigCmd) CurrentUserCommand() *cobra.Command {
 		Short: "Display current user details",
 		Long:  "Display extended details for the current user, which the access keys are associated with.",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			client := c.clientGetter.GetClient()
 			ctx := cmd.Context()
-			userID, err := c.client.GetUser(ctx)
+			userID, err := client.GetUser(ctx)
 			if err != nil {
 				return err
 			}
-			user, err := c.client.Users().V2().GetUser(ctx, userID)
+			user, err := client.Users().V2().GetUser(ctx, userID)
 			if err != nil {
 				return err
 			}

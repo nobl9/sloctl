@@ -27,44 +27,56 @@ run_sloctl_config() {
 @test "sloctl config current-context" {
 	run_sloctl_config config current-context
 
+  assert_success_joined_output
 	assert_output 'minimal'
 }
 
 @test "sloctl config use-context" {
 	run_sloctl_config config current-context
+
+  assert_success_joined_output
 	assert_output 'minimal'
 
 	run_sloctl_config config use-context full
+
+  assert_success_joined_output
 	assert_output 'Switched to context "full"'
 
 	run_sloctl_config config current-context
+
+  assert_success_joined_output
 	assert_output 'full'
 }
 
 @test "sloctl config get-contexts" {
 	run_sloctl_config config get-contexts
 
+  assert_success_joined_output
 	assert_output '[full, minimal]'
 }
 
 @test "sloctl config get-contexts verbose" {
 	run_sloctl_config config get-contexts -v
 
+  assert_success_joined_output
 	assert_output <"$OUTPUTS/get-contexts-verbose.txt"
 }
 
 @test "sloctl config rename-context" {
 	run_sloctl_config config rename-context minimal mini
 
+  assert_success_joined_output
 	assert_output 'Renaming: "minimal" to "mini"'
 
 	run_sloctl_config config get-contexts
 
+  assert_success_joined_output
 	assert_output '[full, mini]'
 }
 
 @test "sloctl config delete-context" {
 	run_sloctl_config config delete-context mini
 
+  assert_success_joined_output
 	assert_output 'Context "mini" has been deleted.'
 }

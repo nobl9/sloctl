@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"sync"
 
 	v1alphaParser "github.com/nobl9/nobl9-go/manifest/v1alpha/parser"
 	"github.com/nobl9/nobl9-go/sdk"
@@ -64,13 +65,16 @@ For every command more detailed help is available.`,
 type RootCmd struct {
 	Client *sdk.Client
 	Flags  globalFlags
+	once   sync.Once
 }
 
 func (r *RootCmd) GetClient() *sdk.Client {
-	if err := r.setupClient(); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+	r.once.Do(func() {
+		if err := r.setupClient(); err != nil {
+			_, _ = fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	})
 	return r.Client
 }
 
