@@ -35,7 +35,7 @@ type ConfigCmd struct {
 }
 
 func (r *RootCmd) NewConfigCmd() *cobra.Command {
-	configCmd := ConfigCmd{
+	configCmd := &ConfigCmd{
 		printer: printer.NewPrinter(printer.Config{}),
 	}
 	cmd := &cobra.Command{
@@ -60,21 +60,19 @@ func (r *RootCmd) NewConfigCmd() *cobra.Command {
 }
 
 func (c *ConfigCmd) loadFileConfig(configFilePath string) error {
-	fileConfig := c.client.Config.GetFileConfig()
-	if fileConfig.ContextlessConfig == (sdk.ContextlessConfig{}) && len(fileConfig.Contexts) == 0 {
-		if configFilePath == "" {
-			var err error
-			configFilePath, err = sdk.GetDefaultConfigPath()
-			if err != nil {
-				return err
-			}
-		}
-		if err := fileConfig.Load(configFilePath); err != nil {
+	c.config = c.client.Config.GetFileConfig()
+	if c.config != nil {
+		return nil
+	}
+	if configFilePath == "" {
+		var err error
+		configFilePath, err = sdk.GetDefaultConfigPath()
+		if err != nil {
 			return err
 		}
 	}
-	c.config = &fileConfig
-	return nil
+	c.config = new(sdk.FileConfig)
+	return c.config.Load(configFilePath)
 }
 
 // AddContextCommand returns cobra command add-context, allows to add context to your configuration file.

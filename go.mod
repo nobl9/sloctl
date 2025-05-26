@@ -15,6 +15,8 @@ require (
 	golang.org/x/sync v0.14.0
 )
 
+replace github.com/nobl9/nobl9-go v0.106.0 => github.com/nobl9/nobl9-go v0.107.0-rc1.0.20250526110401-d7229cbdf4b9
+
 require (
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
