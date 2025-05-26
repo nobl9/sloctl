@@ -44,9 +44,7 @@ func (r *RootCmd) NewConfigCmd() *cobra.Command {
 		Long:  `Manage configurations stored in configuration file.`,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			configCmd.client = r.GetClient()
-			config := configCmd.client.Config.GetFileConfig()
-			configCmd.config = &config
-			return nil
+			return configCmd.loadFileConfig(r.Flags.ConfigFile)
 		},
 	}
 
@@ -59,6 +57,24 @@ func (r *RootCmd) NewConfigCmd() *cobra.Command {
 	cmd.AddCommand(configCmd.SetDefaultContextCommand())
 
 	return cmd
+}
+
+func (c *ConfigCmd) loadFileConfig(configFilePath string) error {
+	fileConfig := c.client.Config.GetFileConfig()
+	if fileConfig.ContextlessConfig == (sdk.ContextlessConfig{}) && len(fileConfig.Contexts) == 0 {
+		if configFilePath == "" {
+			var err error
+			configFilePath, err = sdk.GetDefaultConfigPath()
+			if err != nil {
+				return err
+			}
+		}
+		if err := fileConfig.Load(configFilePath); err != nil {
+			return err
+		}
+	}
+	c.config = &fileConfig
+	return nil
 }
 
 // AddContextCommand returns cobra command add-context, allows to add context to your configuration file.
