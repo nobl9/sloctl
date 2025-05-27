@@ -13,6 +13,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/nobl9/nobl9-go/sdk"
+
+	"github.com/nobl9/sloctl/internal/printer"
 )
 
 const defaultProject = "default"
@@ -25,43 +27,52 @@ Example: sloctl config rename-context [oldContext] [newContext]`)
 Example: sloctl config delete-context [contextName]`)
 )
 
+type clientGetter interface {
+	GetClient() *sdk.Client
+}
+
 type ConfigCmd struct {
-	config  *sdk.FileConfig
-	verbose bool
+	clientGetter clientGetter
+	config       *sdk.FileConfig
+	printer      *printer.Printer
+	verbose      bool
 }
 
 func (r *RootCmd) NewConfigCmd() *cobra.Command {
-	configCmd := ConfigCmd{}
+	configCmd := &ConfigCmd{
+		clientGetter: r,
+		printer:      printer.NewPrinter(printer.Config{}),
+	}
 	cmd := &cobra.Command{
 		Use:   "config",
 		Short: "Configuration management",
 		Long:  `Manage configurations stored in configuration file.`,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			fileConfig := new(sdk.FileConfig)
-			configPath := r.Flags.ConfigFile
-			if configPath == "" {
-				var err error
-				configPath, err = sdk.GetDefaultConfigPath()
-				if err != nil {
-					return err
-				}
-			}
-			if err := fileConfig.Load(configPath); err != nil {
-				return err
-			}
-			configCmd.config = fileConfig
-			return nil
+			return configCmd.loadFileConfig(r.Flags.ConfigFile)
 		},
 	}
 
 	cmd.AddCommand(configCmd.AddContextCommand())
 	cmd.AddCommand(configCmd.CurrentContextCommand())
+	cmd.AddCommand(configCmd.CurrentUserCommand())
 	cmd.AddCommand(configCmd.GetContextsCommand())
 	cmd.AddCommand(configCmd.RenameContextCommand())
 	cmd.AddCommand(configCmd.DeleteContextCommand())
 	cmd.AddCommand(configCmd.SetDefaultContextCommand())
 
 	return cmd
+}
+
+func (c *ConfigCmd) loadFileConfig(configPath string) error {
+	if configPath == "" {
+		var err error
+		configPath, err = sdk.GetDefaultConfigPath()
+		if err != nil {
+			return err
+		}
+	}
+	c.config = new(sdk.FileConfig)
+	return c.config.Load(configPath)
 }
 
 // AddContextCommand returns cobra command add-context, allows to add context to your configuration file.
@@ -281,7 +292,7 @@ func (c *ConfigCmd) CurrentContextCommand() *cobra.Command {
 		Long:  "Display configuration for the current context set in the configuration file.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if c.verbose {
-				currentContext := displayContext(c.config.DefaultContext,
+				currentContext := buildContextString(c.config.DefaultContext,
 					c.config.Contexts[c.config.DefaultContext],
 					c.verbose)
 				fmt.Print(currentContext)
@@ -295,6 +306,34 @@ func (c *ConfigCmd) CurrentContextCommand() *cobra.Command {
 	registerVerboseFlag(currentCtxCmd, &c.verbose)
 
 	return currentCtxCmd
+}
+
+func (c *ConfigCmd) CurrentUserCommand() *cobra.Command {
+	currentUserCmd := &cobra.Command{
+		Use:   "current-user",
+		Short: "Display current user details",
+		Long:  "Display extended details for the user associated with the current context's access key.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			client := c.clientGetter.GetClient()
+			ctx := cmd.Context()
+			userID, err := client.GetUser(ctx)
+			if err != nil {
+				return err
+			}
+			user, err := client.Users().V2().GetUser(ctx, userID)
+			if err != nil {
+				return err
+			}
+			if err = c.printer.Print(user); err != nil {
+				return err
+			}
+			return nil
+		},
+	}
+
+	c.printer.MustRegisterFlags(currentUserCmd)
+
+	return currentUserCmd
 }
 
 // GetContextsCommand returns cobra command to prints all available contexts.
@@ -312,7 +351,7 @@ func (c *ConfigCmd) GetContextsCommand() *cobra.Command {
 			var fullConfig string
 			if len(args) == 0 && c.verbose {
 				for _, name := range names {
-					singleConfig := displayContext(name, c.config.Contexts[name], true)
+					singleConfig := buildContextString(name, c.config.Contexts[name], true)
 					fullConfig += singleConfig + "\n"
 				}
 				fmt.Printf("[%s]\n%s", strings.Join(names, ", "), fullConfig)
@@ -323,7 +362,7 @@ func (c *ConfigCmd) GetContextsCommand() *cobra.Command {
 					fullConfig += fmt.Sprintf("Missing context: %s\n\n", name)
 					continue
 				}
-				singleConfig := displayContext(name, c.config.Contexts[name], true)
+				singleConfig := buildContextString(name, c.config.Contexts[name], true)
 				fullConfig += singleConfig + "\n"
 			}
 			fmt.Printf("[%s]\n%s", strings.Join(names, ", "), fullConfig)
@@ -336,7 +375,7 @@ func (c *ConfigCmd) GetContextsCommand() *cobra.Command {
 	return getContextsCmd
 }
 
-func displayContext(name string, config sdk.ContextConfig, verbose bool) string {
+func buildContextString(name string, config sdk.ContextConfig, verbose bool) string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("Context: %s\n", name))
 	if !verbose {
