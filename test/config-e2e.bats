@@ -14,25 +14,29 @@ setup() {
 }
 
 @test "sloctl config current-user (default YAML)" {
-	run_sloctl config current-user
+  run_sloctl config current-user
 
-	assert_regex "$output" "$(cat "$TEST_OUTPUTS/get-current-user-regex.yaml")"
+  assert_success_joined_output
+  assert_regex "$output" "$(cat "$TEST_OUTPUTS/get-current-user-regex.yaml")"
 }
 
 @test "sloctl config current-user (YAML)" {
-	run_sloctl config current-user -o yaml
+  run_sloctl config current-user -o yaml
 
-	assert_regex "$output" "$(cat "$TEST_OUTPUTS/get-current-user-regex.yaml")"
+  assert_success_joined_output
+  assert_regex "$output" "$(cat "$TEST_OUTPUTS/get-current-user-regex.yaml")"
 }
 
 @test "sloctl config current-user (JSON)" {
-	run_sloctl config current-user -o json
+  run_sloctl config current-user -o json
 
-	assert_regex "$output" "$(cat "$TEST_OUTPUTS/get-current-user-regex.json")"
+  assert_success_joined_output
+  assert_regex "$output" "$(cat "$TEST_OUTPUTS/get-current-user-regex.json")"
 }
 
 @test "sloctl config current-user (CSV)" {
-	run_sloctl config current-user -o csv
+  run_sloctl config current-user -o csv
 
-	assert_regex "$output" "$(cat "$TEST_OUTPUTS/get-current-user-regex.csv")"
+  assert_success_joined_output
+  assert_regex "$output" "$(cat "$TEST_OUTPUTS/get-current-user-regex.csv")"
 }
