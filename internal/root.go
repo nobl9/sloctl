@@ -58,6 +58,7 @@ For every command more detailed help is available.`,
 	rootCmd.AddCommand(root.NewAwsIamIds())
 	rootCmd.AddCommand(budgetadjustments.NewRootCmd(&root))
 	rootCmd.AddCommand(root.NewConvertCmd())
+	rootCmd.AddCommand(root.NewMCPServer())
 
 	return rootCmd
 }
