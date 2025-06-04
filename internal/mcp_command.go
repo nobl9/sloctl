@@ -16,21 +16,21 @@ type MCPServerCmd struct {
 }
 
 func (r *RootCmd) NewMCPServer() *cobra.Command {
-	mcp := &MCPServerCmd{}
+	mcpCmd := &MCPServerCmd{}
 
 	cmd := &cobra.Command{
-		Use:              "mcp",
-		Short:            "Start the MCP server",
-		Long:             "",
-		Example:          "sloctl mcp",
-		Args:             positionalArgsCondition,
-		PersistentPreRun: nil,
-		RunE:             mcp.Run,
+		Use:     "mcp",
+		Short:   "Start the MCP server",
+		Long:    "",
+		Example: "sloctl mcp",
+		Args:    positionalArgsCondition,
+		PersistentPreRun: func(*cobra.Command, []string) {
+			mcpCmd.client = r.GetClient()
+		},
+		RunE: func(*cobra.Command, []string) error {
+			return mcp.NewServer(mcpCmd.client).Start()
+		},
 	}
 
 	return cmd
-}
-
-func (m MCPServerCmd) Run(cmd *cobra.Command, args []string) error {
-	return mcp.StartServer()
 }

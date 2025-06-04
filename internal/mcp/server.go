@@ -16,8 +16,16 @@ import (
 	"github.com/nobl9/nobl9-go/sdk"
 )
 
-func StartServer() error {
-	s := server.NewMCPServer("Nobl9", "0.1.0",
+func NewServer(client *sdk.Client) Server {
+	return Server{client}
+}
+
+type Server struct {
+	client *sdk.Client
+}
+
+func (s Server) Start() error {
+	srv := server.NewMCPServer("Nobl9", "0.1.0",
 		server.WithResourceCapabilities(true, true),
 		server.WithPromptCapabilities(true),
 		server.WithToolCapabilities(true),
@@ -28,7 +36,7 @@ func StartServer() error {
 		mcp.WithResourceDescription("Nobl9 SLOs are used to measure the reliability of your services. Get "),
 		mcp.WithMIMEType("application/yaml"),
 	)
-	s.AddResource(r, getSLOs)
+	srv.AddResource(r, s.getSLOs)
 
 	t := mcp.NewTool("get_slos",
 		mcp.WithDescription("Get SLO or multiple SLOs"),
@@ -52,7 +60,7 @@ func StartServer() error {
 			mcp.Description("The output format. Supported formats: yaml, json."),
 		),
 	)
-	s.AddTool(t, getSLOsTool)
+	srv.AddTool(t, s.getSLOsTool)
 
 	t = mcp.NewTool("get_projects",
 		mcp.WithDescription("Get Projects"),
@@ -65,7 +73,7 @@ func StartServer() error {
 			mcp.Description("The output format for. Supported formats: yaml, json."),
 		),
 	)
-	s.AddTool(t, getProjectsTool)
+	srv.AddTool(t, s.getProjectsTool)
 
 	t = mcp.NewTool("get_status",
 		mcp.WithDescription("Get SLO budget status"),
@@ -76,7 +84,7 @@ func StartServer() error {
 			mcp.Description("The Project name"),
 		),
 	)
-	s.AddTool(t, getSLOStatus)
+	srv.AddTool(t, s.getSLOStatus)
 
 	t = mcp.NewTool("get_ebs",
 		mcp.WithDescription("Get Error Budget Status for multiple SLOs"),
@@ -88,7 +96,7 @@ func StartServer() error {
 			mcp.Required(),
 		),
 	)
-	s.AddTool(t, getEBSTool)
+	srv.AddTool(t, s.getEBSTool)
 
 	t = mcp.NewTool("apply",
 		mcp.WithDescription("Apply changes to nobl9"),
@@ -97,7 +105,7 @@ func StartServer() error {
 			mcp.Required(),
 		),
 	)
-	s.AddTool(t, applyTool)
+	srv.AddTool(t, s.applyTool)
 
 	t = mcp.NewTool("replay",
 		mcp.WithDescription("Replay slo"),
@@ -114,13 +122,13 @@ func StartServer() error {
 			mcp.Required(),
 		),
 	)
-	s.AddTool(t, replay)
+	srv.AddTool(t, s.replay)
 
 	slog.Info("Starting Nobl9 MCP server", "version", "0.1.0")
-	return server.ServeStdio(s)
+	return server.ServeStdio(srv)
 }
 
-func getSLOs(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+func (s Server) getSLOs(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 	project := req.Params.URI
 
 	outputFile := fmt.Sprintf("%s_%d.yaml", "get_slos", time.Now().Unix())
@@ -142,7 +150,7 @@ func getSLOs(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceCo
 	return nil, nil
 }
 
-func getSLOsTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s Server) getSLOsTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	project := req.Params.Arguments["project"].(string)
 	format := req.Params.Arguments["format"].(string)
 	name := req.Params.Arguments["name"].(string)
@@ -182,7 +190,7 @@ func getSLOsTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRes
 	return mcp.NewToolResultText(buff.String()), nil
 }
 
-func getProjectsTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s Server) getProjectsTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	format := req.Params.Arguments["format"].(string)
 
 	outputFile := fmt.Sprintf("%s_%d.%s", "get_projects", time.Now().Unix(), format)
@@ -203,7 +211,7 @@ func getProjectsTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	}
 
 	buff := bytes.Buffer{}
-	buff.WriteString("SLOs retrieved successfully. Output written to " + outputFile + "\n")
+	buff.WriteString("Projects retrieved successfully. Output written to " + outputFile + "\n")
 
 	objs, err := sdk.ReadObjects(context.Background(), outputFile)
 	if err != nil {
@@ -220,7 +228,7 @@ func getProjectsTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	return mcp.NewToolResultText(buff.String()), nil
 }
 
-func getSLOStatus(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s Server) getSLOStatus(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	sloName, okSlo := req.Params.Arguments["name"].(string)
 	if !okSlo || sloName == "" {
 		return nil, fmt.Errorf("SLO name is required")
@@ -230,11 +238,7 @@ func getSLOStatus(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRe
 		return nil, fmt.Errorf("project name is required")
 	}
 
-	client, err := sdk.DefaultClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Nobl9 client: %w", err)
-	}
-	status, err := client.SLOStatusAPI().V2().GetSLO(ctx, projectName, sloName)
+	status, err := s.client.SLOStatusAPI().V2().GetSLO(ctx, projectName, sloName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get SLO status: %w", err)
 	}
@@ -248,11 +252,11 @@ func getSLOStatus(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRe
 	return mcp.NewToolResultText(string(b)), nil
 }
 
-func getEBSTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s Server) getEBSTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	project := req.Params.Arguments["project"].(string)
 	sessionId := req.Params.Arguments["session_id"].(string)
 
-	r, err := getEBS(ctx, sessionId, project)
+	r, err := s.getEBS(ctx, sessionId, project)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get EBS: %w", err)
 	}
@@ -267,7 +271,7 @@ func getEBSTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResu
 	return mcp.NewToolResultText("Retrieved Error Budget status. Saved it in file " + outputFile), nil
 }
 
-func applyTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s Server) applyTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	fileName := req.Params.Arguments["file_name"].(string)
 
 	cmd := exec.Command("sloctl", "apply", "-f", fileName)
@@ -279,7 +283,7 @@ func applyTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResul
 	return mcp.NewToolResultText(string(b)), nil
 }
 
-func replay(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s Server) replay(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	sloName := req.Params.Arguments["slo"].(string)
 	projectName := req.Params.Arguments["project"].(string)
 	from := req.Params.Arguments["from"].(string)

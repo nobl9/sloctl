@@ -7,30 +7,23 @@ import (
 	"net/http"
 	"strings"
 	"time"
-
-	"github.com/nobl9/nobl9-go/sdk"
 )
 
-func getEBS(ctx context.Context, sessionId, project string) (string, error) {
-	client, err := sdk.DefaultClient()
-	if err != nil {
-		return "", err
-	}
-
+func (s Server) getEBS(ctx context.Context, sessionId, project string) (string, error) {
 	search := `{}`
 	if project != "" {
 		search = fmt.Sprintf(`{"textSearch":"%s"}`, project)
 	}
 	body := strings.NewReader(search)
-	url := fmt.Sprintf("%s/dashboards/servicehealth/error-budget", client.Config.URL)
+	url := fmt.Sprintf("%s/dashboards/servicehealth/error-budget", s.client.Config.URL)
 	req, err := http.NewRequestWithContext(ctx, "POST", url, body)
 	if err != nil {
 		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", client.Config.AccessToken))
-	req.Header.Set("organization", client.Config.Organization)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.client.Config.AccessToken))
+	req.Header.Set("organization", s.client.Config.Organization)
 	req.Header.Set("n9-session-id", sessionId)
 
 	httpClient := http.Client{
