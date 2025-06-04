@@ -99,6 +99,7 @@ func (d DeleteCmd) Run(cmd *cobra.Command) error {
 		return cmd.Usage()
 	}
 	objects, err := readObjectsDefinitions(
+		cmd.Context(),
 		d.client.Config,
 		cmd,
 		d.definitionPaths,

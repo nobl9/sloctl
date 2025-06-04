@@ -101,3 +101,13 @@ func getApplyOrDeleteDescription(description string) string {
 	}
 	return b.String()
 }
+
+// pluralForKind returns plural form of the [manifest.Kind] string.
+func pluralForKind(kind manifest.Kind) string {
+	switch kind {
+	case manifest.KindAlertPolicy:
+		return "AlertPolicies"
+	default:
+		return kind.String() + "s"
+	}
+}

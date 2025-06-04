@@ -1,13 +1,13 @@
 package internal
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -15,8 +15,11 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+	"github.com/pkg/errors"
 
+	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/sdk"
+	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
 )
 
 func newMCPServer(client *sdk.Client) mcpServer {
@@ -41,49 +44,57 @@ func (s mcpServer) Start() error {
 	)
 	srv.AddResource(r, s.getSLOs)
 
-	t := mcp.NewTool("get_slos",
-		mcp.WithDescription("Get SLO or multiple SLOs"),
-		mcp.WithString("name",
-			mcp.Description("The SLO name"),
-			mcp.DefaultString(""),
-		),
-		mcp.WithString("project",
-			mcp.Required(),
-			mcp.DefaultString("*"),
-			mcp.Description("The project in which to find SLOs."),
-		),
-		mcp.WithBoolean("all_projects",
-			mcp.Required(),
-			mcp.DefaultBool(false),
-			mcp.Description("The project in which to find SLOs."),
-		),
-		mcp.WithString("format",
-			mcp.Required(),
-			mcp.DefaultString("yaml"),
-			mcp.Description("The output format. Supported formats: yaml, json."),
-		),
-	)
-	srv.AddTool(t, s.getSLOsTool)
+	for _, tool := range []struct {
+		Kind manifest.Kind
+	}{
+		{Kind: manifest.KindAgent},
+		{Kind: manifest.KindAlertMethod},
+		{Kind: manifest.KindAlertPolicy},
+		{Kind: manifest.KindAlert},
+		{Kind: manifest.KindAlertSilence},
+		{Kind: manifest.KindAnnotation},
+		{Kind: manifest.KindDataExport},
+		{Kind: manifest.KindDirect},
+		{Kind: manifest.KindProject},
+		{Kind: manifest.KindRoleBinding},
+		{Kind: manifest.KindService},
+		{Kind: manifest.KindSLO},
+		{Kind: manifest.KindUserGroup},
+		{Kind: manifest.KindBudgetAdjustment},
+		{Kind: manifest.KindReport},
+	} {
+		kindPlural := pluralForKind(tool.Kind)
+		opts := []mcp.ToolOption{
+			mcp.WithDescription("Get " + kindPlural),
+			mcp.WithString("name",
+				mcp.Description(fmt.Sprintf("The %s name", tool.Kind)),
+			),
+			mcp.WithString("format",
+				mcp.Required(),
+				mcp.DefaultString("yaml"),
+				mcp.Enum("yaml", "json"),
+				mcp.Description("The output format"),
+			),
+		}
+		if objectKindSupportsProjectFlag(tool.Kind) {
+			opts = append(opts, mcp.WithString("project",
+				mcp.Required(),
+				mcp.DefaultString("*"),
+				mcp.Description(fmt.Sprintf("The project in which to find %s.", kindPlural)),
+			))
+		}
+		srv.AddTool(
+			mcp.NewTool("get_"+strings.ToLower(kindPlural), opts...),
+			s.getObjectsHandler(tool.Kind),
+		)
+	}
 
-	t = mcp.NewTool("get_projects",
-		mcp.WithDescription("Get Projects"),
-		mcp.WithString("name",
-			mcp.Description("The Project name"),
-		),
-		mcp.WithString("format",
-			mcp.Required(),
-			mcp.DefaultString("yaml"),
-			mcp.Description("The output format for. Supported formats: yaml, json."),
-		),
-	)
-	srv.AddTool(t, s.getProjectsTool)
-
-	t = mcp.NewTool("get_status",
+	t := mcp.NewTool("get_status",
 		mcp.WithDescription("Get SLO budget status"),
 		mcp.WithString("name",
 			mcp.Description("The SLO name"),
 		),
-		mcp.WithString("project_name",
+		mcp.WithString("project",
 			mcp.Description("The Project name"),
 		),
 	)
@@ -153,82 +164,61 @@ func (s mcpServer) getSLOs(ctx context.Context, req mcp.ReadResourceRequest) ([]
 	return nil, nil
 }
 
-func (s mcpServer) getSLOsTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	project := req.Params.Arguments["project"].(string)
-	format := req.Params.Arguments["format"].(string)
-	name := req.Params.Arguments["name"].(string)
+func (s mcpServer) getObjectsHandler(kind manifest.Kind) server.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		format, _ := req.Params.Arguments["format"].(string)
+		project, _ := req.Params.Arguments["project"].(string)
+		name, _ := req.Params.Arguments["name"].(string)
 
-	outputFile := fmt.Sprintf("%s_%d.%s", "get_slos", time.Now().Unix(), format)
-	outFile, err := os.Create(outputFile)
-	if err != nil {
-		slog.Error("Failed to create output file", "error", err)
-		return nil, err
+		header := http.Header{}
+		query := url.Values{}
+		if project != "" {
+			header.Set(sdk.HeaderProject, project)
+		}
+		if name != "" {
+			query.Set(objectsV1.QueryKeyName, name)
+		}
+		objects, err := s.client.Objects().V1().Get(ctx, kind, header, query)
+		if err != nil {
+			slog.Error(fmt.Sprintf("Failed to fetch %s", pluralForKind(kind)), "error", err)
+			return nil, err
+		}
+		if len(objects) == 0 {
+			return mcp.NewToolResultText(fmt.Sprintf("Found no %s\n", pluralForKind(kind))), nil
+		}
+
+		filename, err := s.writeObjectsToFile(format, objects)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to write %s to a file", pluralForKind(kind))
+		}
+
+		buf := strings.Builder{}
+		buf.WriteString(fmt.Sprintf("Retrieved %d %s. Output written to: %s\n", len(objects), pluralForKind(kind), filename))
+
+		for _, obj := range objects {
+			buf.WriteString(obj.GetName())
+			buf.WriteString("\n")
+		}
+
+		return mcp.NewToolResultText(buf.String()), nil
 	}
-	defer outFile.Close()
-
-	cmd := exec.Command("sloctl", "get", "slo", "--project", project, "-o", format, name)
-	cmd.Stdout = outFile
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		slog.Error("Failed to run sloctl command", "error", err)
-		return nil, err
-	}
-
-	buff := bytes.Buffer{}
-	buff.WriteString("SLOs retrieved successfully. Output written to " + outputFile + "\n")
-
-	objs, err := sdk.ReadObjects(context.Background(), outputFile)
-	if err != nil {
-		slog.Error("Failed to read SLO objects", "error", err)
-		return nil, err
-	}
-
-	buff.WriteString(fmt.Sprintf("Retrieved %d SLOs:\n", len(objs)))
-	for _, obj := range objs {
-		buff.WriteString(obj.GetName())
-		buff.WriteString("\n")
-	}
-
-	return mcp.NewToolResultText(buff.String()), nil
 }
 
-func (s mcpServer) getProjectsTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	format := req.Params.Arguments["format"].(string)
-
-	outputFile := fmt.Sprintf("%s_%d.%s", "get_projects", time.Now().Unix(), format)
+func (s mcpServer) writeObjectsToFile(formatStr string, objects []manifest.Object) (string, error) {
+	format, err := manifest.ParseObjectFormat(strings.ToUpper(formatStr))
+	if err != nil {
+		return "", err
+	}
+	outputFile := fmt.Sprintf("get_%s_%d.%s", objects[0].GetKind(), time.Now().Unix(), format)
 	outFile, err := os.Create(outputFile)
 	if err != nil {
-		slog.Error("Failed to create output file", "error", err)
-		return nil, err
+		slog.Error("Failed to create output file",
+			slog.String("error", err.Error()),
+			slog.String("filename", outputFile))
+		return "", err
 	}
-	defer outFile.Close()
-
-	cmd := exec.Command("sloctl", "get", "project", "-o", format)
-	cmd.Stdout = outFile
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		slog.Error("Failed to run sloctl command", "error", err)
-		return nil, err
-	}
-
-	buff := bytes.Buffer{}
-	buff.WriteString("Projects retrieved successfully. Output written to " + outputFile + "\n")
-
-	objs, err := sdk.ReadObjects(context.Background(), outputFile)
-	if err != nil {
-		slog.Error("Failed to read Project objects", "error", err)
-		return nil, err
-	}
-
-	buff.WriteString(fmt.Sprintf("Retrieved %d Projects:\n", len(objs)))
-	for _, obj := range objs {
-		buff.WriteString(obj.GetName())
-		buff.WriteString("\n")
-	}
-
-	return mcp.NewToolResultText(buff.String()), nil
+	defer func() { _ = outFile.Close() }()
+	return outputFile, sdk.EncodeObjects(objects, outFile, format)
 }
 
 func (s mcpServer) getSLOStatus(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -236,7 +226,7 @@ func (s mcpServer) getSLOStatus(ctx context.Context, req mcp.CallToolRequest) (*
 	if !okSlo || sloName == "" {
 		return nil, fmt.Errorf("SLO name is required")
 	}
-	projectName, okProject := req.Params.Arguments["project_name"].(string)
+	projectName, okProject := req.Params.Arguments["project"].(string)
 	if !okProject || projectName == "" {
 		return nil, fmt.Errorf("project name is required")
 	}
@@ -250,6 +240,40 @@ func (s mcpServer) getSLOStatus(ctx context.Context, req mcp.CallToolRequest) (*
 	b, err := json.Marshal(status)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal SLO status: %w", err)
+	}
+
+	return mcp.NewToolResultText(string(b)), nil
+}
+
+func (s mcpServer) applyTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	fileName := req.Params.Arguments["file_name"].(string)
+
+	objects, err := readObjectsDefinitions(
+		ctx,
+		s.client.Config,
+		nil,
+		[]string{fileName},
+		newFilesPrompt(s.client.Config.FilesPromptEnabled, true, s.client.Config.FilesPromptThreshold),
+		false)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read objects from '%s' file", fileName)
+	}
+	if err = s.client.Objects().V1().Apply(ctx, objects); err != nil {
+		return nil, errors.Wrap(err, "failed to apply objects")
+	}
+
+	return mcp.NewToolResultText("The objects were successfully applied."), nil
+}
+
+func (s mcpServer) replay(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	sloName := req.Params.Arguments["slo"].(string)
+	projectName := req.Params.Arguments["project"].(string)
+	from := req.Params.Arguments["from"].(string)
+
+	cmd := exec.Command("sloctl", "replay", sloName, "--project", projectName, "--from", from)
+	b, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to replay SLO: %w; %s", err, string(b))
 	}
 
 	return mcp.NewToolResultText(string(b)), nil
@@ -269,35 +293,10 @@ func (s mcpServer) getEBSTool(ctx context.Context, req mcp.CallToolRequest) (*mc
 		slog.Error("Failed to create output file", "error", err)
 		return nil, err
 	}
+	defer func() { _ = outFile.Close() }()
 	outFile.WriteString(r)
 
 	return mcp.NewToolResultText("Retrieved Error Budget status. Saved it in file " + outputFile), nil
-}
-
-func (s mcpServer) applyTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	fileName := req.Params.Arguments["file_name"].(string)
-
-	cmd := exec.Command("sloctl", "apply", "-f", fileName)
-	b, err := cmd.Output()
-	if err != nil {
-		return nil, fmt.Errorf("failed to apply changes: %w", err)
-	}
-
-	return mcp.NewToolResultText(string(b)), nil
-}
-
-func (s mcpServer) replay(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	sloName := req.Params.Arguments["slo"].(string)
-	projectName := req.Params.Arguments["project"].(string)
-	from := req.Params.Arguments["from"].(string)
-
-	cmd := exec.Command("sloctl", "replay", sloName, "--project", projectName, "--from", from)
-	b, err := cmd.Output()
-	if err != nil {
-		return nil, fmt.Errorf("failed to replay SLO: %w; %s", err, string(b))
-	}
-
-	return mcp.NewToolResultText(string(b)), nil
 }
 
 func (s mcpServer) getEBS(ctx context.Context, sessionId, project string) (string, error) {
@@ -327,7 +326,7 @@ func (s mcpServer) getEBS(ctx context.Context, sessionId, project string) (strin
 	if resp.StatusCode == http.StatusUnauthorized {
 		// TODO call sloctl to refresh token, redo the request
 	}
-	defer resp.Body.Close()
+	defer func() { resp.Body.Close() }()
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
