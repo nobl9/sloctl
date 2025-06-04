@@ -78,6 +78,7 @@ func (a ApplyCmd) Run(cmd *cobra.Command) error {
 		return cmd.Usage()
 	}
 	objects, err := readObjectsDefinitions(
+		cmd.Context(),
 		a.client.Config,
 		cmd,
 		a.definitionPaths,
