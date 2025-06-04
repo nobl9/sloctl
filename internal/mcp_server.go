@@ -1,13 +1,16 @@
-package mcp
+package internal
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -16,15 +19,15 @@ import (
 	"github.com/nobl9/nobl9-go/sdk"
 )
 
-func NewServer(client *sdk.Client) Server {
-	return Server{client}
+func newMCPServer(client *sdk.Client) mcpServer {
+	return mcpServer{client}
 }
 
-type Server struct {
+type mcpServer struct {
 	client *sdk.Client
 }
 
-func (s Server) Start() error {
+func (s mcpServer) Start() error {
 	srv := server.NewMCPServer("Nobl9", "0.1.0",
 		server.WithResourceCapabilities(true, true),
 		server.WithPromptCapabilities(true),
@@ -128,7 +131,7 @@ func (s Server) Start() error {
 	return server.ServeStdio(srv)
 }
 
-func (s Server) getSLOs(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+func (s mcpServer) getSLOs(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 	project := req.Params.URI
 
 	outputFile := fmt.Sprintf("%s_%d.yaml", "get_slos", time.Now().Unix())
@@ -150,7 +153,7 @@ func (s Server) getSLOs(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp
 	return nil, nil
 }
 
-func (s Server) getSLOsTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s mcpServer) getSLOsTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	project := req.Params.Arguments["project"].(string)
 	format := req.Params.Arguments["format"].(string)
 	name := req.Params.Arguments["name"].(string)
@@ -190,7 +193,7 @@ func (s Server) getSLOsTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 	return mcp.NewToolResultText(buff.String()), nil
 }
 
-func (s Server) getProjectsTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s mcpServer) getProjectsTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	format := req.Params.Arguments["format"].(string)
 
 	outputFile := fmt.Sprintf("%s_%d.%s", "get_projects", time.Now().Unix(), format)
@@ -228,7 +231,7 @@ func (s Server) getProjectsTool(ctx context.Context, req mcp.CallToolRequest) (*
 	return mcp.NewToolResultText(buff.String()), nil
 }
 
-func (s Server) getSLOStatus(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s mcpServer) getSLOStatus(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	sloName, okSlo := req.Params.Arguments["name"].(string)
 	if !okSlo || sloName == "" {
 		return nil, fmt.Errorf("SLO name is required")
@@ -252,7 +255,7 @@ func (s Server) getSLOStatus(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	return mcp.NewToolResultText(string(b)), nil
 }
 
-func (s Server) getEBSTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s mcpServer) getEBSTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	project := req.Params.Arguments["project"].(string)
 	sessionId := req.Params.Arguments["session_id"].(string)
 
@@ -271,7 +274,7 @@ func (s Server) getEBSTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.C
 	return mcp.NewToolResultText("Retrieved Error Budget status. Saved it in file " + outputFile), nil
 }
 
-func (s Server) applyTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s mcpServer) applyTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	fileName := req.Params.Arguments["file_name"].(string)
 
 	cmd := exec.Command("sloctl", "apply", "-f", fileName)
@@ -283,7 +286,7 @@ func (s Server) applyTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 	return mcp.NewToolResultText(string(b)), nil
 }
 
-func (s Server) replay(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s mcpServer) replay(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	sloName := req.Params.Arguments["slo"].(string)
 	projectName := req.Params.Arguments["project"].(string)
 	from := req.Params.Arguments["from"].(string)
@@ -295,4 +298,41 @@ func (s Server) replay(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	}
 
 	return mcp.NewToolResultText(string(b)), nil
+}
+
+func (s mcpServer) getEBS(ctx context.Context, sessionId, project string) (string, error) {
+	search := `{}`
+	if project != "" {
+		search = fmt.Sprintf(`{"textSearch":"%s"}`, project)
+	}
+	body := strings.NewReader(search)
+	url := fmt.Sprintf("%s/dashboards/servicehealth/error-budget", s.client.Config.URL)
+	req, err := http.NewRequestWithContext(ctx, "POST", url, body)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.client.Config.AccessToken))
+	req.Header.Set("organization", s.client.Config.Organization)
+	req.Header.Set("n9-session-id", sessionId)
+
+	httpClient := http.Client{
+		Timeout: time.Second * 20,
+	}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode == http.StatusUnauthorized {
+		// TODO call sloctl to refresh token, redo the request
+	}
+	defer resp.Body.Close()
+
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response: %w", err)
+	}
+
+	return string(b), nil
 }
