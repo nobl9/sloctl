@@ -4,8 +4,8 @@ github.com/MicahParks/jwkset v0.9.6 h1:Tf8l2/MOby5Kh3IkrqzThPQKfLytMERoAsGZKlyYZ
 github.com/MicahParks/jwkset v0.9.6/go.mod h1:U2oRhRaLgDCLjtpGL2GseNKGmZtLs/3O7p+OZaL5vo0=
 github.com/MicahParks/keyfunc/v3 v3.3.11 h1:eA6wNltwdSRX2gtpTwZseBCC9nGeBkI9KxHtTyZbDbo=
 github.com/MicahParks/keyfunc/v3 v3.3.11/go.mod h1:y6Ed3dMgNKTcpxbaQHD8mmrYDUZWJAxteddA6OQj+ag=
-github.com/OpenSLO/go-sdk v0.6.0 h1:8VeLGqGaxc91YK49U0tcx/5GZ19sPfRBzcZKsZHJqtA=
-github.com/OpenSLO/go-sdk v0.6.0/go.mod h1:NXPksgD8m2PTufcojVbs/QqaCVWbVFJfli9lL3piBsM=
+github.com/OpenSLO/go-sdk v0.6.1 h1:n1uTt5y0G22CJ5NMyZGycgnhFJd7nVkD6Y0AzqPMr+c=
+github.com/OpenSLO/go-sdk v0.6.1/go.mod h1:/4RRWlKqlBmkty2PAPlRUsE5LHupvvklVz2ZCF2uq/U=
 github.com/aws/aws-sdk-go v1.55.7 h1:UJrkFq7es5CShfBwlWAC8DA077vp8PyVbQd3lqLiztE=
 github.com/aws/aws-sdk-go v1.55.7/go.mod h1:eRwEWoyTWFMVYVQzKMNHWP5/RV4xIUGMQfXQHfHkpNU=
 github.com/bmatcuk/doublestar/v4 v4.8.1 h1:54Bopc5c2cAvhLRAzqOGCYHYyhcDHsFF4wWIR5wKP38=
