@@ -13,7 +13,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
 	github.com/tidwall/sjson v1.2.5
-	golang.org/x/sync v0.14.0
+	golang.org/x/sync v0.15.0
 )
 
 require (
@@ -30,7 +30,7 @@ require (
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/MicahParks/jwkset v0.9.6 // indirect
 	github.com/MicahParks/keyfunc/v3 v3.3.11 // indirect
-	github.com/OpenSLO/go-sdk v0.6.0
+	github.com/OpenSLO/go-sdk v0.6.1
 	github.com/aws/aws-sdk-go v1.55.7 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.8.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
