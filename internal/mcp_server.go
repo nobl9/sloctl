@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -23,70 +24,90 @@ import (
 )
 
 func newMCPServer(client *sdk.Client) mcpServer {
-	return mcpServer{client}
+	return mcpServer{
+		client: client,
+		server: server.NewMCPServer("Nobl9", "0.1.0",
+			server.WithResourceCapabilities(true, true),
+			server.WithPromptCapabilities(true),
+			server.WithToolCapabilities(true),
+		),
+	}
 }
 
 type mcpServer struct {
 	client *sdk.Client
+	server *server.MCPServer
 }
 
 func (s mcpServer) Start() error {
-	srv := server.NewMCPServer("Nobl9", "0.1.0",
-		server.WithResourceCapabilities(true, true),
-		server.WithPromptCapabilities(true),
-		server.WithToolCapabilities(true),
-	)
-
-	r := mcp.NewResource("nobl9://{project}/slos",
-		"Nobl9 SLOs",
-		mcp.WithResourceDescription("Nobl9 SLOs are used to measure the reliability of your services. Get "),
-		mcp.WithMIMEType("application/yaml"),
-	)
-	srv.AddResource(r, s.getSLOs)
-
-	for _, tool := range []struct {
-		Kind manifest.Kind
+	// Register tools and resources for each kind.
+	for _, object := range []struct {
+		Kind                manifest.Kind
+		ResourceDescription string
 	}{
-		{Kind: manifest.KindAgent},
-		{Kind: manifest.KindAlertMethod},
-		{Kind: manifest.KindAlertPolicy},
-		{Kind: manifest.KindAlert},
-		{Kind: manifest.KindAlertSilence},
-		{Kind: manifest.KindAnnotation},
-		{Kind: manifest.KindDataExport},
-		{Kind: manifest.KindDirect},
-		{Kind: manifest.KindProject},
-		{Kind: manifest.KindRoleBinding},
-		{Kind: manifest.KindService},
-		{Kind: manifest.KindSLO},
-		{Kind: manifest.KindUserGroup},
-		{Kind: manifest.KindBudgetAdjustment},
-		{Kind: manifest.KindReport},
+		{
+			Kind:                manifest.KindAgent,
+			ResourceDescription: "Agents are middleware between the Nobl9 app and external data sources. They gather metrics data and send it to Nobl9.",
+		},
+		{
+			Kind:                manifest.KindAlertMethod,
+			ResourceDescription: "Alert methods define how notifications are sent to external tools or REST endpoints when alerts are triggered.",
+		},
+		{
+			Kind:                manifest.KindAlertPolicy,
+			ResourceDescription: "Alert policies define when to trigger an alert via the configured alert method. They accept up to three conditions that must all be met to trigger an alert.",
+		},
+		{
+			Kind:                manifest.KindAlert,
+			ResourceDescription: "Alerts represent specific notification events generated when an alert policy's conditions are met for a particular SLO.",
+		},
+		{
+			Kind:                manifest.KindAlertSilence,
+			ResourceDescription: "Alert silences allow you to turn off alerts that are attached to an SLO for a defined period of time.",
+		},
+		{
+			Kind:                manifest.KindAnnotation,
+			ResourceDescription: "Annotations let Nobl9 users add notes to their metrics. They are placed at specific time points on SLO graphs.",
+		},
+		{
+			Kind:                manifest.KindDataExport,
+			ResourceDescription: "Data export configurations allow you to export your data from Nobl9 to external storage systems like S3 or GCS.",
+		},
+		{
+			Kind:                manifest.KindDirect,
+			ResourceDescription: "Direct configurations gather metrics data directly from external sources based on provided credentials, without requiring server-side installation.",
+		},
+		{
+			Kind:                manifest.KindProject,
+			ResourceDescription: "Projects are the primary grouping of resources in Nobl9. They provide organizational structure for SLOs, services, and other resources.",
+		},
+		{
+			Kind:                manifest.KindRoleBinding,
+			ResourceDescription: "Role bindings define the relationship between users and roles, managing access permissions within projects or organizations.",
+		},
+		{
+			Kind:                manifest.KindService,
+			ResourceDescription: "Services are high-level groupings of SLOs that represent logical service endpoints like APIs, databases, or applications.",
+		},
+		{
+			Kind:                manifest.KindSLO,
+			ResourceDescription: "SLOs are target values or ranges for services measured by service level indicators. They define reliability expectations in terms of customer experience.",
+		},
+		{
+			Kind:                manifest.KindUserGroup,
+			ResourceDescription: "User groups facilitate managing user access by synchronizing groups from Identity Providers like Azure AD or Okta.",
+		},
+		{
+			Kind:                manifest.KindBudgetAdjustment,
+			ResourceDescription: "Budget adjustments define future periods where planned maintenance, releases, and similar activities won't affect your SLO budget.",
+		},
+		{
+			Kind:                manifest.KindReport,
+			ResourceDescription: "Reports allow you to define Error Budget Status, SLO History, and System Health Review report types for monitoring and analysis.",
+		},
 	} {
-		kindPlural := pluralForKind(tool.Kind)
-		opts := []mcp.ToolOption{
-			mcp.WithDescription("Get " + kindPlural),
-			mcp.WithString("name",
-				mcp.Description(fmt.Sprintf("The %s name", tool.Kind)),
-			),
-			mcp.WithString("format",
-				mcp.Required(),
-				mcp.DefaultString("yaml"),
-				mcp.Enum("yaml", "json"),
-				mcp.Description("The output format"),
-			),
-		}
-		if objectKindSupportsProjectFlag(tool.Kind) {
-			opts = append(opts, mcp.WithString("project",
-				mcp.Required(),
-				mcp.DefaultString("*"),
-				mcp.Description(fmt.Sprintf("The project in which to find %s.", kindPlural)),
-			))
-		}
-		srv.AddTool(
-			mcp.NewTool("get_"+strings.ToLower(kindPlural), opts...),
-			s.getObjectsHandler(tool.Kind),
-		)
+		s.addToolForObject(object.Kind)
+		s.addResourceForObject(object.Kind, object.ResourceDescription)
 	}
 
 	t := mcp.NewTool("get_status",
@@ -98,7 +119,7 @@ func (s mcpServer) Start() error {
 			mcp.Description("The Project name"),
 		),
 	)
-	srv.AddTool(t, s.getSLOStatus)
+	s.server.AddTool(t, s.getSLOStatus)
 
 	t = mcp.NewTool("get_ebs",
 		mcp.WithDescription("Get Error Budget Status for multiple SLOs"),
@@ -110,7 +131,7 @@ func (s mcpServer) Start() error {
 			mcp.Required(),
 		),
 	)
-	srv.AddTool(t, s.getEBSTool)
+	s.server.AddTool(t, s.getEBSTool)
 
 	t = mcp.NewTool("apply",
 		mcp.WithDescription("Apply changes to nobl9"),
@@ -119,7 +140,7 @@ func (s mcpServer) Start() error {
 			mcp.Required(),
 		),
 	)
-	srv.AddTool(t, s.applyTool)
+	s.server.AddTool(t, s.applyTool)
 
 	t = mcp.NewTool("replay",
 		mcp.WithDescription("Replay slo"),
@@ -136,35 +157,120 @@ func (s mcpServer) Start() error {
 			mcp.Required(),
 		),
 	)
-	srv.AddTool(t, s.replay)
+	s.server.AddTool(t, s.replay)
 
 	slog.Info("Starting Nobl9 MCP server", "version", "0.1.0")
-	return server.ServeStdio(srv)
+	return server.ServeStdio(s.server)
 }
 
-func (s mcpServer) getSLOs(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
-	project := req.Params.URI
-
-	outputFile := fmt.Sprintf("%s_%d.yaml", "get_slos", time.Now().Unix())
-	outFile, err := os.Create(outputFile)
-	if err != nil {
-		slog.Error("Failed to create output file", "error", err)
-		return nil, err
+func (s mcpServer) addToolForObject(kind manifest.Kind) {
+	kindPlural := pluralForKind(kind)
+	opts := []mcp.ToolOption{
+		mcp.WithDescription("Get " + kindPlural),
+		mcp.WithString("name",
+			mcp.Description(fmt.Sprintf("The %s name", kind)),
+		),
+		mcp.WithString("format",
+			mcp.Required(),
+			mcp.DefaultString("yaml"),
+			mcp.Enum("yaml", "json"),
+			mcp.Description("The output format"),
+		),
 	}
-
-	cmd := exec.Command("sloctl", "get", "slo", "--project", project)
-	cmd.Stdout = outFile
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		slog.Error("Failed to run sloctl command", "error", err)
-		return nil, err
+	if objectKindSupportsProjectFlag(kind) {
+		opts = append(opts, mcp.WithString("project",
+			mcp.Required(),
+			mcp.DefaultString("*"),
+			mcp.Description(fmt.Sprintf("The project in which to find %s.", kindPlural)),
+		))
 	}
-
-	return nil, nil
+	s.server.AddTool(
+		mcp.NewTool("get_"+strings.ToLower(kindPlural), opts...),
+		s.getObjectsToolHandler(kind),
+	)
 }
 
-func (s mcpServer) getObjectsHandler(kind manifest.Kind) server.ToolHandlerFunc {
+func (s mcpServer) addResourceForObject(kind manifest.Kind, description string) {
+	kindPlural := pluralForKind(kind)
+	var uri string
+	if objectKindSupportsProjectFlag(kind) {
+		uri = fmt.Sprintf("nobl9://{project}/%s", strings.ToLower(kindPlural))
+	} else {
+		uri = fmt.Sprintf("nobl9://%s", strings.ToLower(kindPlural))
+	}
+	r := mcp.NewResource(uri,
+		fmt.Sprintf("Nobl9 %s", kindPlural),
+		mcp.WithResourceDescription(description),
+		mcp.WithMIMEType("application/yaml"),
+	)
+	s.server.AddResource(r, s.getObjectsResourceHandler(kind))
+}
+
+func (s mcpServer) getObjectsResourceHandler(kind manifest.Kind) server.ResourceHandlerFunc {
+	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		uri := req.Params.URI
+		kindPlural := strings.ToLower(pluralForKind(kind))
+
+		header := http.Header{}
+		var project string
+		if objectKindSupportsProjectFlag(kind) {
+			// URI format: nobl9://{project}/{kindPlural}
+			uriWithoutScheme := strings.TrimPrefix(uri, "nobl9://")
+			project = strings.TrimSuffix(uriWithoutScheme, "/"+kindPlural)
+			header.Set(sdk.HeaderProject, project)
+		}
+
+		objects, err := s.client.Objects().V1().Get(ctx, kind, header, nil)
+		if err != nil {
+			slog.Error(fmt.Sprintf("Failed to fetch %s", pluralForKind(kind)), "error", err, "project", project)
+			return nil, err
+		}
+
+		if len(objects) == 0 {
+			var text string
+			if project != "" {
+				text = fmt.Sprintf("Found no %s in project %s\n", pluralForKind(kind), project)
+			} else {
+				text = fmt.Sprintf("Found no %s\n", pluralForKind(kind))
+			}
+			return []mcp.ResourceContents{
+				&mcp.TextResourceContents{
+					URI:      uri,
+					MIMEType: "text/plain",
+					Text:     text,
+				},
+			}, nil
+		}
+
+		filename := fmt.Sprintf("%s_%d.yaml", objects[0].GetKind(), time.Now().Unix())
+		if err := s.writeObjectsToFile(filename, "yaml", objects); err != nil {
+			return nil, errors.Wrapf(err, "failed to write %s to a file", pluralForKind(kind))
+		}
+
+		resourceContents := make([]mcp.ResourceContents, 0, len(objects)+1)
+		resourceContents = append(resourceContents, &mcp.TextResourceContents{
+			URI:      uri,
+			MIMEType: "text/plain",
+			Text: fmt.Sprintf("Retrieved %d %s. Output written to: %s\n",
+				len(objects), pluralForKind(kind), filename),
+		})
+		for _, obj := range objects {
+			var buf bytes.Buffer
+			if err := sdk.EncodeObject(obj, &buf, manifest.ObjectFormatYAML); err != nil {
+				slog.Error("Failed to encode object", "error", err, "object", obj)
+				continue
+			}
+			resourceContents = append(resourceContents, &mcp.TextResourceContents{
+				URI:      uri,
+				MIMEType: "application/yaml",
+				Text:     buf.String(),
+			})
+		}
+		return resourceContents, nil
+	}
+}
+
+func (s mcpServer) getObjectsToolHandler(kind manifest.Kind) server.ToolHandlerFunc {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		format, _ := req.Params.Arguments["format"].(string)
 		project, _ := req.Params.Arguments["project"].(string)
@@ -187,8 +293,8 @@ func (s mcpServer) getObjectsHandler(kind manifest.Kind) server.ToolHandlerFunc 
 			return mcp.NewToolResultText(fmt.Sprintf("Found no %s\n", pluralForKind(kind))), nil
 		}
 
-		filename, err := s.writeObjectsToFile(format, objects)
-		if err != nil {
+		filename := fmt.Sprintf("get_%s_%d.%s", objects[0].GetKind(), time.Now().Unix(), format)
+		if err := s.writeObjectsToFile(filename, format, objects); err != nil {
 			return nil, errors.Wrapf(err, "failed to write %s to a file", pluralForKind(kind))
 		}
 
@@ -204,21 +310,20 @@ func (s mcpServer) getObjectsHandler(kind manifest.Kind) server.ToolHandlerFunc 
 	}
 }
 
-func (s mcpServer) writeObjectsToFile(formatStr string, objects []manifest.Object) (string, error) {
+func (s mcpServer) writeObjectsToFile(outFilename, formatStr string, objects []manifest.Object) error {
 	format, err := manifest.ParseObjectFormat(strings.ToUpper(formatStr))
 	if err != nil {
-		return "", err
+		return err
 	}
-	outputFile := fmt.Sprintf("get_%s_%d.%s", objects[0].GetKind(), time.Now().Unix(), format)
-	outFile, err := os.Create(outputFile)
+	outFile, err := os.Create(outFilename)
 	if err != nil {
 		slog.Error("Failed to create output file",
 			slog.String("error", err.Error()),
-			slog.String("filename", outputFile))
-		return "", err
+			slog.String("filename", outFilename))
+		return err
 	}
 	defer func() { _ = outFile.Close() }()
-	return outputFile, sdk.EncodeObjects(objects, outFile, format)
+	return sdk.EncodeObjects(objects, outFile, format)
 }
 
 func (s mcpServer) getSLOStatus(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
