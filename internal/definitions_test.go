@@ -149,7 +149,7 @@ func TestReadResourceDefinitions(t *testing.T) {
 			reader := &mockReader{Reader: strings.NewReader(test.PromptResponse)}
 			test.Prompt.ReadFrom = reader
 
-			d, err := readObjectsDefinitions(&sdk.Config{}, cmd, test.Paths, test.Prompt, false)
+			d, err := readObjectsDefinitions(cmd.Context(), &sdk.Config{}, cmd, test.Paths, test.Prompt, false)
 
 			if test.PromptDisplayed {
 				assert.Equal(t, test.PromptDisplayed, reader.WasRead)
