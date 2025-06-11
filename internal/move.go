@@ -1,0 +1,112 @@
+package internal
+
+import (
+	"bytes"
+	_ "embed"
+	"fmt"
+	"io"
+	"os"
+
+	"github.com/nobl9/nobl9-go/sdk"
+	v1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
+	"github.com/nobl9/nobl9-go/sdk/models"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+)
+
+type MoveCmd struct {
+	client              *sdk.Client
+	oldProject          string
+	newService          string
+	newProject          string
+	detachAlertPolicies bool
+	out                 io.Writer
+}
+
+//go:embed move_slo_example.sh
+var moveSLOExample string
+
+// NewApplyCmd returns cobra command apply with all its flags.
+func (r *RootCmd) NewMoveCmd() *cobra.Command {
+	move := &MoveCmd{out: os.Stderr}
+
+	cmd := &cobra.Command{
+		Use:   "move",
+		Short: "Move objects.",
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			move.client = r.GetClient()
+		},
+	}
+
+	cmd.AddCommand(move.newMoveSLOCmd())
+	return cmd
+}
+
+func (m *MoveCmd) newMoveSLOCmd() *cobra.Command {
+	moveSubCmd := &cobra.Command{
+		Use:     "slo",
+		Short:   "Move SLOs between Projects.",
+		Long:    "Moves specified SLOs from their current Project to a new Project.",
+		Example: moveSLOExample,
+		RunE:    m.moveSLO,
+	}
+
+	const toProjectFlagName = "to-project"
+	moveSubCmd.Flags().StringVarP(&m.oldProject, "project", "p", "", `Source Project of the moved SLOs.`)
+	moveSubCmd.Flags().StringVarP(&m.newProject, toProjectFlagName, "", "", `Target Project for the moved SLOs (where to move them to).`)
+	moveSubCmd.Flags().StringVarP(&m.newService, "service", "s", "", `Target Service for the moved SLOs.`)
+	moveSubCmd.Flags().BoolVarP(&m.detachAlertPolicies, "detach-alert-policies", "", false, `Detach all Alert Policies from the moved SLOs.`)
+	moveSubCmd.MarkFlagRequired(toProjectFlagName)
+
+	return moveSubCmd
+}
+
+func (m *MoveCmd) moveSLO(cmd *cobra.Command, sloNames []string) error {
+	ctx := cmd.Context()
+	if m.oldProject != "" {
+		m.client.Config.Project = m.oldProject
+	}
+	oldProject := m.client.Config.Project
+
+	if len(sloNames) == 0 {
+		slos, err := m.client.Objects().V1().GetV1alphaSLOs(ctx, v1.GetSLOsRequest{Project: oldProject})
+		if err != nil {
+			return errors.Wrapf(err, "failed to fetch all SLOs for '%s' Project", oldProject)
+		}
+		sloNames = make([]string, 0, len(slos))
+		for _, slo := range slos {
+			sloNames = append(sloNames, slo.GetName())
+		}
+	}
+
+	buf := bytes.Buffer{}
+	if len(sloNames) == 1 {
+		buf.WriteString(fmt.Sprintf("Moving '%s' SLO from '%s' Project to '%s' Project.\n",
+			sloNames[0], oldProject, m.newProject))
+	} else {
+		buf.WriteString(fmt.Sprintf("Moving the following SLOs from '%s' Project to '%s' Project:\n",
+			oldProject, m.newProject))
+		buf.WriteString(" - ")
+		for _, sloName := range sloNames {
+			buf.WriteString(sloName)
+			buf.WriteString("\n")
+		}
+	}
+	if m.newService != "" {
+		buf.WriteString(fmt.Sprintf("'%s' Service in '%s' Project will be assigned to all the moved SLOs.\n",
+			m.newService, m.newProject))
+	}
+	buf.WriteString("If the target Service in the new Project does not exist, it will be copied.\n")
+	if m.detachAlertPolicies {
+		buf.WriteString("Attached Alert Policies will be detached from all the moved SLOs.\n")
+	}
+	m.out.Write(buf.Bytes())
+
+	return m.client.Objects().V1().MoveSLOs(ctx, models.MoveSLOs{
+		SLONames:            sloNames,
+		OldProject:          oldProject,
+		NewProject:          m.newProject,
+		Service:             m.newService,
+		DetachAlertPolicies: m.detachAlertPolicies,
+	})
+}
