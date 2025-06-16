@@ -7,8 +7,6 @@ setup_file() {
   load_lib "bats-assert"
 
   generate_inputs "$BATS_FILE_TMPDIR"
-  run_sloctl apply -f "'$TEST_INPUTS/**'"
-  assert_success_joined_output
 
   export TEST_OUTPUTS="$TEST_SUITE_OUTPUTS/move-e2e"
 
@@ -16,6 +14,9 @@ setup_file() {
   for file in "$TEST_OUTPUTS"/*; do
     run sed -i "s/<PROJECT>/$TEST_PROJECT/g" "$file"
   done
+
+  run_sloctl apply -f "'$TEST_INPUTS/**'"
+  assert_success_joined_output
 }
 
 # teardown_file is run only once for the whole file.
@@ -31,7 +32,6 @@ setup() {
   load_lib "bats-assert"
 }
 
-# bats test_tags=bats:focsu
 @test "default source Project" {
   SLOCTL_PROJECT="$TEST_PROJECT" run_sloctl move slo default-project --to-project="${TEST_PROJECT}-new"
 
@@ -74,12 +74,13 @@ EOF
 }
 
 @test "move all slos from Project" {
-  run_sloctl move slo -p "$TEST_PROJECT" --to-project="${TEST_PROJECT}-new"
+  run_sloctl move slo -p "${TEST_PROJECT}-all" --to-project="${TEST_PROJECT}-new"
 
   assert_success_joined_output
   output="$stderr"
   assert_output - <<EOF
-Moving the following SLOs from '$TEST_PROJECT' Project to '${TEST_PROJECT}-new' Project:
+Fetching all SLOs from '${TEST_PROJECT}-all' Project...
+Moving the following SLOs from '${TEST_PROJECT}-all' Project to '${TEST_PROJECT}-new' Project:
  - move-all-slos-1
  - move-all-slos-2
 If the target Service in the new Project does not exist, it will be copied.
@@ -89,12 +90,12 @@ EOF
 }
 
 @test "custom target Service" {
-  run_sloctl move slo splunk-raw-rolling -p "$TEST_PROJECT" --to-service="custom-target-service" --to-project="${TEST_PROJECT}-new"
+  run_sloctl move slo custom-target-service -p "$TEST_PROJECT" --to-service="custom-target-service" --to-project="${TEST_PROJECT}-new"
 
   assert_success_joined_output
   output="$stderr"
   assert_output - <<EOF
-Moving 'splunk-raw-rolling' SLO from '$TEST_PROJECT' Project to '${TEST_PROJECT}-new' Project.
+Moving 'custom-target-service' SLO from '$TEST_PROJECT' Project to '${TEST_PROJECT}-new' Project.
 'custom-target-service' Service in '${TEST_PROJECT}-new' Project will be assigned to all the moved SLOs.
 If the target Service in the new Project does not exist, it will be copied.
 EOF
@@ -103,15 +104,15 @@ EOF
 }
 
 @test "error for attached Alert Policies" {
-  run_sloctl move slo splunk-raw-rolling -p "$TEST_PROJECT" --to-service="TODO" --to-project="${TEST_PROJECT}-new"
+  run_sloctl move slo detach-alert-policies -p "$TEST_PROJECT" --to-project="${TEST_PROJECT}-new"
 
   assert_failure
   output="$stderr"
-  assert_output 'Error: required flag(s) "adjustment-name", "file" not set'
+  assert_output --partial 'cannot move detach-alert-policies SLO while it has assigned Alert Policies'
 }
 
 @test "detach Alert Policies" {
-  run_sloctl move slo splunk-raw-rolling -p "$TEST_PROJECT" --detach-alert-policies --to-project="${TEST_PROJECT}-new"
+  run_sloctl move slo detach-alert-policies -p "$TEST_PROJECT" --detach-alert-policies --to-project="${TEST_PROJECT}-new"
 
   assert_success_joined_output
   output="$stderr"

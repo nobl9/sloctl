@@ -1,15 +1,15 @@
 - apiVersion: n9/v1alpha
   kind: SLO
   metadata:
-    name: custom-target-service
-    project: <PROJECT>-new
+    name: detach-alert-policies-error
+    project: <PROJECT>
   spec:
     description: This SLO is just for the e2e 'sloctl move' tests, it's not supposed to work!
-    service: custom-target-service
+    alertPolicies: [trigger-alert-immediately]
+    service: move-slo-service
     indicator:
       metricSource:
         kind: Direct
-        project: <PROJECT>
         name: splunk-direct
     timeWindows:
       - unit: Day
@@ -28,10 +28,3 @@
           query:
             splunk:
               query: "index=* source=udp:5072 sourcetype=syslog status<400 | bucket _time span=1m | stats avg(response_time) as n9value by _time | rename _time as n9time | fields n9time n9value"
-- apiVersion: n9/v1alpha
-  kind: Service
-  metadata:
-    name: custom-target-service
-    project: <PROJECT>-new
-  spec:
-    description: Dummy Service for 'sloctl move' e2e tests

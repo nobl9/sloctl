@@ -2,13 +2,15 @@ package internal
 
 import (
 	"bytes"
+	"context"
 	_ "embed"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 
+	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/sdk"
-	v1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
 	"github.com/nobl9/nobl9-go/sdk/models"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -26,7 +28,6 @@ type MoveCmd struct {
 //go:embed move_slo_example.sh
 var moveSLOExample string
 
-// NewApplyCmd returns cobra command apply with all its flags.
 func (r *RootCmd) NewMoveCmd() *cobra.Command {
 	move := &MoveCmd{out: os.Stderr}
 
@@ -52,11 +53,37 @@ func (m *MoveCmd) newMoveSLOCmd() *cobra.Command {
 	}
 
 	const toProjectFlagName = "to-project"
-	moveSubCmd.Flags().StringVarP(&m.oldProject, "project", "p", "", `Source Project of the moved SLOs.`)
-	moveSubCmd.Flags().StringVarP(&m.newProject, toProjectFlagName, "", "", `Target Project for the moved SLOs (where to move them to).`)
-	moveSubCmd.Flags().StringVarP(&m.newService, "service", "s", "", `Target Service for the moved SLOs.`)
-	moveSubCmd.Flags().BoolVarP(&m.detachAlertPolicies, "detach-alert-policies", "", false, `Detach all Alert Policies from the moved SLOs.`)
-	moveSubCmd.MarkFlagRequired(toProjectFlagName)
+	moveSubCmd.Flags().StringVarP(
+		&m.oldProject,
+		"project",
+		"p",
+		"",
+		`Source Project of the moved SLOs.`,
+	)
+	moveSubCmd.Flags().StringVarP(
+		&m.newProject,
+		toProjectFlagName,
+		"",
+		"",
+		`Target Project for the moved SLOs (where to move them to).`,
+	)
+	moveSubCmd.Flags().StringVarP(
+		&m.newService,
+		"to-service",
+		"",
+		"",
+		`Target Service for the moved SLOs.`,
+	)
+	moveSubCmd.Flags().BoolVarP(
+		&m.detachAlertPolicies,
+		"detach-alert-policies",
+		"",
+		false,
+		`Detach all Alert Policies from the moved SLOs.`,
+	)
+	if err := moveSubCmd.MarkFlagRequired(toProjectFlagName); err != nil {
+		panic(err)
+	}
 
 	return moveSubCmd
 }
@@ -69,21 +96,21 @@ func (m *MoveCmd) moveSLO(cmd *cobra.Command, sloNames []string) error {
 	oldProject := m.client.Config.Project
 
 	if len(sloNames) == 0 {
-		slos, err := m.client.Objects().V1().GetV1alphaSLOs(ctx, v1.GetSLOsRequest{Project: oldProject})
+		var err error
+		sloNames, err = m.getSLONamesForProject(ctx, oldProject)
 		if err != nil {
-			return errors.Wrapf(err, "failed to fetch all SLOs for '%s' Project", oldProject)
-		}
-		sloNames = make([]string, 0, len(slos))
-		for _, slo := range slos {
-			sloNames = append(sloNames, slo.GetName())
+			return err
 		}
 	}
 
 	buf := bytes.Buffer{}
-	if len(sloNames) == 1 {
+	switch len(sloNames) {
+	case 0:
+		return errors.Errorf("found no SLOs in '%s' Project", oldProject)
+	case 1:
 		buf.WriteString(fmt.Sprintf("Moving '%s' SLO from '%s' Project to '%s' Project.\n",
 			sloNames[0], oldProject, m.newProject))
-	} else {
+	default:
 		buf.WriteString(fmt.Sprintf("Moving the following SLOs from '%s' Project to '%s' Project:\n",
 			oldProject, m.newProject))
 		for _, sloName := range sloNames {
@@ -100,7 +127,7 @@ func (m *MoveCmd) moveSLO(cmd *cobra.Command, sloNames []string) error {
 	if m.detachAlertPolicies {
 		buf.WriteString("Attached Alert Policies will be detached from all the moved SLOs.\n")
 	}
-	m.out.Write(buf.Bytes())
+	_, _ = m.out.Write(buf.Bytes())
 
 	return m.client.Objects().V1().MoveSLOs(ctx, models.MoveSLOs{
 		SLONames:            sloNames,
@@ -109,4 +136,22 @@ func (m *MoveCmd) moveSLO(cmd *cobra.Command, sloNames []string) error {
 		Service:             m.newService,
 		DetachAlertPolicies: m.detachAlertPolicies,
 	})
+}
+
+func (m *MoveCmd) getSLONamesForProject(ctx context.Context, project string) ([]string, error) {
+	_, _ = m.out.Write([]byte(fmt.Sprintf("Fetching all SLOs from '%s' Project...\n", project)))
+	slos, err := m.client.Objects().V1().Get(
+		ctx,
+		manifest.KindSLO,
+		http.Header{sdk.HeaderProject: []string{project}},
+		nil,
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to fetch all SLOs for '%s' Project", project)
+	}
+	sloNames := make([]string, 0, len(slos))
+	for _, slo := range slos {
+		sloNames = append(sloNames, slo.GetName())
+	}
+	return sloNames, nil
 }

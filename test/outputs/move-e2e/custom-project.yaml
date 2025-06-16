@@ -9,6 +9,7 @@
     indicator:
       metricSource:
         kind: Direct
+        project: <PROJECT>
         name: splunk-direct
     timeWindows:
       - unit: Day

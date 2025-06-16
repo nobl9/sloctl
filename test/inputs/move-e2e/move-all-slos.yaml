@@ -2,13 +2,14 @@
   kind: SLO
   metadata:
     name: move-all-slos-1
-    project: <PROJECT>
+    project: <PROJECT>-all
   spec:
     description: This SLO is just for the e2e 'sloctl move' tests, it's not supposed to work!
     service: move-slo-service
     indicator:
       metricSource:
         kind: Direct
+        project: <PROJECT>
         name: splunk-direct
     timeWindows:
       - unit: Day
@@ -31,13 +32,14 @@
   kind: SLO
   metadata:
     name: move-all-slos-2
-    project: <PROJECT>-new
+    project: <PROJECT>-all
   spec:
     description: This SLO is just for the e2e 'sloctl move' tests, it's not supposed to work!
     service: move-slo-service
     indicator:
       metricSource:
         kind: Direct
+        project: <PROJECT>
         name: splunk-direct
     timeWindows:
       - unit: Day
@@ -56,3 +58,16 @@
           query:
             splunk:
               query: "index=* source=udp:5072 sourcetype=syslog status<400 | bucket _time span=1m | stats avg(response_time) as n9value by _time | rename _time as n9time | fields n9time n9value"
+- apiVersion: n9/v1alpha
+  kind: Service
+  metadata:
+    name: move-slo-service
+    project: <PROJECT>-all
+  spec:
+    description: Dummy Service for 'sloctl move' e2e tests
+- apiVersion: n9/v1alpha
+  kind: Project
+  metadata:
+    name: <PROJECT>-all
+  spec:
+    description: Dummy Project for 'sloctl move' e2e tests

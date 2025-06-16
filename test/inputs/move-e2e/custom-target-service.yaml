@@ -5,7 +5,7 @@
     project: <PROJECT>
   spec:
     description: This SLO is just for the e2e 'sloctl move' tests, it's not supposed to work!
-    service: move-slo-custom-service
+    service: move-slo-service
     indicator:
       metricSource:
         kind: Direct

@@ -1,7 +1,7 @@
 - apiVersion: n9/v1alpha
   kind: SLO
   metadata:
-    name: move-single-slo-custom-project
+    name: detach-alert-policies
     project: <PROJECT>-new
   spec:
     description: This SLO is just for the e2e 'sloctl move' tests, it's not supposed to work!
@@ -9,6 +9,7 @@
     indicator:
       metricSource:
         kind: Direct
+        project: <PROJECT>
         name: splunk-direct
     timeWindows:
       - unit: Day

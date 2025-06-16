@@ -14,7 +14,7 @@
 # Stderr is separated from stdout into $stderr and $output.
 run_sloctl() {
   bats_require_minimum_version 1.5.0
-  run --separate-stderr bash -c "set -o pipefail && sloctl $* | sed 's/ *$//'"
+  run --separate-stderr bash -c "set -eo pipefail && sloctl $* | sed 's/ *$//'"
 }
 
 # read_files
