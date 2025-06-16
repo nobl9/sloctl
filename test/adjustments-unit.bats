@@ -3,8 +3,8 @@
 
 # setup_file is run only once for the whole file.
 setup_file() {
-  load "test_helper/load"
-  load_lib "bats-assert"
+  export SLOCTL_CLIENT_ID=id
+  export SLOCTL_CLIENT_SECRET=secret
 }
 
 # setup is run before each test.
@@ -12,8 +12,6 @@ setup() {
   load "test_helper/load"
   load_lib "bats-support"
   load_lib "bats-assert"
-  export SLOCTL_CLIENT_ID=id
-  export SLOCTL_CLIENT_SECRET=secret
 }
 
 @test "missing required flags" {
