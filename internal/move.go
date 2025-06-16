@@ -86,8 +86,8 @@ func (m *MoveCmd) moveSLO(cmd *cobra.Command, sloNames []string) error {
 	} else {
 		buf.WriteString(fmt.Sprintf("Moving the following SLOs from '%s' Project to '%s' Project:\n",
 			oldProject, m.newProject))
-		buf.WriteString(" - ")
 		for _, sloName := range sloNames {
+			buf.WriteString(" - ")
 			buf.WriteString(sloName)
 			buf.WriteString("\n")
 		}

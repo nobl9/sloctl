@@ -1,11 +1,11 @@
 - apiVersion: n9/v1alpha
   kind: SLO
   metadata:
-    name: splunk-raw-rolling
-    project: move-single-slo 
+    name: custom-target-service
+    project: <PROJECT>-new
   spec:
     description: This SLO is just for the e2e 'sloctl move' tests, it's not supposed to work!
-    service: old-service
+    service: custom-target-service
     indicator:
       metricSource:
         kind: Direct
@@ -27,33 +27,10 @@
           query:
             splunk:
               query: "index=* source=udp:5072 sourcetype=syslog status<400 | bucket _time span=1m | stats avg(response_time) as n9value by _time | rename _time as n9time | fields n9time n9value"
-    alertPolicies:
-      - trigger-alert-immediately
-      - budget-will-be-burn-in-3days
-- apiVersion: n9/v1alpha
-  kind: Project
-  metadata:
-    name: move-single-slo
-  spec:
-    description: Dummy Project for 'sloctl move' e2e tests
 - apiVersion: n9/v1alpha
   kind: Service
   metadata:
-    name: old-service
-    project: move-single-slo 
+    name: custom-target-service
+    project: <PROJECT>-new
   spec:
     description: Dummy Service for 'sloctl move' e2e tests
-- apiVersion: n9/v1alpha
-  kind: Direct
-  metadata:
-    name: splunk-direct
-    project: move-single-slo
-  spec:
-    description: This Direct is just for the e2e 'sloctl move' tests, it's not supposed to work!
-    splunk:
-      accessToken: "theaccesstoken"
-      url: "https://splunk.example.com"
-    queryDelay:
-      unit: Minute
-      value: 5
-    releaseChannel: stable

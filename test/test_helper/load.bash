@@ -99,7 +99,9 @@ _assert_objects_existence() {
     case "$1" in
     apply)
       run_sloctl "${args[*]}"
-      refute_output --partial "No resources found"
+      if ! refute_output --partial "No resources found"; then
+        printf "Assertion failed for 'sloctl %s'\n" "${args[*]}" >&2
+      fi
       # We can't retrieve the same object we applied so we need to compare the minimum.
       filter='[.[] | {"name": .metadata.name, "project": .metadata.project, "labels": .metadata.labels, "annotations": .metadata.annotations}] | sort_by(.name, .project)'
       # shellcheck disable=2154
