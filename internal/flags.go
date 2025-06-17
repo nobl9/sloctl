@@ -86,9 +86,9 @@ func objectKindSupportsProjectSloFlag(kind manifest.Kind) bool {
 
 func registerProjectSloFlag(cmd *cobra.Command, storeSloIn, storeProjectIn *string) {
 	cmd.Flags().StringVarP(storeSloIn, "slo", "", "",
-		`Filter resource by slo name. Example:	my-sample-slo-name `)
+		`Filter resource by SLO name. Example: my-sample-slo-name`)
 	cmd.Flags().StringVarP(storeProjectIn, "project", "p", "",
-		`Filter resource by slo project name. Example:	my-sample-project-name `)
+		`Filter resource by SLO Project name. Example: my-sample-project-name`)
 	cmd.MarkFlagsRequiredTogether("slo", "project")
 }
 

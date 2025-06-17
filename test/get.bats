@@ -204,12 +204,12 @@ setup() {
 
 @test "check get adjustment" {
   # SLO specified - no matches.
-  run_sloctl get get budgetadjustments --slo slo-that-not-exists --project default
+  run_sloctl get budgetadjustments --slo slo-that-not-exists --project default
   assert_success_joined_output
   assert_output "No resources found."
 
   # SLO not specified - no matches.
-  run_sloctl get get budgetadjustments
+  run_sloctl get budgetadjustments
   assert_success
 }
 
