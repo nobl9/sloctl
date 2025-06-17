@@ -75,23 +75,6 @@ func objectKindSupportsLabelsFlag(kind manifest.Kind) bool {
 	return ok
 }
 
-var sloSupportingKinds = map[manifest.Kind]struct{}{
-	manifest.KindBudgetAdjustment: {},
-}
-
-func objectKindSupportsProjectSloFlag(kind manifest.Kind) bool {
-	_, ok := sloSupportingKinds[kind]
-	return ok
-}
-
-func registerProjectSloFlag(cmd *cobra.Command, storeSloIn, storeProjectIn *string) {
-	cmd.Flags().StringVarP(storeSloIn, "slo", "", "",
-		`Filter resource by SLO name. Example: my-sample-slo-name`)
-	cmd.Flags().StringVarP(storeProjectIn, "project", "p", "",
-		`Filter resource by SLO Project name. Example: my-sample-project-name`)
-	cmd.MarkFlagsRequiredTogether("slo", "project")
-}
-
 func registerLabelsFlag(cmd *cobra.Command, storeIn *[]string) {
 	cmd.Flags().StringArrayVarP(storeIn, "label", "l", []string{},
 		`Filter resource by label. Example: key=value,key2=value2,key2=value3.`)

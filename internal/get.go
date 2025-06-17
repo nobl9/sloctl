@@ -79,7 +79,7 @@ To get more details in output use one of the available flags.`,
 		{Kind: manifest.KindService, Aliases: []string{"svc", "svcs"}},
 		{Kind: manifest.KindSLO, Extender: get.newGetSLOCommand},
 		{Kind: manifest.KindUserGroup},
-		{Kind: manifest.KindBudgetAdjustment},
+		{Kind: manifest.KindBudgetAdjustment, Extender: get.newGetBudgetAdjustmentCommand},
 		{Kind: manifest.KindReport},
 	} {
 		plural := subCmd.Kind.String() + "s"
@@ -102,9 +102,6 @@ To get more details in output use one of the available flags.`,
 		}
 		if objectKindSupportsLabelsFlag(subCmd.Kind) {
 			registerLabelsFlag(sc, &get.labels)
-		}
-		if objectKindSupportsProjectSloFlag(subCmd.Kind) {
-			registerProjectSloFlag(sc, &get.slo, &get.project)
 		}
 		cmd.AddCommand(sc)
 	}
@@ -313,6 +310,15 @@ func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 
 func (g *GetCmd) newGetSLOCommand(cmd *cobra.Command) *cobra.Command {
 	cmd.Flags().StringArrayVarP(&g.services, "service", "s", nil, "Filter SLOs by service name.")
+	return cmd
+}
+
+func (g *GetCmd) newGetBudgetAdjustmentCommand(cmd *cobra.Command) *cobra.Command {
+	cmd.Flags().StringVarP(&g.slo, "slo", "", "",
+		`Filter resource by SLO name. Example: my-sample-slo-name`)
+	cmd.Flags().StringVarP(&g.project, "project", "p", "",
+		`Filter resource by SLO Project name. Example: my-sample-project-name`)
+	cmd.MarkFlagsRequiredTogether("slo", "project")
 	return cmd
 }
 
