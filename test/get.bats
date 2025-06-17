@@ -202,6 +202,17 @@ setup() {
     "$(yq --sort-keys -y -r . "${TEST_OUTPUTS}/direct.yaml")"
 }
 
+@test "check get adjustment" {
+  # SLO specified - no matches.
+  run_sloctl get get budgetadjustments --filters-slo-name slo-that-not-exists --filters-slo-project default
+  assert_success_joined_output
+  assert_output "No resources found."
+
+  # SLO not specified - no matches.
+  run_sloctl get get budgetadjustments
+  assert_success
+}
+
 test_get() {
   local \
     kind="$1" \
