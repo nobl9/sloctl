@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"slices"
 
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/sdk"
@@ -33,7 +34,7 @@ func (r *RootCmd) NewMoveCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "move",
-		Short: "Move objects.",
+		Short: "Move objects between Projects.",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			move.client = r.GetClient()
 		},
@@ -153,5 +154,6 @@ func (m *MoveCmd) getSLONamesForProject(ctx context.Context, project string) ([]
 	for _, slo := range slos {
 		sloNames = append(sloNames, slo.GetName())
 	}
+	slices.Sort(sloNames)
 	return sloNames, nil
 }
