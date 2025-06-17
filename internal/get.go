@@ -33,7 +33,6 @@ type GetCmd struct {
 	services    []string
 	allProjects bool
 	slo         string
-	sloProject  string
 }
 
 // NewGetCmd returns cobra command get with all flags for it.
@@ -105,7 +104,7 @@ To get more details in output use one of the available flags.`,
 			registerLabelsFlag(sc, &get.labels)
 		}
 		if objectKindSupportsProjectSloFlag(subCmd.Kind) {
-			registerProjectSloFlag(sc, &get.slo, &get.sloProject)
+			registerProjectSloFlag(sc, &get.slo, &get.project)
 		}
 		cmd.AddCommand(sc)
 	}
@@ -372,8 +371,8 @@ func (g *GetCmd) getObjects(ctx context.Context, args []string, kind manifest.Ki
 	if len(g.services) > 0 && kind == manifest.KindSLO {
 		query[objectsV1.QueryKeyServiceName] = g.services
 	}
-	if len(g.slo) > 0 && len(g.sloProject) > 0 && kind == manifest.KindBudgetAdjustment {
-		query.Set(objectsV1.QueryKeySLOProjectName, g.sloProject)
+	if len(g.slo) > 0 && len(g.project) > 0 && kind == manifest.KindBudgetAdjustment {
+		query.Set(objectsV1.QueryKeySLOProjectName, g.project)
 		query.Set(objectsV1.QueryKeySLOName, g.slo)
 	}
 	header := http.Header{sdk.HeaderProject: []string{g.client.Config.Project}}

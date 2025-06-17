@@ -58,13 +58,13 @@ setup() {
 }
 
 @test "check adjustment filtered by slo project and name flags - validation errors" {
-  run_sloctl get budgetadjustments --filters-slo-project prometheus
+  run_sloctl get budgetadjustments --project prometheus
   assert_failure
   output="$stderr"
-  assert_output "Error: if any flags in the group [filters-slo-name filters-slo-project] are set they must all be set; missing [filters-slo-name]"
+  assert_output "Error: if any flags in the group [slo project] are set they must all be set; missing [slo]"
 
-  run_sloctl get budgetadjustments --filters-slo-name slo-2025-06-01-003
+  run_sloctl get budgetadjustments --slo slo-2025-06-01-003
   assert_failure
   output="$stderr"
-  assert_output "Error: if any flags in the group [filters-slo-name filters-slo-project] are set they must all be set; missing [filters-slo-project]"
+  assert_output "Error: if any flags in the group [slo project] are set they must all be set; missing [project]"
 }

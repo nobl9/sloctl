@@ -55,8 +55,7 @@ var projectFlagSupportingKinds = map[manifest.Kind]struct{}{
 	manifest.KindAnnotation:   {},
 	// While Alert itself is not Project scoped per-se,
 	// it does support Project filtering.
-	manifest.KindAlert:            {},
-	manifest.KindBudgetAdjustment: {},
+	manifest.KindAlert: {},
 }
 
 func objectKindSupportsProjectFlag(kind manifest.Kind) bool {
@@ -86,11 +85,11 @@ func objectKindSupportsProjectSloFlag(kind manifest.Kind) bool {
 }
 
 func registerProjectSloFlag(cmd *cobra.Command, storeSloIn, storeProjectIn *string) {
-	cmd.Flags().StringVarP(storeSloIn, "filters-slo-name", "", "",
+	cmd.Flags().StringVarP(storeSloIn, "slo", "", "",
 		`Filter resource by slo name. Example:	my-sample-slo-name `)
-	cmd.Flags().StringVarP(storeProjectIn, "filters-slo-project", "", "",
+	cmd.Flags().StringVarP(storeProjectIn, "project", "p", "",
 		`Filter resource by slo project name. Example:	my-sample-project-name `)
-	cmd.MarkFlagsRequiredTogether("filters-slo-name", "filters-slo-project")
+	cmd.MarkFlagsRequiredTogether("slo", "project")
 }
 
 func registerLabelsFlag(cmd *cobra.Command, storeIn *[]string) {
