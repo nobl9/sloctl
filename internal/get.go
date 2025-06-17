@@ -63,12 +63,11 @@ To get more details in output use one of the available flags.`,
 	for _, subCmd := range []struct {
 		Kind     manifest.Kind
 		Aliases  []string
-		Plural   string
 		Extender func(cmd *cobra.Command) *cobra.Command
 	}{
 		{Kind: manifest.KindAgent, Aliases: []string{"agent", "Agents", "Agent"}, Extender: get.newGetAgentCommand},
 		{Kind: manifest.KindAlertMethod},
-		{Kind: manifest.KindAlertPolicy, Plural: "AlertPolicies"},
+		{Kind: manifest.KindAlertPolicy},
 		{Kind: manifest.KindAlert, Extender: get.newGetAlertCommand},
 		{Kind: manifest.KindAlertSilence},
 		{Kind: manifest.KindAnnotation},
@@ -82,10 +81,7 @@ To get more details in output use one of the available flags.`,
 		{Kind: manifest.KindBudgetAdjustment},
 		{Kind: manifest.KindReport},
 	} {
-		plural := subCmd.Kind.String() + "s"
-		if len(subCmd.Plural) > 0 {
-			plural = subCmd.Plural
-		}
+		plural := pluralForKind(subCmd.Kind)
 		short := fmt.Sprintf("Displays all of the %s.", plural)
 		use := strings.ToLower(plural)
 		subCmd.Aliases = append(subCmd.Aliases, subCmd.Kind.ToLower(), subCmd.Kind.String())
@@ -119,7 +115,7 @@ func (g *GetCmd) newGetObjectsCommand(
 		Aliases: aliases,
 		Short:   short,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			objects, err := g.getObjects(cmd.Context(), args, kind)
+			objects, err := g.getObjects(cmd.Context(), kind, args)
 			if err != nil {
 				return err
 			}
@@ -287,7 +283,7 @@ func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 		`Displays client_secret and client_id.`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		objects, err := g.getObjects(cmd.Context(), args, manifest.KindAgent)
+		objects, err := g.getObjects(cmd.Context(), manifest.KindAgent, args)
 		if err != nil || objects == nil {
 			return err
 		}
@@ -360,7 +356,7 @@ func (g *GetCmd) enrichAgentWithSecrets(
 	return agent, nil
 }
 
-func (g *GetCmd) getObjects(ctx context.Context, args []string, kind manifest.Kind) ([]manifest.Object, error) {
+func (g *GetCmd) getObjects(ctx context.Context, kind manifest.Kind, args []string) ([]manifest.Object, error) {
 	query := url.Values{objectsV1.QueryKeyName: args}
 	if len(g.labels) > 0 {
 		query.Set(objectsV1.QueryKeyLabels, parseFilterLabel(g.labels))
