@@ -3,7 +3,7 @@ module github.com/nobl9/sloctl
 go 1.24
 
 require (
-	github.com/go-playground/validator/v10 v10.26.0
+	github.com/go-playground/validator/v10 v10.27.0
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/nobl9/go-yaml v1.0.1
 	github.com/nobl9/nobl9-go v0.108.0
