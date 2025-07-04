@@ -3,7 +3,7 @@ module github.com/nobl9/sloctl
 go 1.24
 
 require (
-	github.com/go-playground/validator/v10 v10.26.0
+	github.com/go-playground/validator/v10 v10.27.0
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/nobl9/go-yaml v1.0.1
 	github.com/nobl9/nobl9-go v0.110.0
@@ -19,14 +19,15 @@ require (
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
-	sigs.k8s.io/yaml v1.4.0 // indirect
+	go.yaml.in/yaml/v2 v2.4.2 // indirect
+	sigs.k8s.io/yaml v1.5.0 // indirect
 )
 
 require (
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/MicahParks/jwkset v0.9.6 // indirect
 	github.com/MicahParks/keyfunc/v3 v3.4.0 // indirect
-	github.com/OpenSLO/go-sdk v0.6.1
+	github.com/OpenSLO/go-sdk v0.6.2
 	github.com/aws/aws-sdk-go v1.55.7 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.8.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
