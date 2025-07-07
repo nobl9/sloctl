@@ -46,9 +46,14 @@ func (r *RootCmd) NewMoveCmd() *cobra.Command {
 
 func (m *MoveCmd) newMoveSLOCmd() *cobra.Command {
 	moveSubCmd := &cobra.Command{
-		Use:     "slo",
-		Short:   "Move SLOs between Projects.",
-		Long:    "Moves specified SLOs from their current Project to a new Project.",
+		Use:   "slo",
+		Short: "Move SLOs between Projects.",
+		Long: `Moves specified SLOs from their current Project to a new Project.
+Moving an SLO between Projects:
+  - Updates its link — the former link won't work anymore.
+  - Removes it from reports filtered by its previous path.
+  - Unlinks alert policies.
+  - Updates SLO’s parent project in the composite definition.`,
 		Example: moveSLOExample,
 		RunE:    m.moveSLO,
 	}
@@ -66,14 +71,14 @@ func (m *MoveCmd) newMoveSLOCmd() *cobra.Command {
 		toProjectFlagName,
 		"",
 		"",
-		`Target Project for the moved SLOs (where to move them to).`,
+		`Target Project for the moved SLOs.`,
 	)
 	moveSubCmd.Flags().StringVarP(
 		&m.newService,
 		"to-service",
 		"",
 		"",
-		`Target Service for the moved SLOs.`,
+		`Target Service for the moved SLOs (if not specified, the source Service name will be used).`,
 	)
 	moveSubCmd.Flags().BoolVarP(
 		&m.detachAlertPolicies,
