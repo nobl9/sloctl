@@ -48,11 +48,13 @@ func (m *MoveCmd) newMoveSLOCmd() *cobra.Command {
 	moveSubCmd := &cobra.Command{
 		Use:   "slo",
 		Short: "Move SLOs between Projects.",
-		Long: `Moves specified SLOs from their current Project to a new Project.
+		Long: `Moves one or more SLOs to a different project.
+The command will also create a new Project or Service if the specified target does not yet exist.
+
 Moving an SLO between Projects:
   - Updates its link — the former link won't work anymore.
   - Removes it from reports filtered by its previous path.
-  - Unlinks alert policies.
+  - Unlinks Alert Policies (only if --detach-alert-policies flag is provided).
   - Updates SLO’s parent project in the composite definition.`,
 		Example: moveSLOExample,
 		RunE:    m.moveSLO,
