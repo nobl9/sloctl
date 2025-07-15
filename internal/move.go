@@ -50,7 +50,7 @@ func (m *MoveCmd) newMoveSLOCmd() *cobra.Command {
 		Use:   "slo",
 		Short: "Move SLOs between Projects.",
 		Long: `Moves one or more SLOs to a different project.
-The command will also create a new Project or Service if the specified target does not yet exist.
+The command will also create a new Project and/or Service if the specified target objects do not yet exist.
 
 Moving an SLO between Projects:
   - Updates its link — the former link won't work anymore.
