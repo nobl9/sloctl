@@ -12,7 +12,7 @@ import (
 
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/sdk"
-	"github.com/nobl9/nobl9-go/sdk/models"
+	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -111,6 +111,17 @@ func (m *MoveCmd) moveSLO(cmd *cobra.Command, sloNames []string) error {
 		}
 	}
 
+	payload := objectsV1.MoveSLOsRequest{
+		SLONames:            sloNames,
+		OldProject:          oldProject,
+		NewProject:          m.newProject,
+		Service:             m.newService,
+		DetachAlertPolicies: m.detachAlertPolicies,
+	}
+	if err := payload.Validate(); err != nil {
+		return err
+	}
+
 	buf := bytes.Buffer{}
 	switch len(sloNames) {
 	case 0:
@@ -131,19 +142,17 @@ func (m *MoveCmd) moveSLO(cmd *cobra.Command, sloNames []string) error {
 		buf.WriteString(fmt.Sprintf("'%s' Service in '%s' Project will be assigned to all the moved SLOs.\n",
 			m.newService, m.newProject))
 	}
-	buf.WriteString("If the target Service in the new Project does not exist, it will be copied.\n")
+	buf.WriteString("If the target Service in the new Project does not exist, it will be created.\n")
 	if m.detachAlertPolicies {
 		buf.WriteString("Attached Alert Policies will be detached from all the moved SLOs.\n")
 	}
 	_, _ = m.out.Write(buf.Bytes())
 
-	return m.client.Objects().V1().MoveSLOs(ctx, models.MoveSLOs{
-		SLONames:            sloNames,
-		OldProject:          oldProject,
-		NewProject:          m.newProject,
-		Service:             m.newService,
-		DetachAlertPolicies: m.detachAlertPolicies,
-	})
+	if err := m.client.Objects().V1().MoveSLOs(ctx, payload); err != nil {
+		return err
+	}
+	_, _ = m.out.Write([]byte("SLOs moved successfully.\n"))
+	return nil
 }
 
 func (m *MoveCmd) getSLONamesForProject(ctx context.Context, project string) ([]string, error) {

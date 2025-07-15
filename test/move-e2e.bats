@@ -39,7 +39,8 @@ setup() {
   output="$stderr"
   assert_output - <<EOF
 Moving 'default-project' SLO from '$TEST_PROJECT' Project to '${TEST_PROJECT}-new' Project.
-If the target Service in the new Project does not exist, it will be copied.
+If the target Service in the new Project does not exist, it will be created.
+SLOs moved successfully.
 EOF
 
   assert_applied "$(read_files "${TEST_OUTPUTS}/default-project.yaml")"
@@ -52,7 +53,8 @@ EOF
   output="$stderr"
   assert_output - <<EOF
 Moving 'custom-project' SLO from '$TEST_PROJECT' Project to '${TEST_PROJECT}-new' Project.
-If the target Service in the new Project does not exist, it will be copied.
+If the target Service in the new Project does not exist, it will be created.
+SLOs moved successfully.
 EOF
 
   assert_applied "$(read_files "${TEST_OUTPUTS}/custom-project.yaml")"
@@ -67,7 +69,8 @@ EOF
 Moving the following SLOs from '$TEST_PROJECT' Project to '${TEST_PROJECT}-new' Project:
  - move-multiple-slos-1
  - move-multiple-slos-2
-If the target Service in the new Project does not exist, it will be copied.
+If the target Service in the new Project does not exist, it will be created.
+SLOs moved successfully.
 EOF
 
   assert_applied "$(read_files "${TEST_OUTPUTS}/move-multiple-slos.yaml")"
@@ -83,7 +86,8 @@ Fetching all SLOs from '${TEST_PROJECT}-all' Project...
 Moving the following SLOs from '${TEST_PROJECT}-all' Project to '${TEST_PROJECT}-new' Project:
  - move-all-slos-1
  - move-all-slos-2
-If the target Service in the new Project does not exist, it will be copied.
+If the target Service in the new Project does not exist, it will be created.
+SLOs moved successfully.
 EOF
 
   assert_applied "$(read_files "${TEST_OUTPUTS}/move-all-slos.yaml")"
@@ -97,7 +101,8 @@ EOF
   assert_output - <<EOF
 Moving 'custom-target-service' SLO from '$TEST_PROJECT' Project to '${TEST_PROJECT}-new' Project.
 'custom-target-service' Service in '${TEST_PROJECT}-new' Project will be assigned to all the moved SLOs.
-If the target Service in the new Project does not exist, it will be copied.
+If the target Service in the new Project does not exist, it will be created.
+SLOs moved successfully.
 EOF
 
   assert_applied "$(read_files "${TEST_OUTPUTS}/custom-target-service.yaml")"
@@ -118,8 +123,9 @@ EOF
   output="$stderr"
   assert_output - <<EOF
 Moving 'detach-alert-policies' SLO from '$TEST_PROJECT' Project to '${TEST_PROJECT}-new' Project.
-If the target Service in the new Project does not exist, it will be copied.
+If the target Service in the new Project does not exist, it will be created.
 Attached Alert Policies will be detached from all the moved SLOs.
+SLOs moved successfully.
 EOF
 
   assert_applied "$(read_files "${TEST_OUTPUTS}/detach-alert-policies.yaml")"
