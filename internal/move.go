@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"slices"
+	"strings"
 
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/sdk"
@@ -149,9 +150,17 @@ func (m *MoveCmd) moveSLO(cmd *cobra.Command, sloNames []string) error {
 	_, _ = m.out.Write(buf.Bytes())
 
 	if err := m.client.Objects().V1().MoveSLOs(ctx, payload); err != nil {
+		_, _ = m.out.Write([]byte("\n"))
+		var httpErr *sdk.HTTPError
+		if errors.As(err, &httpErr) {
+			if len(httpErr.Errors) > 0 && strings.Contains(httpErr.Errors[0].Title, "it has assigned Alert Policies") {
+				return errors.New("Cannot move SLOs with attached Alert Policies.\n" +
+					"Detach them manually or use the '--detach-alert-policies' flag to detach them automatically.")
+			}
+		}
 		return err
 	}
-	_, _ = m.out.Write([]byte("SLOs moved successfully.\n"))
+	_, _ = m.out.Write([]byte("\nThe SLOs were successfully moved.\n"))
 	return nil
 }
 
