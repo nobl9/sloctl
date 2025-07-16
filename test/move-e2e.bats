@@ -36,8 +36,7 @@ setup() {
   SLOCTL_PROJECT="$TEST_PROJECT" run_sloctl move slo default-project --to-project="${TEST_PROJECT}-new"
 
   assert_success_joined_output
-  output="$stderr"
-  assert_output - <<EOF
+  assert_stderr - <<EOF
 Moving 'default-project' SLO from '$TEST_PROJECT' Project to '${TEST_PROJECT}-new' Project.
 If the target Service in the new Project does not exist, it will be created.
 
@@ -51,8 +50,7 @@ EOF
   run_sloctl move slo custom-project -p "$TEST_PROJECT" --to-project="${TEST_PROJECT}-new"
 
   assert_success_joined_output
-  output="$stderr"
-  assert_output - <<EOF
+  assert_stderr - <<EOF
 Moving 'custom-project' SLO from '$TEST_PROJECT' Project to '${TEST_PROJECT}-new' Project.
 If the target Service in the new Project does not exist, it will be created.
 
@@ -66,8 +64,7 @@ EOF
   run_sloctl move slo move-multiple-slos-1 move-multiple-slos-2 -p "$TEST_PROJECT" --to-project="${TEST_PROJECT}-new"
 
   assert_success_joined_output
-  output="$stderr"
-  assert_output - <<EOF
+  assert_stderr - <<EOF
 Moving the following SLOs from '$TEST_PROJECT' Project to '${TEST_PROJECT}-new' Project:
  - move-multiple-slos-1
  - move-multiple-slos-2
@@ -83,8 +80,7 @@ EOF
   run_sloctl move slo -p "${TEST_PROJECT}-all" --to-project="${TEST_PROJECT}-new"
 
   assert_success_joined_output
-  output="$stderr"
-  assert_output - <<EOF
+  assert_stderr - <<EOF
 Fetching all SLOs from '${TEST_PROJECT}-all' Project...
 Moving the following SLOs from '${TEST_PROJECT}-all' Project to '${TEST_PROJECT}-new' Project:
  - move-all-slos-1
@@ -101,8 +97,7 @@ EOF
   run_sloctl move slo custom-target-service -p "$TEST_PROJECT" --to-service="custom-target-service" --to-project="${TEST_PROJECT}-new"
 
   assert_success_joined_output
-  output="$stderr"
-  assert_output - <<EOF
+  assert_stderr - <<EOF
 Moving 'custom-target-service' SLO from '$TEST_PROJECT' Project to '${TEST_PROJECT}-new' Project.
 'custom-target-service' Service in '${TEST_PROJECT}-new' Project will be assigned to all the moved SLOs.
 If the target Service in the new Project does not exist, it will be created.
@@ -117,8 +112,7 @@ EOF
   run_sloctl move slo detach-alert-policies -p "$TEST_PROJECT" --to-project="${TEST_PROJECT}-new"
 
   assert_failure
-  output="$stderr"
-  assert_output - <<EOF
+  assert_stderr - <<EOF
 Moving 'detach-alert-policies' SLO from '$TEST_PROJECT' Project to '${TEST_PROJECT}-new' Project.
 If the target Service in the new Project does not exist, it will be created.
 
@@ -131,8 +125,7 @@ EOF
   run_sloctl move slo detach-alert-policies -p "$TEST_PROJECT" --detach-alert-policies --to-project="${TEST_PROJECT}-new"
 
   assert_success_joined_output
-  output="$stderr"
-  assert_output - <<EOF
+  assert_stderr - <<EOF
 Moving 'detach-alert-policies' SLO from '$TEST_PROJECT' Project to '${TEST_PROJECT}-new' Project.
 If the target Service in the new Project does not exist, it will be created.
 Attached Alert Policies will be detached from all the moved SLOs.
@@ -141,4 +134,15 @@ The SLOs were successfully moved.
 EOF
 
   assert_applied "$(read_files "${TEST_OUTPUTS}/detach-alert-policies.yaml")"
+}
+
+@test "no SLOs in source Project" {
+  FAKE_PROJECT="made-up-project-x-y-z"
+  SLOCTL_PROJECT="$TEST_PROJECT" run_sloctl move slo -p "$FAKE_PROJECT" --to-project="${TEST_PROJECT}-new"
+
+  assert_failure
+  assert_stderr - <<EOF
+Fetching all SLOs from '$FAKE_PROJECT' Project...
+Error: Found no SLOs in '$FAKE_PROJECT' Project.
+EOF
 }

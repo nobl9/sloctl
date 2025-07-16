@@ -111,6 +111,9 @@ func (m *MoveCmd) moveSLO(cmd *cobra.Command, sloNames []string) error {
 			return err
 		}
 	}
+	if len(sloNames) == 0 {
+		return errors.Errorf("Found no SLOs in '%s' Project.", oldProject)
+	}
 
 	payload := objectsV1.MoveSLOsRequest{
 		SLONames:            sloNames,
@@ -125,8 +128,6 @@ func (m *MoveCmd) moveSLO(cmd *cobra.Command, sloNames []string) error {
 
 	buf := bytes.Buffer{}
 	switch len(sloNames) {
-	case 0:
-		return errors.Errorf("found no SLOs in '%s' Project", oldProject)
 	case 1:
 		buf.WriteString(fmt.Sprintf("Moving '%s' SLO from '%s' Project to '%s' Project.\n",
 			sloNames[0], oldProject, m.newProject))
