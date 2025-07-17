@@ -1,0 +1,13 @@
+- apiVersion: n9/v1alpha
+  kind: Project
+  metadata:
+    name: <PROJECT>-new
+  spec:
+    description: Dummy Project for 'sloctl move' e2e tests
+- apiVersion: n9/v1alpha
+  kind: Service
+  metadata:
+    name: move-slo-service
+    project: <PROJECT>-new
+  spec:
+    description: Dummy Service for 'sloctl move' e2e tests

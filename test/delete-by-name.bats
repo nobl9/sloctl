@@ -98,8 +98,7 @@ test_delete_by_name() {
   # Ensure delete by name without a name doesn't pass.
   run_sloctl delete "$kind"
   assert_failure
-  output="$stderr"
-  assert_output "Error: requires at least 1 arg(s), only received 0"
+  assert_stderr "Error: requires at least 1 arg(s), only received 0"
 
   # Delete the object by name.
   args=(delete "$kind" "$object_name")

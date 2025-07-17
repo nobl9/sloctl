@@ -43,6 +43,15 @@ define _print_step
 	printf -- '------\n%s...\n' "${1}"
 endef
 
+# Ensure the required environment variable is set.
+# ${1} - environment variable name
+define _ensure_env_var
+	@if [ -z "$${${1}}" ]; then \
+		echo "Error: ${1} environment variable is not set"; \
+		exit 1; \
+	fi
+endef
+
 # Build sloctl docker image.
 # ${1} - image name
 # ${2} - version
@@ -105,6 +114,8 @@ test/bats/unit:
 ## Run bats e2e tests.
 test/bats/e2e:
 	$(call _print_step,Running bats e2e tests)
+	$(call _ensure_env_var,SLOCTL_CLIENT_ID)
+	$(call _ensure_env_var,SLOCTL_CLIENT_SECRET)
 	$(call _build_docker,sloctl-e2e-test-bin,$(VERSION),$(BRANCH),$(REVISION))
 	docker build -t sloctl-bats-e2e -f $(TEST_DIR)/docker/Dockerfile.e2e .
 	docker run --rm \
