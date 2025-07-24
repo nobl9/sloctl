@@ -126,10 +126,6 @@ func (s mcpServer) Start() error {
 		mcp.WithString("project",
 			mcp.Description("The Project name"),
 		),
-		mcp.WithString("session_id",
-			mcp.Description("The web browser sessionID"),
-			mcp.Required(),
-		),
 	)
 	s.server.AddTool(t, s.getEBSTool)
 
@@ -386,9 +382,8 @@ func (s mcpServer) replay(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 
 func (s mcpServer) getEBSTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	project := req.Params.Arguments["project"].(string)
-	sessionId := req.Params.Arguments["session_id"].(string)
 
-	r, err := s.getEBS(ctx, sessionId, project)
+	r, err := s.getEBS(ctx, project)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get EBS: %w", err)
 	}
@@ -404,7 +399,7 @@ func (s mcpServer) getEBSTool(ctx context.Context, req mcp.CallToolRequest) (*mc
 	return mcp.NewToolResultText("Retrieved Error Budget status. Saved it in file " + outputFile), nil
 }
 
-func (s mcpServer) getEBS(ctx context.Context, sessionId, project string) (string, error) {
+func (s mcpServer) getEBS(ctx context.Context, project string) (string, error) {
 	search := `{}`
 	if project != "" {
 		search = fmt.Sprintf(`{"textSearch":"%s"}`, project)
@@ -419,7 +414,6 @@ func (s mcpServer) getEBS(ctx context.Context, sessionId, project string) (strin
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.client.Config.AccessToken))
 	req.Header.Set("organization", s.client.Config.Organization)
-	req.Header.Set("n9-session-id", sessionId)
 
 	httpClient := http.Client{
 		Timeout: time.Second * 20,
