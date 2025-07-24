@@ -14,6 +14,8 @@ import (
 	"github.com/nobl9/nobl9-go/sdk"
 )
 
+// noPositionalArgsCondition ensures there are no positional arguments provided.
+//
 // ref: https://github.com/spf13/cobra/issues/1466
 // Ways to prevent shell glob expansion:
 //
@@ -27,7 +29,7 @@ import (
 //     `$ set -f`
 //     or
 //     `$ set -o noglob`
-func positionalArgsCondition(_ *cobra.Command, args []string) error {
+func noPositionalArgsCondition(_ *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		return nil
 	}

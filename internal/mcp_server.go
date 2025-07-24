@@ -44,8 +44,7 @@ type mcpServer struct {
 	server *server.MCPServer
 }
 
-func (s mcpServer) Start() error {
-	// Register tools and resources for each kind.
+func (s mcpServer) RegisterToolsAndResources() error {
 	// nolint: lll
 	for _, object := range []struct {
 		Kind                manifest.Kind
@@ -161,6 +160,10 @@ func (s mcpServer) Start() error {
 	)
 	s.server.AddTool(t, s.ReplayTool)
 
+	return nil
+}
+
+func (s mcpServer) Start() error {
 	slog.Info("Starting Nobl9 MCP server", "version", "0.1.0")
 	return server.ServeStdio(s.server)
 }
@@ -343,7 +346,6 @@ func (s mcpServer) SLOStatusTool(ctx context.Context, req mcp.CallToolRequest) (
 		return nil, fmt.Errorf("failed to get SLO status: %w", err)
 	}
 
-	// TODO encode status to json
 	b, err := json.Marshal(status)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal SLO status: %w", err)

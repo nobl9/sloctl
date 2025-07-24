@@ -38,7 +38,7 @@ func (r *RootCmd) NewApplyCmd() *cobra.Command {
 		Long: getApplyOrDeleteDescription(
 			"The apply command commits the changes by sending the updates to the application."),
 		Example: applyExample,
-		Args:    positionalArgsCondition,
+		Args:    noPositionalArgsCondition,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			apply.client = r.GetClient()
 			if apply.project != "" {
