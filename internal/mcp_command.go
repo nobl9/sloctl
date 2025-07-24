@@ -25,8 +25,8 @@ func (r *RootCmd) NewMCPServer() *cobra.Command {
 		PersistentPreRun: func(*cobra.Command, []string) {
 			mcpCmd.client = r.GetClient()
 		},
-		RunE: func(*cobra.Command, []string) error {
-			return newMCPServer(mcpCmd.client).Start()
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return newMCPServer(cmd, mcpCmd.client).Start()
 		},
 	}
 

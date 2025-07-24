@@ -10,21 +10,25 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/sdk"
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
+
+	"github.com/nobl9/sloctl/internal/flags"
+	"github.com/nobl9/sloctl/internal/printer"
 )
 
-func newMCPServer(client *sdk.Client) mcpServer {
+func newMCPServer(cmd *cobra.Command, client *sdk.Client) mcpServer {
 	return mcpServer{
+		cmd:    cmd,
 		client: client,
 		server: server.NewMCPServer("Nobl9", "0.1.0",
 			server.WithResourceCapabilities(true, true),
@@ -35,12 +39,14 @@ func newMCPServer(client *sdk.Client) mcpServer {
 }
 
 type mcpServer struct {
+	cmd    *cobra.Command
 	client *sdk.Client
 	server *server.MCPServer
 }
 
 func (s mcpServer) Start() error {
 	// Register tools and resources for each kind.
+	// nolint: lll
 	for _, object := range []struct {
 		Kind                manifest.Kind
 		ResourceDescription string
@@ -119,7 +125,7 @@ func (s mcpServer) Start() error {
 			mcp.Description("The Project name"),
 		),
 	)
-	s.server.AddTool(t, s.getSLOStatus)
+	s.server.AddTool(t, s.SLOStatusTool)
 
 	t = mcp.NewTool("get_ebs",
 		mcp.WithDescription("Get Error Budget Status for multiple SLOs"),
@@ -127,7 +133,7 @@ func (s mcpServer) Start() error {
 			mcp.Description("The Project name"),
 		),
 	)
-	s.server.AddTool(t, s.getEBSTool)
+	s.server.AddTool(t, s.EBSTool)
 
 	t = mcp.NewTool("apply",
 		mcp.WithDescription("Apply changes to nobl9"),
@@ -136,7 +142,7 @@ func (s mcpServer) Start() error {
 			mcp.Required(),
 		),
 	)
-	s.server.AddTool(t, s.applyTool)
+	s.server.AddTool(t, s.ApplyTool)
 
 	t = mcp.NewTool("replay",
 		mcp.WithDescription("Replay slo"),
@@ -153,7 +159,7 @@ func (s mcpServer) Start() error {
 			mcp.Required(),
 		),
 	)
-	s.server.AddTool(t, s.replay)
+	s.server.AddTool(t, s.ReplayTool)
 
 	slog.Info("Starting Nobl9 MCP server", "version", "0.1.0")
 	return server.ServeStdio(s.server)
@@ -311,7 +317,7 @@ func (s mcpServer) writeObjectsToFile(outFilename, formatStr string, objects []m
 	if err != nil {
 		return err
 	}
-	outFile, err := os.Create(outFilename)
+	outFile, err := os.Create(outFilename) // #nosec: G304
 	if err != nil {
 		slog.Error("Failed to create output file",
 			slog.String("error", err.Error()),
@@ -322,7 +328,7 @@ func (s mcpServer) writeObjectsToFile(outFilename, formatStr string, objects []m
 	return sdk.EncodeObjects(objects, outFile, format)
 }
 
-func (s mcpServer) getSLOStatus(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s mcpServer) SLOStatusTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	sloName, okSlo := req.Params.Arguments["name"].(string)
 	if !okSlo || sloName == "" {
 		return nil, fmt.Errorf("SLO name is required")
@@ -346,7 +352,7 @@ func (s mcpServer) getSLOStatus(ctx context.Context, req mcp.CallToolRequest) (*
 	return mcp.NewToolResultText(string(b)), nil
 }
 
-func (s mcpServer) applyTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s mcpServer) ApplyTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	fileName := req.Params.Arguments["file_name"].(string)
 
 	objects, err := readObjectsDefinitions(
@@ -366,21 +372,35 @@ func (s mcpServer) applyTool(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	return mcp.NewToolResultText("The objects were successfully applied."), nil
 }
 
-func (s mcpServer) replay(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s mcpServer) ReplayTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	sloName := req.Params.Arguments["slo"].(string)
 	projectName := req.Params.Arguments["project"].(string)
-	from := req.Params.Arguments["from"].(string)
+	fromStr := req.Params.Arguments["from"].(string)
 
-	cmd := exec.Command("sloctl", "replay", sloName, "--project", projectName, "--from", from)
-	b, err := cmd.Output()
-	if err != nil {
-		return nil, fmt.Errorf("failed to replay SLO: %w; %s", err, string(b))
+	fromValue := new(flags.TimeValue)
+	if err := fromValue.Set(fromStr); err != nil {
+		return nil, err
 	}
 
-	return mcp.NewToolResultText(string(b)), nil
+	out := new(bytes.Buffer)
+	replayCmd := &ReplayCmd{
+		client: s.client,
+		printer: printer.NewPrinter(printer.Config{
+			Output:       out,
+			OutputFormat: printer.YAMLFormat,
+		}),
+		from:    *fromValue,
+		sloName: sloName,
+		project: projectName,
+	}
+
+	if err := replayCmd.Run(s.cmd); err != nil {
+		return nil, err
+	}
+	return mcp.NewToolResultText(out.String()), nil
 }
 
-func (s mcpServer) getEBSTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s mcpServer) EBSTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	project := req.Params.Arguments["project"].(string)
 
 	r, err := s.getEBS(ctx, project)
@@ -388,13 +408,13 @@ func (s mcpServer) getEBSTool(ctx context.Context, req mcp.CallToolRequest) (*mc
 		return nil, fmt.Errorf("failed to get EBS: %w", err)
 	}
 	outputFile := fmt.Sprintf("%s_%d.yaml", "get_ebs", time.Now().Unix())
-	outFile, err := os.Create(outputFile)
+	outFile, err := os.Create(outputFile) // #nosec: G304
 	if err != nil {
 		slog.Error("Failed to create output file", "error", err)
 		return nil, err
 	}
 	defer func() { _ = outFile.Close() }()
-	outFile.WriteString(r)
+	_, _ = outFile.WriteString(r)
 
 	return mcp.NewToolResultText("Retrieved Error Budget status. Saved it in file " + outputFile), nil
 }
@@ -422,10 +442,10 @@ func (s mcpServer) getEBS(ctx context.Context, project string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if resp.StatusCode == http.StatusUnauthorized {
-		// TODO call sloctl to refresh token, redo the request
-	}
-	defer func() { resp.Body.Close() }()
+	// TODO call sloctl to refresh token, redo the request
+	// if resp.StatusCode == http.StatusUnauthorized {
+	// }
+	defer func() { _ = resp.Body.Close() }()
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
