@@ -60,6 +60,32 @@ make test/e2e
 Bats tests are fully containerized, refer to Makefile for more details on
 how they're executed.
 
+## MCP
+
+Sloctl hosts an [MCP server](https://modelcontextprotocol.io/quickstart/server)
+which can be used by LLMs to interact with Nobl9 platform and its resources.
+
+In order to help develop the server's capabilities and test them you can use
+a tool called [MCP inspector](https://modelcontextprotocol.io/docs/tools/inspector).
+
+Simply run:
+
+```bash
+make install # So that sloctl is available in the path.
+npx @modelcontextprotocol/inspector
+```
+
+It will launch the browser for you, once there fill these parameters:
+
+![MCP Inspector connect](./mcp-inspector-connect.png)
+
+Once [this issue](https://github.com/modelcontextprotocol/inspector/issues/636)
+is resolved, you'll be able to run:
+
+```bash
+npx @modelcontextprotocol/inspector --config ./docs/mcp.json --server nobl9
+```
+
 ## Releases
 
 Refer to [RELEASE.md](./RELEASE.md) for more information on release process.

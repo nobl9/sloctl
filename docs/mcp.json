@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "nobl9": {
+      "command": "./bin/sloctl",
+      "args": [
+        "mcp"
+      ]
+    }
+  }
+}
