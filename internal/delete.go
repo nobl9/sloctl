@@ -35,7 +35,7 @@ func (r *RootCmd) NewDeleteCmd() *cobra.Command {
 		Long: getApplyOrDeleteDescription(
 			"One or more definitions can be specified by name or provide a path to file with definitions to remove."),
 		Example: deleteExample,
-		Args:    positionalArgsCondition,
+		Args:    noPositionalArgsCondition,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			deleteCmd.client = r.GetClient()
 			if deleteCmd.project != "" {
@@ -99,6 +99,7 @@ func (d DeleteCmd) Run(cmd *cobra.Command) error {
 		return cmd.Usage()
 	}
 	objects, err := readObjectsDefinitions(
+		cmd.Context(),
 		d.client.Config,
 		cmd,
 		d.definitionPaths,
