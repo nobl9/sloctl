@@ -213,6 +213,13 @@ setup() {
   assert_success
 }
 
+# bats test_tags=bats:focus
+@test "check jq filter for project" {
+  run_sloctl get project death-star --jq .[].metadata.name
+  assert_success_joined_output
+  assert_output "death-star"
+}
+
 test_get() {
   local \
     kind="$1" \

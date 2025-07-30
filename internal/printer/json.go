@@ -2,7 +2,10 @@ package printer
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
+	"math"
+	"strconv"
 
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/sdk"
@@ -17,11 +20,39 @@ func (p *jsonPrinter) Print(content any) error {
 	case []manifest.Object:
 		return sdk.PrintObjects(v, p.out, manifest.ObjectFormatJSON)
 	default:
-		b, err := json.MarshalIndent(content, "", "  ")
-		if err != nil {
-			return err
+		if str, ok := p.jsonScalarToString(content); ok {
+			_, err := fmt.Fprintln(p.out, str)
+			if err != nil {
+				return err
+			}
+		} else {
+			b, err := json.MarshalIndent(content, "", "  ")
+			if err != nil {
+				return err
+			}
+			if _, err = p.out.Write(b); err != nil {
+				return err
+			}
 		}
-		_, err = p.out.Write(b)
-		return err
+	}
+	return nil
+}
+
+func (p *jsonPrinter) jsonScalarToString(input any) (string, bool) {
+	switch v := input.(type) {
+	case string:
+		return v, true
+	case float64:
+		if math.Trunc(v) == v {
+			return strconv.FormatFloat(v, 'f', 0, 64), true
+		} else {
+			return strconv.FormatFloat(v, 'f', 2, 64), true
+		}
+	case nil:
+		return "null", true
+	case bool:
+		return fmt.Sprintf("%v", v), true
+	default:
+		return "", false
 	}
 }

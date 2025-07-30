@@ -19,6 +19,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/nobl9/sloctl/internal/jq"
 	"github.com/nobl9/sloctl/internal/printer"
 )
 
@@ -28,6 +29,7 @@ var getAlertExample string
 type GetCmd struct {
 	client      *sdk.Client
 	printer     *printer.Printer
+	jq          *jq.ExpressionRunner
 	labels      []string
 	project     string
 	services    []string
@@ -37,8 +39,10 @@ type GetCmd struct {
 
 // NewGetCmd returns cobra command get with all flags for it.
 func (r *RootCmd) NewGetCmd() *cobra.Command {
+	printer := printer.NewPrinter(printer.Config{})
 	get := &GetCmd{
-		printer: printer.NewPrinter(printer.Config{}),
+		printer: printer,
+		jq:      jq.NewExpressionRunner(jq.Config{Printer: printer}),
 	}
 
 	cmd := &cobra.Command{
@@ -58,6 +62,7 @@ To get more details in output use one of the available flags.`,
 
 	// All shared flags for 'get' and its subcommands.
 	get.printer.MustRegisterFlags(cmd)
+	get.jq.MustRegisterFlags(cmd)
 
 	// All subcommands for get.
 	for _, subCmd := range []struct {
@@ -119,13 +124,7 @@ func (g *GetCmd) newGetObjectsCommand(
 			if err != nil {
 				return err
 			}
-			if objects == nil {
-				return nil
-			}
-			if err = g.printer.Print(objects); err != nil {
-				return err
-			}
-			return nil
+			return g.printObjects(cmd.Context(), objects)
 		},
 	}
 }
@@ -287,7 +286,7 @@ func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 		if err != nil || objects == nil {
 			return err
 		}
-		var agents interface{}
+		var agents any
 		if *withAccessKeysFlag {
 			agents, err = g.getAgentsWithSecrets(cmd.Context(), objects)
 			if err != nil {
@@ -355,7 +354,7 @@ func (g *GetCmd) enrichAgentWithSecrets(
 	if err != nil {
 		return nil, err
 	}
-	meta, ok := agent["metadata"].(map[string]interface{})
+	meta, ok := agent["metadata"].(map[string]any)
 	if !ok {
 		return agent, nil
 	}
@@ -394,11 +393,27 @@ func (g *GetCmd) getObjects(ctx context.Context, kind manifest.Kind, args []stri
 	return objects, nil
 }
 
+func (g *GetCmd) printObjects(ctx context.Context, objects any) error {
+	switch {
+	case objects == nil:
+		return nil
+	case g.jq.ShouldRun():
+		if err := g.jq.EvaluateAndPrint(ctx, objects); err != nil {
+			return err
+		}
+	default:
+		if err := g.printer.Print(objects); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func parseFilterLabel(filterLabels []string) string {
 	labels := make(v1alpha.Labels)
 	for _, filterLabel := range filterLabels {
-		filteredLabels := strings.Split(filterLabel, ",")
-		for _, currentLabel := range filteredLabels {
+		filteredLabels := strings.SplitSeq(filterLabel, ",")
+		for currentLabel := range filteredLabels {
 			values := strings.Split(currentLabel, "=")
 			key := values[0]
 			if _, ok := labels[key]; !ok {
