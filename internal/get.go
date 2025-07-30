@@ -12,13 +12,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/spf13/cobra"
-	"golang.org/x/sync/errgroup"
-
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/manifest/v1alpha"
 	"github.com/nobl9/nobl9-go/sdk"
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
+	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/nobl9/sloctl/internal/printer"
 )
@@ -33,6 +32,7 @@ type GetCmd struct {
 	project     string
 	services    []string
 	allProjects bool
+	slo         string
 }
 
 // NewGetCmd returns cobra command get with all flags for it.
@@ -78,7 +78,7 @@ To get more details in output use one of the available flags.`,
 		{Kind: manifest.KindService, Aliases: []string{"svc", "svcs"}},
 		{Kind: manifest.KindSLO, Extender: get.newGetSLOCommand},
 		{Kind: manifest.KindUserGroup},
-		{Kind: manifest.KindBudgetAdjustment},
+		{Kind: manifest.KindBudgetAdjustment, Extender: get.newGetBudgetAdjustmentCommand},
 		{Kind: manifest.KindReport},
 	} {
 		plural := pluralForKind(subCmd.Kind)
@@ -309,6 +309,15 @@ func (g *GetCmd) newGetSLOCommand(cmd *cobra.Command) *cobra.Command {
 	return cmd
 }
 
+func (g *GetCmd) newGetBudgetAdjustmentCommand(cmd *cobra.Command) *cobra.Command {
+	cmd.Flags().StringVarP(&g.slo, "slo", "", "",
+		`Filter resource by SLO name. Example: my-sample-slo-name`)
+	cmd.Flags().StringVarP(&g.project, "project", "p", "",
+		`Filter resource by SLO Project name. Example: my-sample-project-name`)
+	cmd.MarkFlagsRequiredTogether("slo", "project")
+	return cmd
+}
+
 func (g *GetCmd) getAgentsWithSecrets(ctx context.Context, objects []manifest.Object) ([]v1alpha.GenericObject, error) {
 	agents := make([]v1alpha.GenericObject, 0, len(objects))
 	var mu sync.Mutex
@@ -363,6 +372,10 @@ func (g *GetCmd) getObjects(ctx context.Context, kind manifest.Kind, args []stri
 	}
 	if len(g.services) > 0 && kind == manifest.KindSLO {
 		query[objectsV1.QueryKeyServiceName] = g.services
+	}
+	if len(g.slo) > 0 && len(g.project) > 0 && kind == manifest.KindBudgetAdjustment {
+		query.Set(objectsV1.QueryKeySLOProjectName, g.project)
+		query.Set(objectsV1.QueryKeySLOName, g.slo)
 	}
 	header := http.Header{sdk.HeaderProject: []string{g.client.Config.Project}}
 	objects, err := g.client.Objects().V1().Get(ctx, kind, header, query)
