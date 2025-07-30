@@ -42,6 +42,8 @@ func (p *jsonPrinter) jsonScalarToString(input any) (string, bool) {
 	switch v := input.(type) {
 	case string:
 		return v, true
+	case int:
+		return strconv.Itoa(v), true
 	case float64:
 		if math.Trunc(v) == v {
 			return strconv.FormatFloat(v, 'f', 0, 64), true
