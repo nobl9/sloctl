@@ -54,6 +54,11 @@ age: 30
 		},
 		"JSON integer scalar": {
 			config:   Config{OutputFormat: JSONFormat},
+			v:        int(42),
+			expected: "42\n",
+		},
+		"JSON float scalar with no decimal": {
+			config:   Config{OutputFormat: JSONFormat},
 			v:        float64(42),
 			expected: "42\n",
 		},
@@ -61,6 +66,11 @@ age: 30
 			config:   Config{OutputFormat: JSONFormat},
 			v:        float64(42.56),
 			expected: "42.56\n",
+		},
+		"JSON decimal scalar (big decimal)": {
+			config:   Config{OutputFormat: JSONFormat},
+			v:        float64(42.560918230975),
+			expected: "42.560918230975\n",
 		},
 		"JSON nil scalar": {
 			config:   Config{OutputFormat: JSONFormat},

@@ -46,7 +46,7 @@ func (p *jsonPrinter) jsonScalarToString(input any) (string, bool) {
 		if math.Trunc(v) == v {
 			return strconv.FormatFloat(v, 'f', 0, 64), true
 		} else {
-			return strconv.FormatFloat(v, 'f', 2, 64), true
+			return strconv.FormatFloat(v, 'f', -1, 64), true
 		}
 	case nil:
 		return "null", true

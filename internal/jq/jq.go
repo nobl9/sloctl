@@ -68,7 +68,7 @@ func (e *ExpressionRunner) EvaluateAndPrint(ctx context.Context, v any) error {
 			if errors.As(v, &haltErr) && haltErr.Value() == nil {
 				break
 			}
-			return err
+			return v
 		default:
 			if err = e.config.Printer.Print(v); err != nil {
 				return err
