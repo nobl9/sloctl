@@ -1,6 +1,7 @@
 package jq
 
 import (
+	"iter"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -209,8 +210,8 @@ func TestExpressionRunner_EvaluateAndPrint_ComplexDataTypes(t *testing.T) {
 }
 
 // collectResults collects values from an iter.Seq2[any, error] and returns them as a slice
-func collectResults(iter func(yield func(any, error) bool)) ([]any, error) {
-	var values []any
+func collectResults(iter iter.Seq2[any, error]) ([]any, error) {
+	var values []any // nolint: prealloc
 	for v, err := range iter {
 		if err != nil {
 			return nil, err

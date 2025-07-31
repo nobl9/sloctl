@@ -64,7 +64,7 @@ func (e *ExpressionRunner) EvaluateAndPrint(v any) (iter.Seq2[any, error], error
 				if errors.As(v, &haltErr) && haltErr.Value() == nil {
 					break
 				}
-				if !yield(nil, err) {
+				if !yield(nil, v) {
 					return
 				}
 			default:

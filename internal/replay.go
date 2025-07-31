@@ -490,7 +490,7 @@ func (r *ReplayCmd) doRequest(
 	ctx context.Context,
 	method, endpoint, project string,
 	values url.Values,
-	payload interface{},
+	payload any,
 ) (data []byte, httpCode int, err error) {
 	var body io.Reader
 	if payload != nil {

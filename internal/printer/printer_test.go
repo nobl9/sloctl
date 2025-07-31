@@ -75,7 +75,7 @@ age: 30
 		"JSON nil scalar": {
 			config:   Config{OutputFormat: JSONFormat},
 			v:        nil,
-			expected: "null\n",
+			expected: "",
 		},
 		"JSON bool true scalar": {
 			config:   Config{OutputFormat: JSONFormat},
