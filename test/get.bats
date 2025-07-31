@@ -213,6 +213,14 @@ setup() {
   assert_success
 }
 
+@test "check jq filter for project" {
+  for alias in --jq -q; do
+    run_sloctl get project death-star "$alias" .[].metadata.name
+    assert_success_joined_output
+    assert_output "death-star"
+  done
+}
+
 test_get() {
   local \
     kind="$1" \
