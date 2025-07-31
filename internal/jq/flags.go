@@ -8,6 +8,6 @@ func (e *ExpressionRunner) MustRegisterFlags(cmd *cobra.Command) {
 		"jq",
 		"q",
 		"",
-		"Query to select values from the response using jq syntax",
+		"jq expression used to filter command results",
 	)
 }
