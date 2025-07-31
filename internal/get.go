@@ -19,7 +19,6 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/nobl9/sloctl/internal/jq"
 	"github.com/nobl9/sloctl/internal/printer"
 )
 
@@ -29,7 +28,6 @@ var getAlertExample string
 type GetCmd struct {
 	client      *sdk.Client
 	printer     *printer.Printer
-	jq          *jq.ExpressionRunner
 	labels      []string
 	project     string
 	services    []string
@@ -39,10 +37,8 @@ type GetCmd struct {
 
 // NewGetCmd returns cobra command get with all flags for it.
 func (r *RootCmd) NewGetCmd() *cobra.Command {
-	printer := printer.NewPrinter(printer.Config{})
 	get := &GetCmd{
-		printer: printer,
-		jq:      jq.NewExpressionRunner(jq.Config{Printer: printer}),
+		printer: printer.NewPrinter(printer.Config{}),
 	}
 
 	cmd := &cobra.Command{
@@ -62,7 +58,6 @@ To get more details in output use one of the available flags.`,
 
 	// All shared flags for 'get' and its subcommands.
 	get.printer.MustRegisterFlags(cmd)
-	get.jq.MustRegisterFlags(cmd)
 
 	// All subcommands for get.
 	for _, subCmd := range []struct {
@@ -124,7 +119,16 @@ func (g *GetCmd) newGetObjectsCommand(
 			if err != nil {
 				return err
 			}
-			return g.printObjects(cmd.Context(), objects)
+			if len(objects) == 0 {
+				switch kind {
+				case manifest.KindProject, manifest.KindUserGroup, manifest.KindBudgetAdjustment, manifest.KindReport:
+					fmt.Printf("No resources found.\n")
+				default:
+					fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)
+				}
+				return nil
+			}
+			return g.printer.Print(objects)
 		},
 	}
 }
@@ -381,32 +385,7 @@ func (g *GetCmd) getObjects(ctx context.Context, kind manifest.Kind, args []stri
 	if err != nil {
 		return nil, err
 	}
-	if len(objects) == 0 {
-		switch kind {
-		case manifest.KindProject, manifest.KindUserGroup, manifest.KindBudgetAdjustment, manifest.KindReport:
-			fmt.Printf("No resources found.\n")
-		default:
-			fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)
-		}
-		return nil, nil
-	}
 	return objects, nil
-}
-
-func (g *GetCmd) printObjects(ctx context.Context, objects any) error {
-	switch {
-	case objects == nil:
-		return nil
-	case g.jq.ShouldRun():
-		if err := g.jq.EvaluateAndPrint(ctx, objects); err != nil {
-			return err
-		}
-	default:
-		if err := g.printer.Print(objects); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func parseFilterLabel(filterLabels []string) string {

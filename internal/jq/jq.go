@@ -1,19 +1,15 @@
 package jq
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"iter"
 	"os"
 	"strings"
 
 	"github.com/itchyny/gojq"
 )
-
-type printerInterface interface {
-	Print(v any) error
-}
 
 func NewExpressionRunner(config Config) *ExpressionRunner {
 	return &ExpressionRunner{config: config}
@@ -24,7 +20,6 @@ type ExpressionRunner struct {
 }
 
 type Config struct {
-	Printer    printerInterface
 	Expression string
 }
 
@@ -32,50 +27,53 @@ func (e *ExpressionRunner) ShouldRun() bool {
 	return e.config.Expression != ""
 }
 
-func (e *ExpressionRunner) EvaluateAndPrint(ctx context.Context, v any) error {
+func (e *ExpressionRunner) EvaluateAndPrint(v any) (iter.Seq2[any, error], error) {
 	query, err := gojq.Parse(e.config.Expression)
 	if err != nil {
 		var parseErr *gojq.ParseError
 		if errors.As(err, &parseErr) {
 			str, line, column := getLineColumn(e.config.Expression, parseErr.Offset-len(parseErr.Token))
-			return fmt.Errorf(
+			return nil, fmt.Errorf(
 				"failed to parse jq expression (line %d, column %d)\n    %s\n    %*c  %w",
 				line, column, str, column, '^', err,
 			)
 		}
-		return err
+		return nil, err
 	}
 
 	code, err := gojq.Compile(query, gojq.WithEnvironLoader(os.Environ))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	anyValue, err := toAny(v)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	iter := code.RunWithContext(ctx, anyValue)
-	for {
-		v, ok := iter.Next()
-		if !ok {
-			break
-		}
-		switch v := v.(type) {
-		case error:
-			var haltErr *gojq.HaltError
-			if errors.As(v, &haltErr) && haltErr.Value() == nil {
-				break
+	return func(yield func(any, error) bool) {
+		iter := code.Run(anyValue)
+		for {
+			v, ok := iter.Next()
+			if !ok {
+				return
 			}
-			return v
-		default:
-			if err = e.config.Printer.Print(v); err != nil {
-				return err
+			switch v := v.(type) {
+			case error:
+				var haltErr *gojq.HaltError
+				if errors.As(v, &haltErr) && haltErr.Value() == nil {
+					break
+				}
+				if !yield(nil, err) {
+					return
+				}
+			default:
+				if !yield(v, nil) {
+					return
+				}
 			}
 		}
-	}
-	return nil
+	}, nil
 }
 
 func getLineColumn(expr string, offset int) (str string, line, newOffset int) {

@@ -495,7 +495,7 @@ func (r *ReplayCmd) doRequest(
 	var body io.Reader
 	if payload != nil {
 		buf := new(bytes.Buffer)
-		if err := json.NewEncoder(buf).Encode(payload); err != nil {
+		if err = json.NewEncoder(buf).Encode(payload); err != nil {
 			return nil, 0, err
 		}
 		body = buf

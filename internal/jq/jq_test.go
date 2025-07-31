@@ -1,8 +1,6 @@
 package jq
 
 import (
-	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,8 +8,6 @@ import (
 )
 
 func TestExpressionRunner_EvaluateAndPrint(t *testing.T) {
-	ctx := context.Background()
-
 	tests := map[string]struct {
 		input    any
 		expr     string
@@ -101,47 +97,32 @@ func TestExpressionRunner_EvaluateAndPrint(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			printer := &mockPrinter{}
 			runner := NewExpressionRunner(Config{
-				Printer:    printer,
 				Expression: tc.expr,
 			})
 
-			err := runner.EvaluateAndPrint(ctx, tc.input)
+			iter, err := runner.EvaluateAndPrint(tc.input)
 
 			if tc.err != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tc.err)
 			} else {
 				require.NoError(t, err)
+
+				values, iterErr := collectResults(iter)
+				require.NoError(t, iterErr)
+
 				if tc.expected == nil {
-					assert.Nil(t, printer.printed)
+					assert.Nil(t, values)
 				} else {
-					assert.Equal(t, tc.expected, printer.printed)
+					assert.Equal(t, tc.expected, values)
 				}
 			}
 		})
 	}
 }
 
-func TestExpressionRunner_EvaluateAndPrint_PrinterError(t *testing.T) {
-	ctx := context.Background()
-
-	printer := &mockPrinter{err: fmt.Errorf("printer error")}
-	runner := NewExpressionRunner(Config{
-		Printer:    printer,
-		Expression: ".",
-	})
-
-	err := runner.EvaluateAndPrint(ctx, map[string]any{"test": "value"})
-
-	require.Error(t, err)
-	assert.Equal(t, "printer error", err.Error())
-}
-
 func TestExpressionRunner_EvaluateAndPrint_ParseErrorFormatting(t *testing.T) {
-	ctx := context.Background()
-
 	tests := map[string]struct {
 		expr        string
 		expectedErr string
@@ -158,13 +139,11 @@ func TestExpressionRunner_EvaluateAndPrint_ParseErrorFormatting(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			printer := &mockPrinter{}
 			runner := NewExpressionRunner(Config{
-				Printer:    printer,
 				Expression: tc.expr,
 			})
 
-			err := runner.EvaluateAndPrint(ctx, map[string]any{"test": "value"})
+			_, err := runner.EvaluateAndPrint(map[string]any{"test": "value"})
 
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.expectedErr)
@@ -204,8 +183,6 @@ func TestExpressionRunner_ShouldRun(t *testing.T) {
 }
 
 func TestExpressionRunner_EvaluateAndPrint_ComplexDataTypes(t *testing.T) {
-	ctx := context.Background()
-
 	// Test with struct that gets converted through JSON marshaling/unmarshaling
 	type TestStruct struct {
 		Name   string            `json:"name"`
@@ -219,27 +196,26 @@ func TestExpressionRunner_EvaluateAndPrint_ComplexDataTypes(t *testing.T) {
 		Meta:   map[string]string{"key": "value"},
 	}
 
-	printer := &mockPrinter{}
 	runner := NewExpressionRunner(Config{
-		Printer:    printer,
 		Expression: ".name",
 	})
 
-	err := runner.EvaluateAndPrint(ctx, input)
-
+	iter, err := runner.EvaluateAndPrint(input)
 	require.NoError(t, err)
-	assert.Equal(t, []any{"test"}, printer.printed)
+
+	values, iterErr := collectResults(iter)
+	require.NoError(t, iterErr)
+	assert.Equal(t, []any{"test"}, values)
 }
 
-type mockPrinter struct {
-	printed []any
-	err     error
-}
-
-func (m *mockPrinter) Print(v any) error {
-	if m.err != nil {
-		return m.err
+// collectResults collects values from an iter.Seq2[any, error] and returns them as a slice
+func collectResults(iter func(yield func(any, error) bool)) ([]any, error) {
+	var values []any
+	for v, err := range iter {
+		if err != nil {
+			return nil, err
+		}
+		values = append(values, v)
 	}
-	m.printed = append(m.printed, v)
-	return nil
+	return values, nil
 }
