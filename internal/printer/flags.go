@@ -35,4 +35,6 @@ func (o *Printer) MustRegisterFlags(cmd *cobra.Command) {
 	if err := cmd.PersistentFlags().MarkHidden(csv.RecordSeparatorFlag); err != nil {
 		panic(err)
 	}
+
+	o.jq.MustRegisterFlags(cmd)
 }

@@ -40,6 +40,7 @@
     "gobin",
     "gofmt",
     "goimports",
+    "gojq",
     "golangci",
     "gosec",
     "govulncheck",
