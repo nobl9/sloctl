@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,20 +12,19 @@ import (
 	"github.com/nobl9/govy/pkg/govy"
 	"github.com/nobl9/govy/pkg/rules"
 	"github.com/nobl9/nobl9-go/sdk"
+	"github.com/nobl9/sloctl/internal/printer"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-
-	"github.com/nobl9/sloctl/internal/printer"
 )
 
 type Recipes map[string]Recipe
 
 type Recipe struct {
-	Args        []string          `json:"args"`
-	Description string            `json:"description"`
-	Example     string            `json:"example,omitempty"`
-	JQ          string            `json:"jq,omitempty"`
-	Validators  *RecipeValidators `json:"validators,omitempty"`
+	Args        []string         `json:"args"`
+	Description string           `json:"description"`
+	Example     string           `json:"example,omitempty"`
+	JQ          string           `json:"jq,omitempty"`
+	Validators  RecipeValidators `json:"validators,omitempty"`
 	name        string
 }
 
@@ -44,26 +44,63 @@ func (r *RootCmd) NewRecipesCmd() *cobra.Command {
 		return cmd
 	}
 
+	printer := printer.NewPrinter(printer.Config{})
+	configGroup := &cobra.Group{
+		ID:    "config",
+		Title: "Config commands:",
+	}
+	addCommand := &cobra.Command{
+		GroupID: configGroup.ID,
+		Use:     "add",
+		Short:   "Add new recipe",
+		Long:    "Provide a ",
+		RunE: func(*cobra.Command, []string) error {
+			return nil
+		},
+	}
+	listCommand := &cobra.Command{
+		GroupID: configGroup.ID,
+		Use:     "list",
+		Short:   "List existing recipes",
+		RunE: func(*cobra.Command, []string) error {
+			return printer.Print(recipes)
+		},
+	}
+	printer.MustRegisterFlags(listCommand)
+	removeCommand := &cobra.Command{
+		GroupID: configGroup.ID,
+		Use:     "remove",
+		Short:   "Remove recipe by name",
+		Args:    recipesArgFunc([]string{"name"}),
+		RunE: func(_ *cobra.Command, args []string) error {
+			for _, name := range args {
+				delete(recipes, name)
+			}
+			return saveRecipes(recipes)
+		},
+	}
+	cmd.AddCommand(addCommand, listCommand, removeCommand)
+
+	recipesGroup := &cobra.Group{
+		ID:    "recipes",
+		Title: "Recipes:",
+	}
 	for name, recipe := range recipes {
 		recipe.name = name
-		printer := printer.NewPrinter(printer.Config{})
-		var showDefinition bool
 		recipeCmd := &cobra.Command{
+			GroupID: recipesGroup.ID,
 			Use:     name,
 			Short:   recipe.Description,
 			Example: recipe.Example,
-			Args:    recipesArgFunc(recipe),
+			Args:    recipesArgFunc(recipe.Validators.AtLeastArgs),
 			RunE: func(*cobra.Command, []string) error {
-				if showDefinition {
-					return printer.Print(Recipes{name: recipe})
-				}
 				return runRecipe(recipe)
 			},
 		}
-		printer.MustRegisterFlags(recipeCmd)
-		recipeCmd.Flags().BoolVarP(&showDefinition, "show-definition", "d", false, "Display recipe definition")
 		cmd.AddCommand(recipeCmd)
 	}
+
+	cmd.AddGroup(configGroup, recipesGroup)
 
 	return cmd
 }
@@ -94,14 +131,9 @@ func runRecipe(recipe Recipe) error {
 }
 
 func readRecipes() (Recipes, error) {
-	configPath := os.Getenv("SLOCTL_RECIPES_PATH")
-	if configPath == "" {
-		defaultFilename := "sloctl-recipes.yaml"
-		sdkConfigPath, err := sdk.GetDefaultConfigPath()
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to read default Nobl9 SDK config path")
-		}
-		configPath = filepath.Join(filepath.Dir(sdkConfigPath), defaultFilename)
+	configPath, err := getRecipesConfigPath()
+	if err != nil {
+		return nil, err
 	}
 	data, err := os.ReadFile(configPath) // #nosec: G304
 	if err != nil {
@@ -114,8 +146,61 @@ func readRecipes() (Recipes, error) {
 	return recipes, nil
 }
 
-func recipesArgFunc(recipe Recipe) cobra.PositionalArgs {
-	requiredArgs := recipe.Validators.AtLeastArgs
+func saveRecipes(recipes Recipes) error {
+	configPath, err := getRecipesConfigPath()
+	if err != nil {
+		return err
+	}
+	tmpFileName, err := writeRecipesToTempFile(configPath, recipes)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create and write a temporary recipes file used for saving the changes")
+	}
+	if err = os.Rename(tmpFileName, configPath); err != nil {
+		return err
+	}
+	return nil
+}
+
+type fileEncoder interface {
+	Encode(v any) error
+}
+
+func writeRecipesToTempFile(path string, recipes Recipes) (tmpFileName string, err error) {
+	tmpFile, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path))
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = tmpFile.Close() }()
+	var enc fileEncoder
+	switch filepath.Ext(path) {
+	case ".json":
+		enc = json.NewEncoder(tmpFile)
+	default:
+		enc = yaml.NewEncoder(tmpFile)
+	}
+	if err = enc.Encode(recipes); err != nil {
+		return "", err
+	}
+	if err = tmpFile.Sync(); err != nil {
+		return "", err
+	}
+	return tmpFile.Name(), nil
+}
+
+func getRecipesConfigPath() (string, error) {
+	configPath := os.Getenv("SLOCTL_RECIPES_PATH")
+	if configPath == "" {
+		defaultFilename := "sloctl-recipes.yaml"
+		sdkConfigPath, err := sdk.GetDefaultConfigPath()
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to read default Nobl9 SDK config path")
+		}
+		configPath = filepath.Join(filepath.Dir(sdkConfigPath), defaultFilename)
+	}
+	return configPath, nil
+}
+
+func recipesArgFunc(requiredArgs []string) cobra.PositionalArgs {
 	if len(requiredArgs) == 0 {
 		return nil
 	}

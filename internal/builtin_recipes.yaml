@@ -1,0 +1,9 @@
+object-names:
+  description: Fetch object names
+  args: [get]
+  example: |
+    # Fetch SLO object names
+    sloctl recipe object-names slo
+  validators:
+    atLeastArgs: [kind]
+  jq: .[].metadata.name
