@@ -44,6 +44,7 @@
     "golangci",
     "gosec",
     "govulncheck",
+    "govy",
     "ldflags",
     "nobl",
     "openslo",
@@ -58,6 +59,7 @@
     "unmarshalling",
     "vuln",
     "vulns",
-    "wrapf"
+    "wrapf",
+    "yamlenc"
   ]
 }

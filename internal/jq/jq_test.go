@@ -102,7 +102,7 @@ func TestExpressionRunner_EvaluateAndPrint(t *testing.T) {
 				Expression: tc.expr,
 			})
 
-			iter, err := runner.EvaluateAndPrint(tc.input)
+			iter, err := runner.Evaluate(tc.input)
 
 			if tc.err != "" {
 				require.Error(t, err)
@@ -144,7 +144,7 @@ func TestExpressionRunner_EvaluateAndPrint_ParseErrorFormatting(t *testing.T) {
 				Expression: tc.expr,
 			})
 
-			_, err := runner.EvaluateAndPrint(map[string]any{"test": "value"})
+			_, err := runner.Evaluate(map[string]any{"test": "value"})
 
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.expectedErr)
@@ -201,7 +201,7 @@ func TestExpressionRunner_EvaluateAndPrint_ComplexDataTypes(t *testing.T) {
 		Expression: ".name",
 	})
 
-	iter, err := runner.EvaluateAndPrint(input)
+	iter, err := runner.Evaluate(input)
 	require.NoError(t, err)
 
 	values, iterErr := collectResults(iter)

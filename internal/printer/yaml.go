@@ -5,6 +5,7 @@ import (
 
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/sdk"
+
 	"github.com/nobl9/sloctl/internal/yamlenc"
 )
 

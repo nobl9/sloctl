@@ -27,7 +27,9 @@ func (e *ExpressionRunner) ShouldRun() bool {
 	return e.config.Expression != ""
 }
 
-func (e *ExpressionRunner) EvaluateAndPrint(v any) (iter.Seq2[any, error], error) {
+// Evaluate parses, compiles and runs jq expressions.
+// It returns an iterator which yields jq expression result and error (if any).
+func (e *ExpressionRunner) Evaluate(v any) (iter.Seq2[any, error], error) {
 	query, err := gojq.Parse(e.config.Expression)
 	if err != nil {
 		var parseErr *gojq.ParseError

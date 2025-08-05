@@ -12,10 +12,11 @@ import (
 	"github.com/nobl9/govy/pkg/govy"
 	"github.com/nobl9/govy/pkg/rules"
 	"github.com/nobl9/nobl9-go/sdk"
-	"github.com/nobl9/sloctl/internal/printer"
-	"github.com/nobl9/sloctl/internal/yamlenc"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	"github.com/nobl9/sloctl/internal/printer"
+	"github.com/nobl9/sloctl/internal/yamlenc"
 )
 
 type Recipes map[string]Recipe
