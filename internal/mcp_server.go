@@ -44,6 +44,14 @@ type mcpServer struct {
 	server *server.MCPServer
 }
 
+type mcpToolArguments struct {
+	Project  string
+	Format   string
+	From     string
+	Name     string
+	FileName string
+}
+
 func (s mcpServer) RegisterToolsAndResources() error {
 	// nolint: lll
 	for _, object := range []struct {
@@ -124,7 +132,7 @@ func (s mcpServer) RegisterToolsAndResources() error {
 			mcp.Description("The Project name"),
 		),
 	)
-	s.server.AddTool(t, s.SLOStatusTool)
+	s.server.AddTool(t, getTypedToolHandler(s.SLOStatusTool))
 
 	t = mcp.NewTool("get_ebs",
 		mcp.WithDescription("Get Error Budget Status for multiple SLOs"),
@@ -132,7 +140,7 @@ func (s mcpServer) RegisterToolsAndResources() error {
 			mcp.Description("The Project name"),
 		),
 	)
-	s.server.AddTool(t, s.EBSTool)
+	s.server.AddTool(t, getTypedToolHandler(s.EBSTool))
 
 	t = mcp.NewTool("apply",
 		mcp.WithDescription("Apply changes to nobl9"),
@@ -141,7 +149,7 @@ func (s mcpServer) RegisterToolsAndResources() error {
 			mcp.Required(),
 		),
 	)
-	s.server.AddTool(t, s.ApplyTool)
+	s.server.AddTool(t, getTypedToolHandler(s.ApplyTool))
 
 	t = mcp.NewTool("replay",
 		mcp.WithDescription("Replay slo"),
@@ -158,7 +166,7 @@ func (s mcpServer) RegisterToolsAndResources() error {
 			mcp.Required(),
 		),
 	)
-	s.server.AddTool(t, s.ReplayTool)
+	s.server.AddTool(t, getTypedToolHandler(s.ReplayTool))
 
 	return nil
 }
@@ -191,7 +199,7 @@ func (s mcpServer) addToolForObject(kind manifest.Kind) {
 	}
 	s.server.AddTool(
 		mcp.NewTool("get_"+strings.ToLower(kindPlural), opts...),
-		s.getObjectsToolHandler(kind),
+		getTypedToolHandler(s.getObjectsToolHandler(kind)),
 	)
 }
 
@@ -275,19 +283,27 @@ func (s mcpServer) getObjectsResourceHandler(kind manifest.Kind) server.Resource
 	}
 }
 
-func (s mcpServer) getObjectsToolHandler(kind manifest.Kind) server.ToolHandlerFunc {
-	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		format, _ := req.Params.Arguments["format"].(string)
-		project, _ := req.Params.Arguments["project"].(string)
-		name, _ := req.Params.Arguments["name"].(string)
+type typedToolHandler[T any] func(ctx context.Context, args T) (*mcp.CallToolResult, error)
 
+func getTypedToolHandler[T any](typedReq typedToolHandler[T]) server.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		var args T
+		if err := req.BindArguments(&args); err != nil {
+			return nil, errors.Wrapf(err, "failed to bind arguments to type %T", args)
+		}
+		return typedReq(ctx, args)
+	}
+}
+
+func (s mcpServer) getObjectsToolHandler(kind manifest.Kind) typedToolHandler[mcpToolArguments] {
+	return func(ctx context.Context, args mcpToolArguments) (*mcp.CallToolResult, error) {
 		header := http.Header{}
 		query := url.Values{}
-		if project != "" {
-			header.Set(sdk.HeaderProject, project)
+		if args.Project != "" {
+			header.Set(sdk.HeaderProject, args.Project)
 		}
-		if name != "" {
-			query.Set(objectsV1.QueryKeyName, name)
+		if args.Name != "" {
+			query.Set(objectsV1.QueryKeyName, args.Name)
 		}
 		objects, err := s.client.Objects().V1().Get(ctx, kind, header, query)
 		if err != nil {
@@ -298,8 +314,8 @@ func (s mcpServer) getObjectsToolHandler(kind manifest.Kind) server.ToolHandlerF
 			return mcp.NewToolResultText(fmt.Sprintf("Found no %s\n", pluralForKind(kind))), nil
 		}
 
-		filename := fmt.Sprintf("get_%s_%d.%s", objects[0].GetKind(), time.Now().Unix(), format)
-		if err := s.writeObjectsToFile(filename, format, objects); err != nil {
+		filename := fmt.Sprintf("get_%s_%d.%s", objects[0].GetKind(), time.Now().Unix(), args.Format)
+		if err := s.writeObjectsToFile(filename, args.Format, objects); err != nil {
 			return nil, errors.Wrapf(err, "failed to write %s to a file", pluralForKind(kind))
 		}
 
@@ -331,17 +347,15 @@ func (s mcpServer) writeObjectsToFile(outFilename, formatStr string, objects []m
 	return sdk.EncodeObjects(objects, outFile, format)
 }
 
-func (s mcpServer) SLOStatusTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	sloName, okSlo := req.Params.Arguments["name"].(string)
-	if !okSlo || sloName == "" {
-		return nil, fmt.Errorf("SLO name is required")
+func (s mcpServer) SLOStatusTool(ctx context.Context, args mcpToolArguments) (*mcp.CallToolResult, error) {
+	if args.Name == "" {
+		return nil, fmt.Errorf("'name' argument is required")
 	}
-	projectName, okProject := req.Params.Arguments["project"].(string)
-	if !okProject || projectName == "" {
-		return nil, fmt.Errorf("project name is required")
+	if args.Project == "" {
+		return nil, fmt.Errorf("'project' argument is required")
 	}
 
-	status, err := s.client.SLOStatusAPI().V2().GetSLO(ctx, projectName, sloName)
+	status, err := s.client.SLOStatusAPI().V2().GetSLO(ctx, args.Project, args.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get SLO status: %w", err)
 	}
@@ -354,18 +368,20 @@ func (s mcpServer) SLOStatusTool(ctx context.Context, req mcp.CallToolRequest) (
 	return mcp.NewToolResultText(string(b)), nil
 }
 
-func (s mcpServer) ApplyTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	fileName := req.Params.Arguments["file_name"].(string)
+func (s mcpServer) ApplyTool(ctx context.Context, args mcpToolArguments) (*mcp.CallToolResult, error) {
+	if args.FileName == "" {
+		return nil, fmt.Errorf("'fileName' argument is required")
+	}
 
 	objects, err := readObjectsDefinitions(
 		ctx,
 		s.client.Config,
 		nil,
-		[]string{fileName},
+		[]string{args.Format},
 		newFilesPrompt(s.client.Config.FilesPromptEnabled, true, s.client.Config.FilesPromptThreshold),
 		false)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read objects from '%s' file", fileName)
+		return nil, errors.Wrapf(err, "failed to read objects from '%s' file", args.FileName)
 	}
 	if err = s.client.Objects().V1().Apply(ctx, objects); err != nil {
 		return nil, errors.Wrap(err, "failed to apply objects")
@@ -374,13 +390,9 @@ func (s mcpServer) ApplyTool(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	return mcp.NewToolResultText("The objects were successfully applied."), nil
 }
 
-func (s mcpServer) ReplayTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	sloName := req.Params.Arguments["slo"].(string)
-	projectName := req.Params.Arguments["project"].(string)
-	fromStr := req.Params.Arguments["from"].(string)
-
+func (s mcpServer) ReplayTool(ctx context.Context, args mcpToolArguments) (*mcp.CallToolResult, error) {
 	fromValue := new(flags.TimeValue)
-	if err := fromValue.Set(fromStr); err != nil {
+	if err := fromValue.Set(args.From); err != nil {
 		return nil, err
 	}
 
@@ -392,8 +404,8 @@ func (s mcpServer) ReplayTool(ctx context.Context, req mcp.CallToolRequest) (*mc
 			OutputFormat: printer.YAMLFormat,
 		}),
 		from:    *fromValue,
-		sloName: sloName,
-		project: projectName,
+		sloName: args.Name,
+		project: args.Project,
 	}
 
 	if err := replayCmd.Run(s.cmd); err != nil {
@@ -402,10 +414,8 @@ func (s mcpServer) ReplayTool(ctx context.Context, req mcp.CallToolRequest) (*mc
 	return mcp.NewToolResultText(out.String()), nil
 }
 
-func (s mcpServer) EBSTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	project := req.Params.Arguments["project"].(string)
-
-	r, err := s.getEBS(ctx, project)
+func (s mcpServer) EBSTool(ctx context.Context, args mcpToolArguments) (*mcp.CallToolResult, error) {
+	r, err := s.getEBS(ctx, args.Project)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get EBS: %w", err)
 	}

@@ -65,7 +65,7 @@ func (c *MCPListCmd) runMCPRequest(ctx context.Context, method string) (mcp.JSON
 	c.reqCounter++
 	req := mcp.JSONRPCRequest{
 		JSONRPC: "2.0",
-		ID:      c.reqCounter,
+		ID:      mcp.NewRequestId(c.reqCounter),
 		Request: mcp.Request{
 			Method: method,
 		},
