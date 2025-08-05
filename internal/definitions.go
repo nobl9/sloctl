@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -18,6 +19,7 @@ const filesPromptPattern = "You're applying more than %d files (%d). Do you want
 // readObjectsDefinitions reads object definitions from the provided definition paths.
 // Empty definition path or '-' are treated as input from os.Stdin.
 func readObjectsDefinitions(
+	ctx context.Context,
 	config *sdk.Config,
 	cmd *cobra.Command,
 	definitionPaths []string,
@@ -44,7 +46,7 @@ func readObjectsDefinitions(
 	if containsStdin {
 		sources = append(sources, sdk.NewObjectSourceReader(cmd.InOrStdin(), "stdin"))
 	}
-	defs, err := sdk.ReadObjectsFromSources(cmd.Context(), sources...)
+	defs, err := sdk.ReadObjectsFromSources(ctx, sources...)
 	if err != nil {
 		return nil, err
 	}

@@ -12,13 +12,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/spf13/cobra"
-	"golang.org/x/sync/errgroup"
-
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/manifest/v1alpha"
 	"github.com/nobl9/nobl9-go/sdk"
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
+	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/nobl9/sloctl/internal/printer"
 )
@@ -33,6 +32,7 @@ type GetCmd struct {
 	project     string
 	services    []string
 	allProjects bool
+	slo         string
 }
 
 // NewGetCmd returns cobra command get with all flags for it.
@@ -63,12 +63,11 @@ To get more details in output use one of the available flags.`,
 	for _, subCmd := range []struct {
 		Kind     manifest.Kind
 		Aliases  []string
-		Plural   string
 		Extender func(cmd *cobra.Command) *cobra.Command
 	}{
 		{Kind: manifest.KindAgent, Aliases: []string{"agent", "Agents", "Agent"}, Extender: get.newGetAgentCommand},
 		{Kind: manifest.KindAlertMethod},
-		{Kind: manifest.KindAlertPolicy, Plural: "AlertPolicies"},
+		{Kind: manifest.KindAlertPolicy},
 		{Kind: manifest.KindAlert, Extender: get.newGetAlertCommand},
 		{Kind: manifest.KindAlertSilence},
 		{Kind: manifest.KindAnnotation},
@@ -79,13 +78,10 @@ To get more details in output use one of the available flags.`,
 		{Kind: manifest.KindService, Aliases: []string{"svc", "svcs"}},
 		{Kind: manifest.KindSLO, Extender: get.newGetSLOCommand},
 		{Kind: manifest.KindUserGroup},
-		{Kind: manifest.KindBudgetAdjustment},
+		{Kind: manifest.KindBudgetAdjustment, Extender: get.newGetBudgetAdjustmentCommand},
 		{Kind: manifest.KindReport},
 	} {
-		plural := subCmd.Kind.String() + "s"
-		if len(subCmd.Plural) > 0 {
-			plural = subCmd.Plural
-		}
+		plural := pluralForKind(subCmd.Kind)
 		short := fmt.Sprintf("Displays all of the %s.", plural)
 		use := strings.ToLower(plural)
 		subCmd.Aliases = append(subCmd.Aliases, subCmd.Kind.ToLower(), subCmd.Kind.String())
@@ -119,17 +115,20 @@ func (g *GetCmd) newGetObjectsCommand(
 		Aliases: aliases,
 		Short:   short,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			objects, err := g.getObjects(cmd.Context(), args, kind)
+			objects, err := g.getObjects(cmd.Context(), kind, args)
 			if err != nil {
 				return err
 			}
-			if objects == nil {
+			if len(objects) == 0 {
+				switch kind {
+				case manifest.KindProject, manifest.KindUserGroup, manifest.KindBudgetAdjustment, manifest.KindReport:
+					fmt.Printf("No resources found.\n")
+				default:
+					fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)
+				}
 				return nil
 			}
-			if err = g.printer.Print(objects); err != nil {
-				return err
-			}
-			return nil
+			return g.printer.Print(objects)
 		},
 	}
 }
@@ -287,11 +286,11 @@ func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 		`Displays client_secret and client_id.`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		objects, err := g.getObjects(cmd.Context(), args, manifest.KindAgent)
+		objects, err := g.getObjects(cmd.Context(), manifest.KindAgent, args)
 		if err != nil || objects == nil {
 			return err
 		}
-		var agents interface{}
+		var agents any
 		if *withAccessKeysFlag {
 			agents, err = g.getAgentsWithSecrets(cmd.Context(), objects)
 			if err != nil {
@@ -310,6 +309,15 @@ func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 
 func (g *GetCmd) newGetSLOCommand(cmd *cobra.Command) *cobra.Command {
 	cmd.Flags().StringArrayVarP(&g.services, "service", "s", nil, "Filter SLOs by service name.")
+	return cmd
+}
+
+func (g *GetCmd) newGetBudgetAdjustmentCommand(cmd *cobra.Command) *cobra.Command {
+	cmd.Flags().StringVarP(&g.slo, "slo", "", "",
+		`Filter resource by SLO name. Example: my-sample-slo-name`)
+	cmd.Flags().StringVarP(&g.project, "project", "p", "",
+		`Filter resource by SLO Project name. Example: my-sample-project-name`)
+	cmd.MarkFlagsRequiredTogether("slo", "project")
 	return cmd
 }
 
@@ -350,7 +358,7 @@ func (g *GetCmd) enrichAgentWithSecrets(
 	if err != nil {
 		return nil, err
 	}
-	meta, ok := agent["metadata"].(map[string]interface{})
+	meta, ok := agent["metadata"].(map[string]any)
 	if !ok {
 		return agent, nil
 	}
@@ -360,7 +368,7 @@ func (g *GetCmd) enrichAgentWithSecrets(
 	return agent, nil
 }
 
-func (g *GetCmd) getObjects(ctx context.Context, args []string, kind manifest.Kind) ([]manifest.Object, error) {
+func (g *GetCmd) getObjects(ctx context.Context, kind manifest.Kind, args []string) ([]manifest.Object, error) {
 	query := url.Values{objectsV1.QueryKeyName: args}
 	if len(g.labels) > 0 {
 		query.Set(objectsV1.QueryKeyLabels, parseFilterLabel(g.labels))
@@ -368,19 +376,14 @@ func (g *GetCmd) getObjects(ctx context.Context, args []string, kind manifest.Ki
 	if len(g.services) > 0 && kind == manifest.KindSLO {
 		query[objectsV1.QueryKeyServiceName] = g.services
 	}
+	if len(g.slo) > 0 && len(g.project) > 0 && kind == manifest.KindBudgetAdjustment {
+		query.Set(objectsV1.QueryKeySLOProjectName, g.project)
+		query.Set(objectsV1.QueryKeySLOName, g.slo)
+	}
 	header := http.Header{sdk.HeaderProject: []string{g.client.Config.Project}}
 	objects, err := g.client.Objects().V1().Get(ctx, kind, header, query)
 	if err != nil {
 		return nil, err
-	}
-	if len(objects) == 0 {
-		switch kind {
-		case manifest.KindProject, manifest.KindUserGroup, manifest.KindBudgetAdjustment, manifest.KindReport:
-			fmt.Printf("No resources found.\n")
-		default:
-			fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)
-		}
-		return nil, nil
 	}
 	return objects, nil
 }
@@ -388,8 +391,8 @@ func (g *GetCmd) getObjects(ctx context.Context, args []string, kind manifest.Ki
 func parseFilterLabel(filterLabels []string) string {
 	labels := make(v1alpha.Labels)
 	for _, filterLabel := range filterLabels {
-		filteredLabels := strings.Split(filterLabel, ",")
-		for _, currentLabel := range filteredLabels {
+		filteredLabels := strings.SplitSeq(filterLabel, ",")
+		for currentLabel := range filteredLabels {
 			values := strings.Split(currentLabel, "=")
 			key := values[0]
 			if _, ok := labels[key]; !ok {

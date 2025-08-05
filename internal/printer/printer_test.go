@@ -47,6 +47,46 @@ age: 30
   "age": 30
 }`,
 		},
+		"JSON string scalar": {
+			config:   Config{OutputFormat: JSONFormat},
+			v:        "hello world",
+			expected: "hello world\n",
+		},
+		"JSON integer scalar": {
+			config:   Config{OutputFormat: JSONFormat},
+			v:        int(42),
+			expected: "42\n",
+		},
+		"JSON float scalar with no decimal": {
+			config:   Config{OutputFormat: JSONFormat},
+			v:        float64(42),
+			expected: "42\n",
+		},
+		"JSON decimal scalar": {
+			config:   Config{OutputFormat: JSONFormat},
+			v:        float64(42.56),
+			expected: "42.56\n",
+		},
+		"JSON decimal scalar (big decimal)": {
+			config:   Config{OutputFormat: JSONFormat},
+			v:        float64(42.560918230975),
+			expected: "42.560918230975\n",
+		},
+		"JSON nil scalar": {
+			config:   Config{OutputFormat: JSONFormat},
+			v:        nil,
+			expected: "",
+		},
+		"JSON bool true scalar": {
+			config:   Config{OutputFormat: JSONFormat},
+			v:        true,
+			expected: "true\n",
+		},
+		"JSON bool false scalar": {
+			config:   Config{OutputFormat: JSONFormat},
+			v:        false,
+			expected: "false\n",
+		},
 		"CSV": {
 			config: Config{OutputFormat: CSVFormat},
 			v:      testStruct{Name: "foo", Age: 30},

@@ -59,6 +59,7 @@ For every command more detailed help is available.`,
 	rootCmd.AddCommand(budgetadjustments.NewRootCmd(&root))
 	rootCmd.AddCommand(root.NewConvertCmd())
 	rootCmd.AddCommand(root.NewMoveCmd())
+	rootCmd.AddCommand(root.NewMCPCmd())
 
 	return rootCmd
 }
