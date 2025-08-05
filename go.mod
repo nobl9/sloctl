@@ -4,6 +4,7 @@ go 1.24
 
 require (
 	github.com/go-playground/validator/v10 v10.27.0
+	github.com/itchyny/gojq v0.12.17
 	github.com/mark3labs/mcp-go v0.26.0
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/nobl9/go-yaml v1.0.1
@@ -18,6 +19,7 @@ require (
 
 require (
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/itchyny/timefmt-go v0.1.6 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect

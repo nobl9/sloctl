@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/nobl9/sloctl/internal/csv"
+	"github.com/nobl9/sloctl/internal/jq"
 )
 
 type Config struct {
@@ -29,11 +30,14 @@ func NewPrinter(config Config) *Printer {
 	if config.CSVRecordSeparator == "" {
 		config.CSVRecordSeparator = csv.DefaultRecordSeparator
 	}
-	return &Printer{config: config}
+	printer := &Printer{config: config}
+	printer.jq = jq.NewExpressionRunner(jq.Config{})
+	return printer
 }
 
 type Printer struct {
 	config Config
+	jq     *jq.ExpressionRunner
 }
 
 func (o *Printer) Print(v any) error {
@@ -41,8 +45,26 @@ func (o *Printer) Print(v any) error {
 	if err != nil {
 		return err
 	}
-	if err = p.Print(v); err != nil {
-		return err
+	switch {
+	case v == nil:
+		return nil
+	case o.jq.ShouldRun():
+		values, err := o.jq.Evaluate(v)
+		if err != nil {
+			return err
+		}
+		for v, err := range values {
+			if err != nil {
+				return err
+			}
+			if err = p.Print(v); err != nil {
+				return err
+			}
+		}
+	default:
+		if err := p.Print(v); err != nil {
+			return err
+		}
 	}
 	return nil
 }

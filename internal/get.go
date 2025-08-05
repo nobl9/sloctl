@@ -119,13 +119,16 @@ func (g *GetCmd) newGetObjectsCommand(
 			if err != nil {
 				return err
 			}
-			if objects == nil {
+			if len(objects) == 0 {
+				switch kind {
+				case manifest.KindProject, manifest.KindUserGroup, manifest.KindBudgetAdjustment, manifest.KindReport:
+					fmt.Printf("No resources found.\n")
+				default:
+					fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)
+				}
 				return nil
 			}
-			if err = g.printer.Print(objects); err != nil {
-				return err
-			}
-			return nil
+			return g.printer.Print(objects)
 		},
 	}
 }
@@ -287,7 +290,7 @@ func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 		if err != nil || objects == nil {
 			return err
 		}
-		var agents interface{}
+		var agents any
 		if *withAccessKeysFlag {
 			agents, err = g.getAgentsWithSecrets(cmd.Context(), objects)
 			if err != nil {
@@ -355,7 +358,7 @@ func (g *GetCmd) enrichAgentWithSecrets(
 	if err != nil {
 		return nil, err
 	}
-	meta, ok := agent["metadata"].(map[string]interface{})
+	meta, ok := agent["metadata"].(map[string]any)
 	if !ok {
 		return agent, nil
 	}
@@ -382,23 +385,14 @@ func (g *GetCmd) getObjects(ctx context.Context, kind manifest.Kind, args []stri
 	if err != nil {
 		return nil, err
 	}
-	if len(objects) == 0 {
-		switch kind {
-		case manifest.KindProject, manifest.KindUserGroup, manifest.KindBudgetAdjustment, manifest.KindReport:
-			fmt.Printf("No resources found.\n")
-		default:
-			fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)
-		}
-		return nil, nil
-	}
 	return objects, nil
 }
 
 func parseFilterLabel(filterLabels []string) string {
 	labels := make(v1alpha.Labels)
 	for _, filterLabel := range filterLabels {
-		filteredLabels := strings.Split(filterLabel, ",")
-		for _, currentLabel := range filteredLabels {
+		filteredLabels := strings.SplitSeq(filterLabel, ",")
+		for currentLabel := range filteredLabels {
 			values := strings.Split(currentLabel, "=")
 			key := values[0]
 			if _, ok := labels[key]; !ok {
