@@ -49,7 +49,7 @@ func (o *Printer) Print(v any) error {
 	case v == nil:
 		return nil
 	case o.jq.ShouldRun():
-		values, err := o.jq.EvaluateAndPrint(v)
+		values, err := o.jq.Evaluate(v)
 		if err != nil {
 			return err
 		}
