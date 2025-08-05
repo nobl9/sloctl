@@ -53,7 +53,7 @@ func (m *MoveCmd) newMoveSLOCmd() *cobra.Command {
 The command will also create a new Project and/or Service if the specified target objects do not yet exist.
 
 Moving an SLO between Projects updates references of this SLO in other objects.
-If you've adopted SLOs as Code apporach, ensure you update these references in your configration:
+If you've adopted SLOs as Code approach, ensure you update these references in your configration:
   - Component SLO’s project in the composite SLO definition.
   - Budget Adjustment filters.
 
