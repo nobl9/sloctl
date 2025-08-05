@@ -13,6 +13,7 @@ import (
 	"github.com/nobl9/govy/pkg/rules"
 	"github.com/nobl9/nobl9-go/sdk"
 	"github.com/nobl9/sloctl/internal/printer"
+	"github.com/nobl9/sloctl/internal/yamlenc"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -176,7 +177,7 @@ func writeRecipesToTempFile(path string, recipes Recipes) (tmpFileName string, e
 	case ".json":
 		enc = json.NewEncoder(tmpFile)
 	default:
-		enc = yaml.NewEncoder(tmpFile)
+		enc = yamlenc.NewEncoder(tmpFile)
 	}
 	if err = enc.Encode(recipes); err != nil {
 		return "", err

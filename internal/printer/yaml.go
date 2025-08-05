@@ -3,9 +3,9 @@ package printer
 import (
 	"io"
 
-	"github.com/goccy/go-yaml"
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/sdk"
+	"github.com/nobl9/sloctl/internal/yamlenc"
 )
 
 type yamlPrinter struct {
@@ -17,11 +17,7 @@ func (p *yamlPrinter) Print(content any) error {
 	case []manifest.Object:
 		return sdk.PrintObjects(v, p.out, manifest.ObjectFormatYAML)
 	default:
-		b, err := yaml.Marshal(content)
-		if err != nil {
-			return err
-		}
-		_, err = p.out.Write(b)
-		return err
+		enc := yamlenc.NewEncoder(p.out)
+		return enc.Encode(content)
 	}
 }
