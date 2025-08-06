@@ -26,12 +26,17 @@ type Recipe struct {
 	Description string           `json:"description"`
 	Example     string           `json:"example,omitempty"`
 	JQ          string           `json:"jq,omitempty"`
-	Validators  RecipeValidators `json:"validators,omitempty"`
+	Validators  RecipeValidators `json:"validators,omitempty,omitzero"`
 	name        string
 }
 
 type RecipeValidators struct {
 	AtLeastArgs []string `json:"atLeastArgs,omitempty"`
+}
+
+type RecipesCmd struct {
+	recipes Recipes
+	printer *printer.Printer
 }
 
 func (r *RootCmd) NewRecipesCmd() *cobra.Command {
@@ -46,7 +51,11 @@ func (r *RootCmd) NewRecipesCmd() *cobra.Command {
 		return cmd
 	}
 
-	printer := printer.NewPrinter(printer.Config{})
+	recipesCmd := &RecipesCmd{
+		recipes: recipes,
+		printer: printer.NewPrinter(printer.Config{}),
+	}
+
 	configGroup := &cobra.Group{
 		ID:    "config",
 		Title: "Config commands:",
@@ -55,30 +64,28 @@ func (r *RootCmd) NewRecipesCmd() *cobra.Command {
 		GroupID: configGroup.ID,
 		Use:     "add",
 		Short:   "Add new recipe",
-		Long:    "Provide a ",
+		Args:    cobra.NoArgs,
 		RunE: func(*cobra.Command, []string) error {
-			return nil
+			return recipesCmd.AddRecipe()
 		},
 	}
 	listCommand := &cobra.Command{
 		GroupID: configGroup.ID,
 		Use:     "list",
 		Short:   "List existing recipes",
+		Args:    cobra.NoArgs,
 		RunE: func(*cobra.Command, []string) error {
-			return printer.Print(recipes)
+			return recipesCmd.ListRecipes()
 		},
 	}
-	printer.MustRegisterFlags(listCommand)
+	recipesCmd.printer.MustRegisterFlags(listCommand)
 	removeCommand := &cobra.Command{
 		GroupID: configGroup.ID,
 		Use:     "remove",
 		Short:   "Remove recipe by name",
 		Args:    recipesArgFunc([]string{"name"}),
 		RunE: func(_ *cobra.Command, args []string) error {
-			for _, name := range args {
-				delete(recipes, name)
-			}
-			return saveRecipes(recipes)
+			return recipesCmd.DeleteRecipes(args)
 		},
 	}
 	cmd.AddCommand(addCommand, listCommand, removeCommand)
@@ -96,7 +103,7 @@ func (r *RootCmd) NewRecipesCmd() *cobra.Command {
 			Example: recipe.Example,
 			Args:    recipesArgFunc(recipe.Validators.AtLeastArgs),
 			RunE: func(*cobra.Command, []string) error {
-				return runRecipe(recipe)
+				return recipesCmd.RunRecipe(recipe)
 			},
 		}
 		cmd.AddCommand(recipeCmd)
@@ -107,7 +114,22 @@ func (r *RootCmd) NewRecipesCmd() *cobra.Command {
 	return cmd
 }
 
-func runRecipe(recipe Recipe) error {
+func (r RecipesCmd) ListRecipes() error {
+	return r.printer.Print(r.recipes)
+}
+
+func (r RecipesCmd) AddRecipe() error {
+	return r.printer.Print(r.recipes)
+}
+
+func (r RecipesCmd) DeleteRecipes(recipeNames []string) error {
+	for _, name := range recipeNames {
+		delete(r.recipes, name)
+	}
+	return saveRecipes(r.recipes)
+}
+
+func (r RecipesCmd) RunRecipe(recipe Recipe) error {
 	args := recipe.Args
 	if len(args) == 0 {
 		return errors.New("empty arguments list for recipe")
