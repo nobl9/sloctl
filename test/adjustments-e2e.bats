@@ -38,7 +38,7 @@ setup() {
   done
 }
 
-@test "adjustment event not found" {
+@test "adjustment not found" {
   run_sloctl budgetadjustments get abc-123
   assert_failure
   output="$stderr"
