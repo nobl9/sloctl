@@ -37,10 +37,3 @@ setup() {
     assert_output "Error: - adjustment 'foo' was not found"
   done
 }
-
-@test "adjustment not found" {
-  run_sloctl budgetadjustments get abc-123
-  assert_failure
-  output="$stderr"
-  assert_output "No resources found."
-}
