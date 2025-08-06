@@ -19,6 +19,7 @@ import (
 	"github.com/nobl9/nobl9-go/sdk"
 	"github.com/nobl9/nobl9-openslo/pkg/openslotonobl9"
 
+	"github.com/nobl9/sloctl/internal/jsonbuffer"
 	"github.com/nobl9/sloctl/internal/printer"
 )
 
@@ -123,7 +124,7 @@ func (c ConvertCmd) convertOpenSLODefinitions(cmd *cobra.Command) ([]manifest.Ob
 
 func (c ConvertCmd) readOpenSLODefinitionsFromSource(def *sdk.RawDefinition) ([]openslo.Object, error) {
 	format := openslosdk.FormatYAML
-	if isJSONBuffer(def.Definition) {
+	if jsonbuffer.IsJSON(def.Definition) {
 		format = openslosdk.FormatJSON
 	}
 	objects, err := openslosdk.Decode(bytes.NewReader(def.Definition), format)
@@ -162,15 +163,6 @@ func (c ConvertCmd) setManifestSourceForOpenSLOObject(object []byte, basePath, s
 		return nil, errors.Wrap(err, "failed to set manifestSrc annotation for OpenSLO object")
 	}
 	return object, nil
-}
-
-var jsonBufferRegex = regexp.MustCompile(`^\s*\[?\s*{`)
-
-// isJSONBuffer scans the provided buffer, looking for an open brace indicating this is JSON.
-// While a simple list like ["a", "b", "c"] is still a valid JSON,
-// it does not really concern us when processing complex objects.
-func isJSONBuffer(buf []byte) bool {
-	return jsonBufferRegex.Match(buf)
 }
 
 var opensloAPIVersionRegex = regexp.MustCompile(`"?apiVersion"?\s*:\s*"?openslo`)

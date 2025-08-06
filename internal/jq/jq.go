@@ -11,8 +11,8 @@ import (
 	"github.com/itchyny/gojq"
 )
 
-func NewExpressionRunner(config Config) *ExpressionRunner {
-	return &ExpressionRunner{config: config}
+func NewExpressionRunner(config Config) ExpressionRunner {
+	return ExpressionRunner{config: config}
 }
 
 type ExpressionRunner struct {
@@ -23,13 +23,13 @@ type Config struct {
 	Expression string
 }
 
-func (e *ExpressionRunner) ShouldRun() bool {
+func (e ExpressionRunner) ShouldRun() bool {
 	return e.config.Expression != ""
 }
 
 // Evaluate parses, compiles and runs jq expressions.
 // It returns an iterator which yields jq expression result and error (if any).
-func (e *ExpressionRunner) Evaluate(v any) (iter.Seq2[any, error], error) {
+func (e ExpressionRunner) Evaluate(v any) (iter.Seq2[any, error], error) {
 	query, err := gojq.Parse(e.config.Expression)
 	if err != nil {
 		var parseErr *gojq.ParseError

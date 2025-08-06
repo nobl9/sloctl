@@ -60,15 +60,7 @@ func (r *RootCmd) NewRecipesCmd() *cobra.Command {
 		ID:    "config",
 		Title: "Config commands:",
 	}
-	addCommand := &cobra.Command{
-		GroupID: configGroup.ID,
-		Use:     "add",
-		Short:   "Add new recipe",
-		Args:    cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error {
-			return recipesCmd.AddRecipe()
-		},
-	}
+
 	listCommand := &cobra.Command{
 		GroupID: configGroup.ID,
 		Use:     "list",
@@ -79,6 +71,7 @@ func (r *RootCmd) NewRecipesCmd() *cobra.Command {
 		},
 	}
 	recipesCmd.printer.MustRegisterFlags(listCommand)
+
 	removeCommand := &cobra.Command{
 		GroupID: configGroup.ID,
 		Use:     "remove",
@@ -88,7 +81,7 @@ func (r *RootCmd) NewRecipesCmd() *cobra.Command {
 			return recipesCmd.DeleteRecipes(args)
 		},
 	}
-	cmd.AddCommand(addCommand, listCommand, removeCommand)
+	cmd.AddCommand(listCommand, removeCommand)
 
 	recipesGroup := &cobra.Group{
 		ID:    "recipes",
@@ -115,10 +108,6 @@ func (r *RootCmd) NewRecipesCmd() *cobra.Command {
 }
 
 func (r RecipesCmd) ListRecipes() error {
-	return r.printer.Print(r.recipes)
-}
-
-func (r RecipesCmd) AddRecipe() error {
 	return r.printer.Print(r.recipes)
 }
 

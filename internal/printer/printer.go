@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 
 	"github.com/nobl9/sloctl/internal/csv"
 	"github.com/nobl9/sloctl/internal/jq"
@@ -37,7 +38,7 @@ func NewPrinter(config Config) *Printer {
 
 type Printer struct {
 	config Config
-	jq     *jq.ExpressionRunner
+	jq     jq.ExpressionRunner
 }
 
 func (o *Printer) Print(v any) error {
@@ -69,6 +70,18 @@ func (o *Printer) Print(v any) error {
 	return nil
 }
 
+func (o *Printer) WithOutput(out io.Writer) *Printer {
+	cp := *o
+	cp.config.Output = out
+	return &cp
+}
+
+var validFormatStrings = []string{
+	YAMLFormat.String(),
+	JSONFormat.String(),
+	CSVFormat.String(),
+}
+
 // All supported output formats by [Printer].
 const (
 	YAMLFormat Format = "yaml"
@@ -79,18 +92,16 @@ const (
 // Format represents supported printing outputs.
 type Format string
 
-func (f *Format) String() string {
-	return string(*f)
+func (f Format) String() string {
+	return string(f)
 }
 
 func (f *Format) Set(value string) error {
-	switch value {
-	case "yaml", "json", "csv":
-		*f = Format(value)
-		return nil
-	default:
+	if !slices.Contains(validFormatStrings, value) {
 		return fmt.Errorf("invalid value for Format: %s", value)
 	}
+	*f = Format(value)
+	return nil
 }
 
 func (f *Format) Type() string {

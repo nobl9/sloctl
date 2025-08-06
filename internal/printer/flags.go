@@ -1,6 +1,9 @@
 package printer
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/spf13/cobra"
 
 	"github.com/nobl9/sloctl/internal/csv"
@@ -11,7 +14,7 @@ func (o *Printer) MustRegisterFlags(cmd *cobra.Command) {
 		&o.config.OutputFormat,
 		"output",
 		"o",
-		`Output format: one of yaml|json|csv.`,
+		fmt.Sprintf("Output format: one of %s.", strings.Join(validFormatStrings, "|")),
 	)
 
 	cmd.PersistentFlags().StringVarP(
