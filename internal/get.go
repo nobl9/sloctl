@@ -91,8 +91,7 @@ To get more details in output use one of the available flags.`,
 			subCmd.Extender(sc)
 		}
 		if objectKindSupportsProjectFlag(subCmd.Kind) {
-			sc.Flags().StringVarP(&get.project, "project", "p", "",
-				`List the requested object(s) which belong to the specified Project (name).`)
+			registerProjectFlag(sc, &get.project)
 			sc.Flags().BoolVarP(&get.allProjects, "all-projects", "A", false,
 				`List the requested object(s) across all projects.`)
 		}
@@ -119,16 +118,7 @@ func (g *GetCmd) newGetObjectsCommand(
 			if err != nil {
 				return err
 			}
-			if len(objects) == 0 {
-				switch kind {
-				case manifest.KindProject, manifest.KindUserGroup, manifest.KindBudgetAdjustment, manifest.KindReport:
-					fmt.Printf("No resources found.\n")
-				default:
-					fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)
-				}
-				return nil
-			}
-			return g.printer.Print(objects)
+			return g.printObjects(kind, objects)
 		},
 	}
 }
@@ -287,22 +277,24 @@ func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		objects, err := g.getObjects(cmd.Context(), manifest.KindAgent, args)
-		if err != nil || objects == nil {
+		if err != nil {
 			return err
 		}
-		var agents any
-		if *withAccessKeysFlag {
-			agents, err = g.getAgentsWithSecrets(cmd.Context(), objects)
+		var agents []manifest.Object
+		switch {
+		case len(objects) > 0 && *withAccessKeysFlag:
+			agentsWithSecrets, err := g.getAgentsWithSecrets(cmd.Context(), objects)
 			if err != nil {
 				return err
 			}
-		} else {
+			agents = make([]manifest.Object, 0, len(agentsWithSecrets))
+			for _, agent := range agentsWithSecrets {
+				agents = append(agents, agent)
+			}
+		default:
 			agents = objects
 		}
-		if err = g.printer.Print(agents); err != nil {
-			return err
-		}
-		return nil
+		return g.printObjects(manifest.KindAgent, agents)
 	}
 	return cmd
 }
@@ -315,8 +307,7 @@ func (g *GetCmd) newGetSLOCommand(cmd *cobra.Command) *cobra.Command {
 func (g *GetCmd) newGetBudgetAdjustmentCommand(cmd *cobra.Command) *cobra.Command {
 	cmd.Flags().StringVarP(&g.slo, "slo", "", "",
 		`Filter resource by SLO name. Example: my-sample-slo-name`)
-	cmd.Flags().StringVarP(&g.project, "project", "p", "",
-		`Filter resource by SLO Project name. Example: my-sample-project-name`)
+	registerProjectFlag(cmd, &g.project)
 	cmd.MarkFlagsRequiredTogether("slo", "project")
 	return cmd
 }
@@ -386,6 +377,19 @@ func (g *GetCmd) getObjects(ctx context.Context, kind manifest.Kind, args []stri
 		return nil, err
 	}
 	return objects, nil
+}
+
+func (g *GetCmd) printObjects(kind manifest.Kind, objects []manifest.Object) error {
+	if len(objects) == 0 {
+		switch {
+		case objectKindSupportsProjectFlag(kind):
+			fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)
+		default:
+			fmt.Printf("No resources found.\n")
+		}
+		return nil
+	}
+	return g.printer.Print(objects)
 }
 
 func parseFilterLabel(filterLabels []string) string {
