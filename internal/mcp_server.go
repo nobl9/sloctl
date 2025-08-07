@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -39,9 +40,10 @@ func newMCPServer(cmd *cobra.Command, client *sdk.Client) mcpServer {
 }
 
 type mcpServer struct {
-	cmd    *cobra.Command
-	client *sdk.Client
-	server *server.MCPServer
+	cmd     *cobra.Command
+	client  *sdk.Client
+	server  *server.MCPServer
+	tempDir string
 }
 
 type mcpToolArguments struct {
@@ -132,7 +134,7 @@ func (s mcpServer) RegisterToolsAndResources() error {
 			mcp.Description("The Project name"),
 		),
 	)
-	s.server.AddTool(t, getTypedToolHandler(s.SLOStatusTool))
+	s.server.AddTool(t, mcp.NewTypedToolHandler(s.SLOStatusTool))
 
 	t = mcp.NewTool("get_ebs",
 		mcp.WithDescription("Get Error Budget Status for multiple SLOs"),
@@ -140,7 +142,7 @@ func (s mcpServer) RegisterToolsAndResources() error {
 			mcp.Description("The Project name"),
 		),
 	)
-	s.server.AddTool(t, getTypedToolHandler(s.EBSTool))
+	s.server.AddTool(t, mcp.NewTypedToolHandler(s.EBSTool))
 
 	t = mcp.NewTool("apply",
 		mcp.WithDescription("Apply changes to nobl9"),
@@ -149,7 +151,7 @@ func (s mcpServer) RegisterToolsAndResources() error {
 			mcp.Required(),
 		),
 	)
-	s.server.AddTool(t, getTypedToolHandler(s.ApplyTool))
+	s.server.AddTool(t, mcp.NewTypedToolHandler(s.ApplyTool))
 
 	t = mcp.NewTool("replay",
 		mcp.WithDescription("Replay slo"),
@@ -166,17 +168,17 @@ func (s mcpServer) RegisterToolsAndResources() error {
 			mcp.Required(),
 		),
 	)
-	s.server.AddTool(t, getTypedToolHandler(s.ReplayTool))
+	s.server.AddTool(t, mcp.NewTypedToolHandler(s.ReplayTool))
 
 	return nil
 }
 
-func (s mcpServer) Start() error {
-	slog.Info("Starting Nobl9 MCP server", "version", "0.1.0")
+func (s *mcpServer) Start() error {
+	slog.Info("Starting Nobl9 MCP server", "version", getBuildVersion())
 	return server.ServeStdio(s.server)
 }
 
-func (s mcpServer) addToolForObject(kind manifest.Kind) {
+func (s *mcpServer) addToolForObject(kind manifest.Kind) {
 	kindPlural := pluralForKind(kind)
 	opts := []mcp.ToolOption{
 		mcp.WithDescription("Get " + kindPlural),
@@ -199,11 +201,11 @@ func (s mcpServer) addToolForObject(kind manifest.Kind) {
 	}
 	s.server.AddTool(
 		mcp.NewTool("get_"+strings.ToLower(kindPlural), opts...),
-		getTypedToolHandler(s.getObjectsToolHandler(kind)),
+		mcp.NewTypedToolHandler(s.getObjectsToolHandler(kind)),
 	)
 }
 
-func (s mcpServer) addResourceForObject(kind manifest.Kind, description string) {
+func (s *mcpServer) addResourceForObject(kind manifest.Kind, description string) {
 	kindPlural := pluralForKind(kind)
 	var uri string
 	if objectKindSupportsProjectFlag(kind) {
@@ -219,7 +221,7 @@ func (s mcpServer) addResourceForObject(kind manifest.Kind, description string) 
 	s.server.AddResource(r, s.getObjectsResourceHandler(kind))
 }
 
-func (s mcpServer) getObjectsResourceHandler(kind manifest.Kind) server.ResourceHandlerFunc {
+func (s *mcpServer) getObjectsResourceHandler(kind manifest.Kind) server.ResourceHandlerFunc {
 	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 		uri := req.Params.URI
 		kindPlural := strings.ToLower(pluralForKind(kind))
@@ -255,8 +257,12 @@ func (s mcpServer) getObjectsResourceHandler(kind manifest.Kind) server.Resource
 			}, nil
 		}
 
-		filename := fmt.Sprintf("%s_%d.yaml", objects[0].GetKind(), time.Now().Unix())
-		if err := s.writeObjectsToFile(filename, "yaml", objects); err != nil {
+		var buf bytes.Buffer
+		if err := sdk.EncodeObjects(objects, &buf, manifest.ObjectFormatYAML); err != nil {
+			return nil, errors.Wrapf(err, "failed to encode %s", pluralForKind(kind))
+		}
+		filename, err := s.writeTempFile(objects[0].GetKind().String(), "yaml", buf.String())
+		if err != nil {
 			return nil, errors.Wrapf(err, "failed to write %s to a file", pluralForKind(kind))
 		}
 
@@ -283,20 +289,8 @@ func (s mcpServer) getObjectsResourceHandler(kind manifest.Kind) server.Resource
 	}
 }
 
-type typedToolHandler[T any] func(ctx context.Context, args T) (*mcp.CallToolResult, error)
-
-func getTypedToolHandler[T any](typedReq typedToolHandler[T]) server.ToolHandlerFunc {
-	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		var args T
-		if err := req.BindArguments(&args); err != nil {
-			return nil, errors.Wrapf(err, "failed to bind arguments to type %T", args)
-		}
-		return typedReq(ctx, args)
-	}
-}
-
-func (s mcpServer) getObjectsToolHandler(kind manifest.Kind) typedToolHandler[mcpToolArguments] {
-	return func(ctx context.Context, args mcpToolArguments) (*mcp.CallToolResult, error) {
+func (s *mcpServer) getObjectsToolHandler(kind manifest.Kind) mcp.TypedToolHandlerFunc[mcpToolArguments] {
+	return func(ctx context.Context, _ mcp.CallToolRequest, args mcpToolArguments) (*mcp.CallToolResult, error) {
 		header := http.Header{}
 		query := url.Values{}
 		if args.Project != "" {
@@ -314,40 +308,36 @@ func (s mcpServer) getObjectsToolHandler(kind manifest.Kind) typedToolHandler[mc
 			return mcp.NewToolResultText(fmt.Sprintf("Found no %s\n", pluralForKind(kind))), nil
 		}
 
-		filename := fmt.Sprintf("get_%s_%d.%s", objects[0].GetKind(), time.Now().Unix(), args.Format)
-		if err := s.writeObjectsToFile(filename, args.Format, objects); err != nil {
+		var buf bytes.Buffer
+		format, err := manifest.ParseObjectFormat(strings.ToUpper(args.Format))
+		if err != nil {
+			return nil, err
+		}
+		if err := sdk.EncodeObjects(objects, &buf, format); err != nil {
+			return nil, errors.Wrapf(err, "failed to encode %s", pluralForKind(kind))
+		}
+		filename, err := s.writeTempFile(fmt.Sprintf("get_%s", objects[0].GetKind()), args.Format, buf.String())
+		if err != nil {
 			return nil, errors.Wrapf(err, "failed to write %s to a file", pluralForKind(kind))
 		}
 
-		buf := strings.Builder{}
-		buf.WriteString(fmt.Sprintf("Retrieved %d %s. Output written to: %s\n", len(objects), pluralForKind(kind), filename))
+		result := strings.Builder{}
+		result.WriteString(fmt.Sprintf("Retrieved %d %s. Output written to: %s\n", len(objects), pluralForKind(kind), filename))
 
 		for _, obj := range objects {
-			buf.WriteString(obj.GetName())
-			buf.WriteString("\n")
+			result.WriteString(obj.GetName())
+			result.WriteString("\n")
 		}
 
-		return mcp.NewToolResultText(buf.String()), nil
+		return mcp.NewToolResultText(result.String()), nil
 	}
 }
 
-func (s mcpServer) writeObjectsToFile(outFilename, formatStr string, objects []manifest.Object) error {
-	format, err := manifest.ParseObjectFormat(strings.ToUpper(formatStr))
-	if err != nil {
-		return err
-	}
-	outFile, err := os.Create(outFilename) // #nosec: G304
-	if err != nil {
-		slog.Error("Failed to create output file",
-			slog.String("error", err.Error()),
-			slog.String("filename", outFilename))
-		return err
-	}
-	defer func() { _ = outFile.Close() }()
-	return sdk.EncodeObjects(objects, outFile, format)
-}
-
-func (s mcpServer) SLOStatusTool(ctx context.Context, args mcpToolArguments) (*mcp.CallToolResult, error) {
+func (s *mcpServer) SLOStatusTool(
+	ctx context.Context,
+	_ mcp.CallToolRequest,
+	args mcpToolArguments,
+) (*mcp.CallToolResult, error) {
 	if args.Name == "" {
 		return nil, fmt.Errorf("'name' argument is required")
 	}
@@ -368,7 +358,11 @@ func (s mcpServer) SLOStatusTool(ctx context.Context, args mcpToolArguments) (*m
 	return mcp.NewToolResultText(string(b)), nil
 }
 
-func (s mcpServer) ApplyTool(ctx context.Context, args mcpToolArguments) (*mcp.CallToolResult, error) {
+func (s *mcpServer) ApplyTool(
+	ctx context.Context,
+	_ mcp.CallToolRequest,
+	args mcpToolArguments,
+) (*mcp.CallToolResult, error) {
 	if args.FileName == "" {
 		return nil, fmt.Errorf("'fileName' argument is required")
 	}
@@ -390,7 +384,7 @@ func (s mcpServer) ApplyTool(ctx context.Context, args mcpToolArguments) (*mcp.C
 	return mcp.NewToolResultText("The objects were successfully applied."), nil
 }
 
-func (s mcpServer) ReplayTool(ctx context.Context, args mcpToolArguments) (*mcp.CallToolResult, error) {
+func (s *mcpServer) ReplayTool(ctx context.Context, _ mcp.CallToolRequest, args mcpToolArguments) (*mcp.CallToolResult, error) {
 	fromValue := new(flags.TimeValue)
 	if err := fromValue.Set(args.From); err != nil {
 		return nil, err
@@ -414,49 +408,38 @@ func (s mcpServer) ReplayTool(ctx context.Context, args mcpToolArguments) (*mcp.
 	return mcp.NewToolResultText(out.String()), nil
 }
 
-func (s mcpServer) EBSTool(ctx context.Context, args mcpToolArguments) (*mcp.CallToolResult, error) {
+func (s *mcpServer) EBSTool(
+	ctx context.Context,
+	_ mcp.CallToolRequest,
+	args mcpToolArguments,
+) (*mcp.CallToolResult, error) {
 	r, err := s.getEBS(ctx, args.Project)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get EBS: %w", err)
 	}
-	outputFile := fmt.Sprintf("%s_%d.yaml", "get_ebs", time.Now().Unix())
-	outFile, err := os.Create(outputFile) // #nosec: G304
+	outputFile, err := s.writeTempFile("get_ebs", "yaml", r)
 	if err != nil {
-		slog.Error("Failed to create output file", "error", err)
 		return nil, err
 	}
-	defer func() { _ = outFile.Close() }()
-	_, _ = outFile.WriteString(r)
 
 	return mcp.NewToolResultText("Retrieved Error Budget status. Saved it in file " + outputFile), nil
 }
 
-func (s mcpServer) getEBS(ctx context.Context, project string) (string, error) {
+func (s *mcpServer) getEBS(ctx context.Context, project string) (string, error) {
 	search := `{}`
 	if project != "" {
 		search = fmt.Sprintf(`{"textSearch":"%s"}`, project)
 	}
 	body := strings.NewReader(search)
-	url := fmt.Sprintf("%s/dashboards/servicehealth/error-budget", s.client.Config.URL)
-	req, err := http.NewRequestWithContext(ctx, "POST", url, body)
+	req, err := s.client.CreateRequest(ctx, http.MethodPost, "/dashboards/servicehealth/error-budget", nil, nil, body)
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.client.Config.AccessToken))
-	req.Header.Set("organization", s.client.Config.Organization)
 
-	httpClient := http.Client{
-		Timeout: time.Second * 20,
-	}
-	resp, err := httpClient.Do(req)
+	resp, err := s.client.Do(req)
 	if err != nil {
 		return "", err
 	}
-	// TODO call sloctl to refresh token, redo the request
-	// if resp.StatusCode == http.StatusUnauthorized {
-	// }
 	defer func() { _ = resp.Body.Close() }()
 
 	b, err := io.ReadAll(resp.Body)
@@ -465,4 +448,21 @@ func (s mcpServer) getEBS(ctx context.Context, project string) (string, error) {
 	}
 
 	return string(b), nil
+}
+
+func (s *mcpServer) writeTempFile(prefix, format, content string) (string, error) {
+	if s.tempDir == "" {
+		tempDir, err := os.MkdirTemp("", "sloctl-mcp-*")
+		if err != nil {
+			return "", fmt.Errorf("failed to create temp directory: %w", err)
+		}
+		s.tempDir = tempDir
+	}
+	filename := filepath.Join(s.tempDir, fmt.Sprintf("%s_%d.%s", prefix, time.Now().Unix(), format))
+	err := os.WriteFile(filename, []byte(content), 0644)
+	if err != nil {
+		slog.Error("Failed to write temp file", "error", err, "filename", filename)
+		return "", err
+	}
+	return filename, nil
 }
