@@ -218,7 +218,7 @@ func recipesArgFunc(requiredArgs []string) cobra.PositionalArgs {
 		return nil
 	}
 	return func(_ *cobra.Command, args []string) error {
-		if len(args) != len(requiredArgs) {
+		if len(args) < len(requiredArgs) {
 			return errors.Errorf("Expected at least %d arg(s), received %d, required arg(s): %v",
 				len(requiredArgs), len(args), requiredArgs)
 		}
