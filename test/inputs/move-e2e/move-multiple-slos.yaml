@@ -1,0 +1,58 @@
+- apiVersion: n9/v1alpha
+  kind: SLO
+  metadata:
+    name: move-multiple-slos-1
+    project: <PROJECT>
+  spec:
+    description: This SLO is just for the e2e 'sloctl move' tests, it's not supposed to work!
+    service: move-slo-service
+    indicator:
+      metricSource:
+        kind: Direct
+        name: splunk-direct
+    timeWindows:
+      - unit: Day
+        count: 1
+        calendar:
+          startTime: 2020-01-21 12:30:00
+          timeZone: America/New_York
+    budgetingMethod: Occurrences
+    objectives:
+      - name: objective-1
+        value: 200
+        target: 0.8
+        op: lte
+        primary: true
+        rawMetric:
+          query:
+            splunk:
+              query: "index=* source=udp:5072 sourcetype=syslog status<400 | bucket _time span=1m | stats avg(response_time) as n9value by _time | rename _time as n9time | fields n9time n9value"
+- apiVersion: n9/v1alpha
+  kind: SLO
+  metadata:
+    name: move-multiple-slos-2
+    project: <PROJECT>
+  spec:
+    description: This SLO is just for the e2e 'sloctl move' tests, it's not supposed to work!
+    service: move-slo-service
+    indicator:
+      metricSource:
+        kind: Direct
+        name: splunk-direct
+    timeWindows:
+      - unit: Day
+        count: 1
+        calendar:
+          startTime: 2020-01-21 12:30:00
+          timeZone: America/New_York
+    budgetingMethod: Occurrences
+    objectives:
+      - name: objective-1
+        value: 200
+        target: 0.8
+        op: lte
+        primary: true
+        rawMetric:
+          query:
+            splunk:
+              query: "index=* source=udp:5072 sourcetype=syslog status<400 | bucket _time span=1m | stats avg(response_time) as n9value by _time | rename _time as n9time | fields n9time n9value"
