@@ -23,7 +23,7 @@ setup() {
   assert_stderr "Error: - 'to' date must be be after 'from' date (source: 'to', value: '{\"Adjustment\":\"foo\",\"From\":\"${from}\",\"To\":\"2024-01-01T00:00:00Z\",\"SloProject\":\"\",\"SloNa...')"
 }
 
-@test "adjustment not found" {
+@test "get events for non-existent adjustment" {
   run_sloctl budgetadjustments events get --adjustment-name=foo --from=2024-01-01T00:00:00Z --to=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   assert_failure
   assert_stderr "Error: - adjustment 'foo' was not found"
