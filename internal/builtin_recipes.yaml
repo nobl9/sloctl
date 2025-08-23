@@ -1,0 +1,32 @@
+object-names:
+  description: Fetch object names
+  args: [get]
+  example: |
+    # Fetch SLO object names
+    sloctl recipe object-names slo
+  validators:
+    atLeastArgs: [kind]
+  jq: .[].metadata.name
+prometheus-slos:
+  args:
+    - get
+    - slo
+  description: Fetch all prometheus SLOs
+  jq: |
+    [ .[] | select(
+      .spec.objectives[] |
+      (.rawMetric and .rawMetric.query["prometheus"])
+      or
+      (.countMetrics and .countMetrics.total["prometheus"])
+    )]
+unique-integrations:
+  args:
+    - get
+    - slo
+    - -A
+  description: Display unique integration types for all SLOs
+  jq: |
+    [.[] |
+    first(.. | (.query? // .total?) |
+    select(type == "object") |
+    keys[0])] | unique[]
