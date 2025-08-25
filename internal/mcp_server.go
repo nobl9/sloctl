@@ -322,7 +322,9 @@ func (s *mcpServer) getObjectsToolHandler(kind manifest.Kind) mcp.TypedToolHandl
 		}
 
 		result := strings.Builder{}
-		result.WriteString(fmt.Sprintf("Retrieved %d %s. Output written to: %s\n", len(objects), pluralForKind(kind), filename))
+		result.WriteString(fmt.Sprintf(
+			"Retrieved %d %s. Output written to: %s\n", len(objects), pluralForKind(kind), filename,
+		))
 
 		for _, obj := range objects {
 			result.WriteString(obj.GetName())
@@ -384,7 +386,11 @@ func (s *mcpServer) ApplyTool(
 	return mcp.NewToolResultText("The objects were successfully applied."), nil
 }
 
-func (s *mcpServer) ReplayTool(ctx context.Context, _ mcp.CallToolRequest, args mcpToolArguments) (*mcp.CallToolResult, error) {
+func (s *mcpServer) ReplayTool(
+	ctx context.Context,
+	_ mcp.CallToolRequest,
+	args mcpToolArguments,
+) (*mcp.CallToolResult, error) {
 	fromValue := new(flags.TimeValue)
 	if err := fromValue.Set(args.From); err != nil {
 		return nil, err
@@ -459,7 +465,7 @@ func (s *mcpServer) writeTempFile(prefix, format, content string) (string, error
 		s.tempDir = tempDir
 	}
 	filename := filepath.Join(s.tempDir, fmt.Sprintf("%s_%d.%s", prefix, time.Now().Unix(), format))
-	err := os.WriteFile(filename, []byte(content), 0644)
+	err := os.WriteFile(filename, []byte(content), 0o600)
 	if err != nil {
 		slog.Error("Failed to write temp file", "error", err, "filename", filename)
 		return "", err
