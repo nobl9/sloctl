@@ -113,14 +113,12 @@ allow the Project to be inferred from the object definition."
   # apply
   run_sloctl apply -f "$input" -p "$project_flag_mismatch_project"
   assert_failure
-  output="$stderr"
-  assert_output "$project_flag_mismatch_error"
+  assert_stderr "$project_flag_mismatch_error"
 
   # delete
   run_sloctl apply -f "$input" -p "$project_flag_mismatch_project"
   assert_failure
-  output="$stderr"
-  assert_output "$project_flag_mismatch_error"
+  assert_stderr "$project_flag_mismatch_error"
 }
 
 @test "read from json file" {

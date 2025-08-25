@@ -42,6 +42,11 @@ func registerAutoConfirmationFlag(cmd *cobra.Command, storeIn *bool) {
 			" Threshold can be changed or disabled in config.toml or via env variables.")
 }
 
+func registerProjectFlag(cmd *cobra.Command, storeIn *string) {
+	cmd.Flags().StringVarP(storeIn, "project", "p", "",
+		`List the requested object(s) which belong to the specified Project (name).`)
+}
+
 var projectFlagSupportingKinds = map[manifest.Kind]struct{}{
 	manifest.KindSLO:          {},
 	manifest.KindService:      {},

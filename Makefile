@@ -16,13 +16,13 @@ LDFLAGS := -s -w \
 	-X $(VERSION_PKG).BuildGitRevision=$(REVISION)
 
 # renovate datasource=github-releases depName=securego/gosec
-GOSEC_VERSION := v2.22.7
+GOSEC_VERSION := v2.22.8
 # renovate datasource=github-releases depName=golangci/golangci-lint
 GOLANGCI_LINT_VERSION := v1.64.8
 # renovate datasource=go depName=golang.org/x/vuln/cmd/govulncheck
 GOVULNCHECK_VERSION := v1.1.4
 # renovate datasource=go depName=golang.org/x/tools/cmd/goimports
-GOIMPORTS_VERSION := v0.35.0
+GOIMPORTS_VERSION := v0.36.0
 
 # Check if the program is present in $PATH and install otherwise.
 # ${1} - oneOf{binary,yarn}
@@ -41,6 +41,15 @@ endef
 # ${1} - step description
 define _print_step
 	printf -- '------\n%s...\n' "${1}"
+endef
+
+# Ensure the required environment variable is set.
+# ${1} - environment variable name
+define _ensure_env_var
+	@if [ -z "$${${1}}" ]; then \
+		echo "Error: ${1} environment variable is not set"; \
+		exit 1; \
+	fi
 endef
 
 # Build sloctl docker image.
@@ -105,6 +114,8 @@ test/bats/unit:
 ## Run bats e2e tests.
 test/bats/e2e:
 	$(call _print_step,Running bats e2e tests)
+	$(call _ensure_env_var,SLOCTL_CLIENT_ID)
+	$(call _ensure_env_var,SLOCTL_CLIENT_SECRET)
 	$(call _build_docker,sloctl-e2e-test-bin,$(VERSION),$(BRANCH),$(REVISION))
 	docker build -t sloctl-bats-e2e -f $(TEST_DIR)/docker/Dockerfile.e2e .
 	docker run --rm \
