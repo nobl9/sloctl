@@ -1,0 +1,44 @@
+- apiVersion: n9/v1alpha
+  kind: Project
+  metadata:
+    name: <PROJECT>
+  spec:
+    description: Dummy Project for 'sloctl move' e2e tests
+- apiVersion: n9/v1alpha
+  kind: Direct
+  metadata:
+    name: splunk-direct
+    project: <PROJECT>
+  spec:
+    description: This Direct is just for the e2e 'sloctl move' tests, it's not supposed to work!
+    splunk:
+      accessToken: "theaccesstoken"
+      url: "https://splunk.example.com"
+    queryDelay:
+      unit: Minute
+      value: 5
+    releaseChannel: stable
+- apiVersion: n9/v1alpha
+  kind: AlertPolicy
+  metadata:
+    name: trigger-alert-immediately
+    project: <PROJECT>
+    annotations:
+      registry: docker.io
+      visibility: internal
+  spec:
+    description: Dummy AlertPolicy for 'sloctl move' e2e tests
+    severity: Medium
+    coolDown: 5m
+    conditions:
+      - measurement: burnedBudget
+        op: gte
+        value: 0.99
+    alertMethods: []
+- apiVersion: n9/v1alpha
+  kind: Service
+  metadata:
+    name: move-slo-service
+    project: <PROJECT>
+  spec:
+    description: Dummy Service for 'sloctl move' e2e tests
