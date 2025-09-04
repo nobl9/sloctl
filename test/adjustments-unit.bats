@@ -31,11 +31,11 @@ setup() {
 @test "invalid date format" {
   run_sloctl budgetadjustments events get --adjustment-name=foo --from=xyz --to=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   assert_failure
-  assert_stderr "Error: invalid argument \"xyz\" for \"--from\" flag: date does not match '2006-01-02T15:04:05Z07:00' layout (RFC3339)"
+  assert_stderr "Error: invalid argument \"xyz\" for \"--from\" flag: date does not match RFC3339 layout (e.g. '2006-01-02T15:04:05Z' or '2006-01-02T08:04:05-07:00')"
 
   run_sloctl budgetadjustments events get --adjustment-name=foo --to=xyz --from=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   assert_failure
-  assert_stderr "Error: invalid argument \"xyz\" for \"--to\" flag: date does not match '2006-01-02T15:04:05Z07:00' layout (RFC3339)"
+  assert_stderr "Error: invalid argument \"xyz\" for \"--to\" flag: date does not match RFC3339 layout (e.g. '2006-01-02T15:04:05Z' or '2006-01-02T08:04:05-07:00')"
 }
 
 @test "conditionally required arguments (slo-project and slo-name)" {
