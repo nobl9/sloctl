@@ -21,7 +21,7 @@ var (
 	errReplayTooManyArgs = errors.New("'replay' command accepts a single SLO name." +
 		" If you want to run it for multiple SLOs provide a configuration file instead using '-f' flag")
 	errReplayMissingFromArg = errors.Errorf("when running 'sloctl replay' for a single SLO,"+
-		" you must provide Replay window start time (%s layout) with '--from' flag", flags.TimeLayoutString)
+		" you must provide Replay window start time (%s layout) with '--from' flag", flags.TimeLayoutName)
 	errProjectWildcardIsNotAllowed = errors.New(
 		"wildcard Project is not allowed, you must provide specific Project name(s)")
 )
