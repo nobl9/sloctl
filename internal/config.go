@@ -1,30 +1,23 @@
 package internal
 
 import (
-	"bufio"
+	"context"
 	"fmt"
-	"os"
-	"regexp"
-	"sort"
-	"strconv"
+	"maps"
+	"net/url"
+	"slices"
 	"strings"
 
+	"github.com/charmbracelet/huh"
+	v1alphaProject "github.com/nobl9/nobl9-go/manifest/v1alpha/project"
+	"github.com/nobl9/nobl9-go/sdk"
+	v1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/nobl9/nobl9-go/sdk"
-
+	"github.com/nobl9/sloctl/internal/csv"
 	"github.com/nobl9/sloctl/internal/printer"
-)
-
-const defaultProject = "default"
-
-var (
-	errWrongRenameSyntax = fmt.Errorf(`command "rename-context" requires exactly two arguments with names of your contexts
-Example: sloctl config rename-context [oldContext] [newContext]`)
-
-	errWrongDeleteSyntax = fmt.Errorf(`command "delete-context" requires exactly one argument with context name
-Example: sloctl config delete-context [contextName]`)
+	"github.com/nobl9/sloctl/internal/theme"
 )
 
 type clientGetter interface {
@@ -41,7 +34,12 @@ type ConfigCmd struct {
 func (r *RootCmd) NewConfigCmd() *cobra.Command {
 	configCmd := &ConfigCmd{
 		clientGetter: r,
-		printer:      printer.NewPrinter(printer.Config{}),
+		printer: printer.NewPrinter(printer.Config{SupportedFromats: []printer.Format{
+			printer.TOMLFormat,
+			printer.YAMLFormat,
+			printer.JSONFormat,
+			printer.CSVFormat,
+		}}),
 	}
 	cmd := &cobra.Command{
 		Use:   "config",
@@ -58,7 +56,7 @@ func (r *RootCmd) NewConfigCmd() *cobra.Command {
 	cmd.AddCommand(configCmd.GetContextsCommand())
 	cmd.AddCommand(configCmd.RenameContextCommand())
 	cmd.AddCommand(configCmd.DeleteContextCommand())
-	cmd.AddCommand(configCmd.SetDefaultContextCommand())
+	cmd.AddCommand(configCmd.UseContextCommand())
 
 	return cmd
 }
@@ -75,241 +73,186 @@ func (c *ConfigCmd) loadFileConfig(configPath string) error {
 	return c.config.Load(configPath)
 }
 
-// AddContextCommand returns cobra command add-context, allows to add context to your configuration file.
 func (c *ConfigCmd) AddContextCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "add-context",
 		Short: "Add new sloctl configuration context",
 		Long:  "Add new sloctl configuration context, an interactive command which collects parameters in wizard mode.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if c.config.Contexts == nil {
-				c.config.Contexts = make(map[string]sdk.ContextConfig)
+			var (
+				contextName      string
+				setAsDefault     bool
+				platformInstance = sdk.PlatformInstanceDefault
+				config           = new(sdk.ContextConfig)
+				orgURL           *url.URL
+				authConfig       sdk.PlatformInstanceAuthConfig
+			)
+			config.Project = "default"
+			authInstances := sdk.GetPlatformInstanceAuthConfigs()
+
+			form := huh.NewForm(
+				huh.NewGroup(
+					huh.NewInput().
+						Title("Provide context name").
+						Value(&contextName).
+						Validate(validateMultipleHuhValues(huh.ValidateNotEmpty(), c.validateContextIsInUse)),
+					huh.NewInput().
+						Title("Provide client ID").
+						Value(&config.ClientID).
+						Validate(huh.ValidateNotEmpty()),
+					huh.NewInput().
+						Title("Provide client secret").
+						Value(&config.ClientSecret).
+						EchoMode(huh.EchoModePassword).
+						Validate(huh.ValidateNotEmpty()),
+					huh.NewSelect[sdk.PlatformInstance]().
+						Title("Select Nobl9 instance").
+						Options(huh.NewOptions(sdk.GetPlatformInstances()...)...).
+						Validate(func(pi sdk.PlatformInstance) error {
+							if pi == sdk.PlatformInstanceCustom {
+								return nil
+							}
+							authConfig = authInstances[platformInstance]
+							return nil
+						}).
+						Value(&platformInstance),
+				),
+				huh.NewGroup(
+					huh.NewInput().
+						Title("Set organization url").
+						Description("Example: "+authInstances[sdk.PlatformInstanceDefault].URL.String()).
+						// Value(&config.OktaOrgURL). -- Value is set in Validate below.
+						Validate(validateMultipleHuhValues(huh.ValidateNotEmpty(), func(s string) error {
+							var err error
+							orgURL, err = url.Parse(s)
+							if err != nil {
+								return err
+							}
+							authConfig = authInstances[platformInstance]
+							authConfig.URL = orgURL
+							return nil
+						})),
+					huh.NewInput().
+						Title("Set auth server id").
+						Description("Example: "+authInstances[sdk.PlatformInstanceDefault].AuthServer).
+						Value(&authConfig.AuthServer).
+						Validate(huh.ValidateNotEmpty()),
+				).
+					WithHideFunc(func() bool { return platformInstance != sdk.PlatformInstanceCustom }),
+				huh.NewGroup(
+					huh.NewInput().
+						Title("Provide default project").
+						Value(&config.Project).
+						Validate(huh.ValidateNotEmpty()),
+					huh.NewConfirm().
+						Title("Set context as default?").
+						Value(&setAsDefault),
+				),
+			).
+				WithTheme(theme.GetDefault())
+
+			if err := form.RunWithContext(cmd.Context()); err != nil {
+				return errors.Wrap(err, "failed to run context addition form")
 			}
 
-			scanner := bufio.NewScanner(os.Stdin)
-			newConfigContext, contextName, scanningStop, err := scanContext(c.config, scanner)
-			if scanningStop || err != nil {
-				return err
+			switch platformInstance {
+			case sdk.PlatformInstanceDefault:
+			// Do nothing, auth config defaults are not required to be set in config.toml.
+			default:
+				config.OktaOrgURL = authConfig.URL.String()
+				config.OktaAuthServer = authConfig.AuthServer
 			}
-
-			ok, err := scanParams(&newConfigContext, scanner)
-			if !ok {
-				if err == nil {
-					fmt.Println()
-				}
-				return err
+			c.config.Contexts[contextName] = *config
+			if setAsDefault {
+				c.config.DefaultContext = contextName
 			}
-
-			if c.config.DefaultContext != contextName {
-				fmt.Printf("Set \"%s\" as a default context? [y/N]: ", contextName)
-				if !scanner.Scan() {
-					err = scanner.Err()
-					if err == nil {
-						fmt.Println()
-					}
-					return nil
-				}
-				newContextName := scanDefaultContext(contextName, scanner)
-				if newContextName != "" {
-					c.config.DefaultContext = newContextName
-				}
-			}
-
-			c.config.Contexts[contextName] = newConfigContext
-
-			return c.config.Save(c.config.GetPath())
-		},
-	}
-}
-
-func scanContext(fileConfig *sdk.FileConfig, scanner *bufio.Scanner) (
-	newConfigContext sdk.ContextConfig,
-	contextName string, scanStop bool, err error,
-) {
-	newConfigContext = sdk.ContextConfig{}
-	fmt.Print("New context name: ")
-	if !scanner.Scan() {
-		err = scanner.Err()
-		if err == nil {
-			fmt.Println()
-		}
-		return newConfigContext, "", true, err
-	}
-	contextName = strings.ToLower(strings.TrimSpace(scanner.Text()))
-	isAllowedContextName := regexp.MustCompile(`^[a-zA-Z0-9\-]+$`).MatchString
-	if !isAllowedContextName(contextName) {
-		return newConfigContext, "", true, errors.New("Enter a valid context name." +
-			" Use letters, numbers and `-` characters.")
-	}
-
-	if cc, ok := fileConfig.Contexts[contextName]; ok {
-		fmt.Printf(
-			"Context \"%s\" is already in the configuration file.\nDo you want to overwrite it? [y/N]: ",
-			contextName)
-		if !scanner.Scan() {
-			err = scanner.Err()
-			if err == nil {
-				fmt.Println()
-			}
-			return newConfigContext, contextName, true, err
-		}
-		yesNo := strings.ToLower(strings.TrimSpace(scanner.Text()))
-		if yesNo == "y" {
-			newConfigContext = cc
-			newConfigContext.AccessToken = ""
-		} else {
-			fmt.Println("Please try to add a new context with a different name.")
-			return newConfigContext, contextName, true, nil
-		}
-	}
-	return newConfigContext, contextName, false, nil
-}
-
-func scanParams(config *sdk.ContextConfig, scanner *bufio.Scanner) (bool, error) {
-	var existingClientID string
-	if config.ClientID != "" {
-		existingClientID = fmt.Sprintf(" [%s]", credentialPreview(config.ClientID))
-	}
-	fmt.Printf("Client ID%s: ", existingClientID)
-	if !scanner.Scan() {
-		return false, scanner.Err()
-	}
-	inputClientID := scanner.Text()
-	if inputClientID != "" {
-		config.ClientID = inputClientID
-	}
-
-	var existingClientSecret string
-	if config.ClientSecret != "" {
-		existingClientSecret = fmt.Sprintf(" [%s]", credentialPreview(config.ClientSecret))
-	}
-	fmt.Printf("Client Secret%s: ", existingClientSecret)
-	if !scanner.Scan() {
-		return false, scanner.Err()
-	}
-	inputClientSecret := scanner.Text()
-	if inputClientSecret != "" {
-		config.ClientSecret = inputClientSecret
-	}
-
-	if config.Project == "" {
-		config.Project = defaultProject
-	}
-
-	fmt.Printf("Project [%s]: ", config.Project)
-	if !scanner.Scan() {
-		return false, scanner.Err()
-	}
-	if inputProject := scanner.Text(); inputProject != "" {
-		config.Project = inputProject
-	}
-
-	return true, nil
-}
-
-func scanDefaultContext(contextName string, scanner *bufio.Scanner) string {
-	yesNo := scanner.Text()
-	yesNo = strings.ToLower(strings.TrimSpace(yesNo))
-	if yesNo == "y" {
-		return contextName
-	}
-	return ""
-}
-
-// SetDefaultContextCommand return cobra command to set current context in configuration file.
-func (c *ConfigCmd) SetDefaultContextCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "use-context [context name]",
-		Short: "Set the default context",
-		Long:  "Set a default context in the existing config file.",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			scanner := bufio.NewScanner(os.Stdin)
-
-			if len(c.config.Contexts) == 0 {
-				return errors.New("You don't have any contexts in the current configuration file.\n" +
-					"Add at least one context in the current configuration file and then set it as the default.\n" +
-					"Run \"sloctl config add-context\" or indicate the path to the file using flag \"--config\".")
-			}
-
-			var contextName string
-			if len(args) > 0 {
-				contextName = strings.TrimSpace(args[0])
-			} else {
-				var names []string
-				for existContextName := range c.config.Contexts {
-					names = append(names, existContextName)
-				}
-				fmt.Printf("Select the default context from the existing contexts [%s]: ", strings.Join(names, ", "))
-				if !scanner.Scan() {
-					return nil
-				}
-				contextName = scanner.Text()
-				contextName = strings.TrimSpace(contextName)
-			}
-
-			if _, exist := c.config.Contexts[contextName]; !exist {
-				// nolint: revive
-				return errors.Errorf(
-					"there is no such context: \"%s\", please enter the correct name",
-					contextName)
-			}
-			c.config.DefaultContext = contextName
-
 			if err := c.config.Save(c.config.GetPath()); err != nil {
 				return err
 			}
-			fmt.Printf("Switched to context \"%s\"\n", contextName)
+			fmt.Printf("Added context %q.\n", contextName)
 			return nil
 		},
 	}
 }
 
-func credentialPreview(val string) string {
-	const forcedLen = 20
-	const disclosedEndingLen = 4
-	const anonymousChar = "*"
-	const defaultIfEmpty = "None"
-	if val == "" {
-		return defaultIfEmpty
+func (c *ConfigCmd) UseContextCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "use-context [context name]",
+		Short: "Set the default context",
+		Long:  "Set a default context in the existing config file.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(c.config.Contexts) == 0 {
+				return errors.New("You don't have any contexts in the current configuration file.\n" +
+					"Add at least one context in the current configuration file and then set it as the default.\n" +
+					"Run \"sloctl config add-context\" or indicate the path to the file using \"--config\" flag.")
+			}
+
+			var contextName string
+			switch {
+			case len(args) == 0:
+				form := huh.NewForm(huh.NewGroup(
+					huh.NewSelect[string]().
+						Title("Select the new context:").
+						Options(huh.NewOptions(slices.Collect(maps.Keys(c.config.Contexts))...)...).
+						Value(&contextName),
+				)).
+					WithTheme(theme.GetDefault())
+				if err := form.RunWithContext(cmd.Context()); err != nil {
+					return errors.Wrap(err, "failed to run context selection prompt")
+				}
+			default:
+				contextName = strings.TrimSpace(args[0])
+			}
+
+			if err := c.validateContextExists(contextName); err != nil {
+				return err
+			}
+
+			c.config.DefaultContext = contextName
+			if err := c.config.Save(c.config.GetPath()); err != nil {
+				return err
+			}
+			fmt.Printf("Switched to context \"%s\".\n", contextName)
+			return nil
+		},
 	}
-	return anonymize(val, forcedLen, disclosedEndingLen, anonymousChar)
 }
 
-func anonymize(val string, forcedLen, disclosedEndingLen int, anonymousChar string) string {
-	if len(val) < disclosedEndingLen {
-		disclosedEndingLen = len(val)
-	}
-	return fmt.Sprintf("%s%s",
-		strings.Repeat(anonymousChar, forcedLen-disclosedEndingLen),
-		val[len(val)-disclosedEndingLen:])
-}
-
-// CurrentContextCommand returns cobra command current-context, prints current used context.
 func (c *ConfigCmd) CurrentContextCommand() *cobra.Command {
-	currentCtxCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "current-context",
 		Short: "Display current context",
 		Long:  "Display configuration for the current context set in the configuration file.",
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
+			return requireFlagsIfFlagIsSet(
+				cmd,
+				flagVerbose,
+				printer.OutputFlagName,
+				csv.RecordSeparatorFlag,
+				csv.FieldSeparatorFlag,
+			)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if c.verbose {
-				currentContext := buildContextString(c.config.DefaultContext,
-					c.config.Contexts[c.config.DefaultContext],
-					c.verbose)
-				fmt.Print(currentContext)
-				return nil
+				conf, err := c.config.GetCurrentContextConfig()
+				if err != nil {
+					return err
+				}
+				conf = sanitizeContextConfig(conf)
+				return c.printer.Print(conf)
 			}
 			fmt.Println(c.config.DefaultContext)
 			return nil
 		},
 	}
 
-	registerVerboseFlag(currentCtxCmd, &c.verbose)
-
-	return currentCtxCmd
+	registerVerboseFlag(cmd, &c.verbose)
+	c.printer.MustRegisterFlags(cmd)
+	return cmd
 }
 
 func (c *ConfigCmd) CurrentUserCommand() *cobra.Command {
-	currentUserCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "current-user",
 		Short: "Display current user details",
 		Long:  "Display extended details for the user associated with the current context's access key.",
@@ -331,12 +274,10 @@ func (c *ConfigCmd) CurrentUserCommand() *cobra.Command {
 		},
 	}
 
-	c.printer.MustRegisterFlags(currentUserCmd)
-
-	return currentUserCmd
+	c.printer.MustRegisterFlags(cmd)
+	return cmd
 }
 
-// GetContextsCommand returns cobra command to prints all available contexts.
 func (c *ConfigCmd) GetContextsCommand() *cobra.Command {
 	getContextsCmd := &cobra.Command{
 		Use:   "get-contexts",
@@ -344,29 +285,30 @@ func (c *ConfigCmd) GetContextsCommand() *cobra.Command {
 		Long:  "Display all available contexts in the configuration file.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var names []string
-			for name := range c.config.Contexts {
-				names = append(names, name)
+			switch len(args) {
+			case 0:
+				names = slices.Collect(maps.Keys(c.config.Contexts))
+			default:
+				names = args
 			}
-			sort.Strings(names)
-			var fullConfig string
-			if len(args) == 0 && c.verbose {
-				for _, name := range names {
-					singleConfig := buildContextString(name, c.config.Contexts[name], true)
-					fullConfig += singleConfig + "\n"
+			for _, name := range names {
+				if err := c.validateContextExists(name); err != nil {
+					return err
 				}
-				fmt.Printf("[%s]\n%s", strings.Join(names, ", "), fullConfig)
+			}
+
+			switch c.verbose {
+			case true:
+				configs := make(map[string]sdk.ContextConfig, len(names))
+				for _, name := range names {
+					configs[name] = sanitizeContextConfig(c.config.Contexts[name])
+				}
+				return c.printer.Print(configs)
+			default:
+				slices.Sort(names)
+				fmt.Println(strings.Join(names, "\n"))
 				return nil
 			}
-			for _, name := range args {
-				if _, ok := c.config.Contexts[name]; !ok {
-					fullConfig += fmt.Sprintf("Missing context: %s\n\n", name)
-					continue
-				}
-				singleConfig := buildContextString(name, c.config.Contexts[name], true)
-				fullConfig += singleConfig + "\n"
-			}
-			fmt.Printf("[%s]\n%s", strings.Join(names, ", "), fullConfig)
-			return nil
 		},
 	}
 
@@ -375,76 +317,53 @@ func (c *ConfigCmd) GetContextsCommand() *cobra.Command {
 	return getContextsCmd
 }
 
-func buildContextString(name string, config sdk.ContextConfig, verbose bool) string {
-	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("Context: %s\n", name))
-	if !verbose {
-		return sb.String()
-	}
-	configuration := []struct {
-		Name  string
-		Value string
-	}{
-		{Name: "client ID", Value: config.ClientID},
-		{Name: "client secret", Value: censorField(config.ClientSecret)},
-		{Name: "project", Value: config.Project},
-		{Name: "url", Value: config.URL},
-		{Name: "oktaOrgURL", Value: config.OktaOrgURL},
-		{Name: "oktaAuthServer", Value: config.OktaAuthServer},
-		{Name: "disable okta", Value: func() string {
-			if config.DisableOkta != nil {
-				return strconv.FormatBool(*config.DisableOkta)
-			}
-			return ""
-		}()},
-		{Name: "timeout", Value: func() string {
-			if config.Timeout != nil {
-				return config.Timeout.String()
-			}
-			return ""
-		}()},
-	}
-	for _, field := range configuration {
-		if field.Value != "" {
-			sb.WriteString(fmt.Sprintf("\t%s: %s\n", field.Name, field.Value))
-		}
-	}
-	return sb.String()
-}
-
-func censorField(field string) (censored string) {
-	if len(field) > 3 {
-		return field[:2] + "***" + field[len(field)-2:]
-	} else if len(field) != 0 {
-		return generateMissingSecretMessage()
-	}
-	return censored
-}
-
-// RenameContextCommand return cobra command to rename one of contexts in configuration file.
 func (c *ConfigCmd) RenameContextCommand() *cobra.Command {
 	renameContextCmd := &cobra.Command{
-		Use:     "rename-context",
-		Short:   "Rename chosen context",
-		Long:    "Rename one of the contexts in the configuration file.",
-		Example: "	sloctl config rename-context [oldContext] [newContext]",
-		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 2 {
-				return errWrongRenameSyntax
-			}
-			return nil
-		},
+		Use:   "rename-context",
+		Short: "Rename chosen context",
+		Long: "Rename one of the contexts in the configuration file.\n" +
+			"If no arguments are provided, the command displays an interactive prompt.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			oldContext, newContext := args[0], args[1]
-			if _, ok := c.config.Contexts[oldContext]; !ok {
-				return errors.Errorf("selected context \"%s\" doesn't exists", oldContext)
+			var (
+				oldContext string
+				newContext string
+			)
+			switch len(args) {
+			case 0:
+				contexts := slices.Collect(maps.Keys(c.config.Contexts))
+				form := huh.NewForm(
+					huh.NewGroup(
+						huh.NewSelect[string]().
+							Title("Select context to rename").
+							Options(huh.NewOptions(contexts...)...).
+							Value(&oldContext),
+						huh.NewInput().
+							Title("New context name").
+							Value(&newContext).
+							Validate(validateMultipleHuhValues(huh.ValidateNotEmpty(), c.validateContextIsInUse)),
+					),
+				).
+					WithTheme(theme.GetDefault())
+				if err := form.RunWithContext(cmd.Context()); err != nil {
+					return errors.Wrap(err, "failed to run context rename form")
+				}
+			case 2:
+				oldContext, newContext = args[0], args[1]
+			default:
+				return errors.Errorf(
+					"either provide new and old context names or no arguments at all, received %d arguments",
+					len(args))
 			}
-			if _, ok := c.config.Contexts[newContext]; ok {
-				return errors.Errorf("selected context name \"%s\" is already in use", newContext)
+
+			if err := c.validateContextExists(oldContext); err != nil {
+				return err
+			}
+			if err := c.validateContextIsInUse(newContext); err != nil {
+				return err
 			}
 
 			if c.config.DefaultContext == oldContext {
-				fmt.Printf("Selected context was set as default. Changing default context to %s.\n", newContext)
+				fmt.Printf("Renamed context was set as default. Changing default context to %q.\n", newContext)
 				c.config.DefaultContext = newContext
 			}
 
@@ -454,7 +373,7 @@ func (c *ConfigCmd) RenameContextCommand() *cobra.Command {
 			if err := c.config.Save(c.config.GetPath()); err != nil {
 				return err
 			}
-			fmt.Printf("Renaming: \"%s\" to \"%s\"\n", oldContext, newContext)
+			fmt.Printf("Renamed context %q to %q.\n", oldContext, newContext)
 			return nil
 		},
 	}
@@ -462,40 +381,116 @@ func (c *ConfigCmd) RenameContextCommand() *cobra.Command {
 	return renameContextCmd
 }
 
-// DeleteContextCommand return cobra command to delete context from configuration file.
 func (c *ConfigCmd) DeleteContextCommand() *cobra.Command {
 	delContextCmd := &cobra.Command{
-		Use:     "delete-context",
-		Short:   "Delete chosen context",
-		Long:    "Delete one of the contexts in the configuration file.",
-		Example: "	sloctl config delete-context [context-name]",
-		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 1 {
-				return errWrongDeleteSyntax
-			}
-			return nil
-		},
+		Use:   "delete-context",
+		Short: "Delete chosen context(s)",
+		Long: "Delete one or more of the contexts from the configuration file.\n" +
+			"Each argument is treated as a context name, " +
+			"when no arguments are provided a multi-selection prompt is desplayed.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			toDeleteCtx := args[0]
-			if _, ok := c.config.Contexts[toDeleteCtx]; !ok {
-				return errors.Errorf("selected context \"%s\" doesn't exists", toDeleteCtx)
+			var contextNames []string
+			switch len(args) {
+			case 0:
+				contexts := slices.Collect(maps.Keys(c.config.Contexts))
+				contexts = slices.DeleteFunc(contexts, func(name string) bool { return name == c.config.DefaultContext })
+				form := huh.NewForm(huh.NewGroup(
+					huh.NewMultiSelect[string]().
+						Title("Select context(s) for deletion").
+						Options(huh.NewOptions(contexts...)...).
+						Value(&contextNames),
+				)).
+					WithTheme(theme.GetDefault())
+				if err := form.RunWithContext(cmd.Context()); err != nil {
+					return errors.Wrap(err, "failed to run context selection prompt")
+				}
+			default:
+				for _, arg := range args {
+					contextNames = append(contextNames, strings.TrimSpace(arg))
+				}
 			}
 
-			if toDeleteCtx == c.config.DefaultContext {
-				return errors.Errorf("cannot remove context currently set as default")
+			for _, name := range contextNames {
+				if err := c.validateContextExists(name); err != nil {
+					return err
+				}
+				if name == c.config.DefaultContext {
+					return errors.Errorf("cannot remove context currently set as default")
+				}
+				delete(c.config.Contexts, name)
 			}
-
-			delete(c.config.Contexts, toDeleteCtx)
 
 			if err := c.config.Save(c.config.GetPath()); err != nil {
 				return err
 			}
-			fmt.Printf("Context \"%s\" has been deleted.\n", toDeleteCtx)
+
+			// Wrap in quotes for presentation.
+			for i, name := range contextNames {
+				contextNames[i] = "\"" + name + "\""
+			}
+			switch len(contextNames) {
+			case 0:
+				fmt.Println("No contexts provided for deletion.")
+			case 1:
+				fmt.Printf("Context %s has been deleted.\n", contextNames[0])
+			default:
+				fmt.Printf("Contexts %s have been deleted.\n", strings.Join(contextNames, ", "))
+			}
 			return nil
 		},
 	}
 
 	return delContextCmd
+}
+
+func (c *ConfigCmd) validateContextIsInUse(name string) error {
+	if _, exist := c.config.Contexts[name]; exist {
+		return errors.Errorf("selected context name %q is already in use", name)
+	}
+	return nil
+}
+
+func (c *ConfigCmd) validateContextExists(name string) error {
+	if _, exist := c.config.Contexts[name]; !exist {
+		return errors.Errorf("selected context %q does not exists", name)
+	}
+	return nil
+}
+
+func (c *ConfigCmd) getProjectsWithFreshClient(
+	ctx context.Context,
+	config *sdk.ContextConfig,
+	authInstance sdk.PlatformInstanceAuthConfig,
+) ([]v1alphaProject.Project, error) {
+	client, err := sdk.NewClient(&sdk.Config{
+		ClientID:       config.ClientID,
+		ClientSecret:   config.ClientSecret,
+		OktaOrgURL:     authInstance.URL,
+		OktaAuthServer: authInstance.AuthServer,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return client.Objects().V1().GetV1alphaProjects(ctx, v1.GetProjectsRequest{})
+}
+
+func newFailedCredentialsVerificationErr(err error) error {
+	return errors.Errorf("Failed to verify credentials.\nError: %s", err.Error())
+}
+
+func sanitizeContextConfig(conf sdk.ContextConfig) sdk.ContextConfig {
+	conf.ClientSecret = censorField(conf.ClientSecret)
+	conf.AccessToken = ""
+	return conf
+}
+
+func censorField(field string) (censored string) {
+	if len(field) > 3 {
+		return field[:2] + "***" + field[len(field)-2:]
+	} else if len(field) != 0 {
+		return generateMissingSecretMessage()
+	}
+	return censored
 }
 
 func generateMissingSecretMessage() string {
@@ -508,4 +503,18 @@ func generateMissingSecretMessage() string {
 		return key
 	}
 	return ""
+}
+
+type huhValidationFunc[T any] func(v T) error
+
+func validateMultipleHuhValues[T any](funcs ...huhValidationFunc[T]) huhValidationFunc[T] {
+	return func(v T) error {
+		var err error
+		for _, f := range funcs {
+			if err = f(v); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 }
