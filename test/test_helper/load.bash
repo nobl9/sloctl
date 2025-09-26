@@ -293,3 +293,19 @@ assert_stderr() {
   output="$stderr"
   assert_output "$@"
 }
+
+# run_mcp_inspector
+# ==========
+#
+# Summary: Run the modelcontextprotocol/inspector via npx.
+#
+# Usage: run_mcp_inspector <args>
+#
+# Options:
+#   <args>    Arguments to inspector invocation.
+#
+# The output of the inspector is captured in $output.
+run_mcp_inspector() {
+  bats_require_minimum_version 1.5.0
+  run npx -y @modelcontextprotocol/inspector --cli sloctl mcp "$@"
+}
