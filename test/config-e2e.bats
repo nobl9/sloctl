@@ -3,7 +3,7 @@
 
 # setup_file is run only once for the whole file.
 setup_file() {
-  generate_outputs
+  export TEST_OUTPUTS="$TEST_SUITE_OUTPUTS/config"
 }
 
 # setup is run before each test.
