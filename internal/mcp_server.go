@@ -47,11 +47,11 @@ type mcpServer struct {
 }
 
 type mcpToolArguments struct {
-	Project  string
-	Format   string
-	From     string
-	Name     string
-	FileName string
+	Project  string `json:"project"`
+	Format   string `json:"format"`
+	From     string `json:"from"`
+	Name     string `json:"name"`
+	FileName string `json:"file_name"`
 }
 
 func (s mcpServer) RegisterToolsAndResources() error {
@@ -258,7 +258,7 @@ func (s *mcpServer) getObjectsResourceHandler(kind manifest.Kind) server.Resourc
 		}
 
 		var buf bytes.Buffer
-		if err := sdk.EncodeObjects(objects, &buf, manifest.ObjectFormatYAML); err != nil {
+		if err = sdk.EncodeObjects(objects, &buf, manifest.ObjectFormatYAML); err != nil {
 			return nil, errors.Wrapf(err, "failed to encode %s", pluralForKind(kind))
 		}
 		filename, err := s.writeTempFile(objects[0].GetKind().String(), "yaml", buf.String())
@@ -313,7 +313,7 @@ func (s *mcpServer) getObjectsToolHandler(kind manifest.Kind) mcp.TypedToolHandl
 		if err != nil {
 			return nil, err
 		}
-		if err := sdk.EncodeObjects(objects, &buf, format); err != nil {
+		if err = sdk.EncodeObjects(objects, &buf, format); err != nil {
 			return nil, errors.Wrapf(err, "failed to encode %s", pluralForKind(kind))
 		}
 		filename, err := s.writeTempFile(fmt.Sprintf("get_%s", objects[0].GetKind()), args.Format, buf.String())
@@ -366,14 +366,14 @@ func (s *mcpServer) ApplyTool(
 	args mcpToolArguments,
 ) (*mcp.CallToolResult, error) {
 	if args.FileName == "" {
-		return nil, fmt.Errorf("'fileName' argument is required")
+		return nil, fmt.Errorf("'file_name' argument is required")
 	}
 
 	objects, err := readObjectsDefinitions(
 		ctx,
 		s.client.Config,
 		nil,
-		[]string{args.Format},
+		[]string{args.FileName},
 		newFilesPrompt(s.client.Config.FilesPromptEnabled, true, s.client.Config.FilesPromptThreshold),
 		false)
 	if err != nil {
