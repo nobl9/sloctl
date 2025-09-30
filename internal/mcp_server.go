@@ -155,7 +155,7 @@ func (s mcpServer) RegisterToolsAndResources() error {
 
 	t = mcp.NewTool("replay",
 		mcp.WithDescription("Replay slo"),
-		mcp.WithString("slo",
+		mcp.WithString("name",
 			mcp.Description("The SLO name"),
 			mcp.Required(),
 		),
@@ -391,6 +391,15 @@ func (s *mcpServer) ReplayTool(
 	_ mcp.CallToolRequest,
 	args mcpToolArguments,
 ) (*mcp.CallToolResult, error) {
+	if args.From == "" {
+		return nil, fmt.Errorf("'from' argument is required")
+	}
+	if args.Name == "" {
+		return nil, fmt.Errorf("'name' argument is required")
+	}
+	if args.Project == "" {
+		return nil, fmt.Errorf("'project' argument is required")
+	}
 	fromValue := new(flags.TimeValue)
 	if err := fromValue.Set(args.From); err != nil {
 		return nil, err
@@ -419,6 +428,9 @@ func (s *mcpServer) EBSTool(
 	_ mcp.CallToolRequest,
 	args mcpToolArguments,
 ) (*mcp.CallToolResult, error) {
+	if args.Project == "" {
+		return nil, fmt.Errorf("'project' argument is required")
+	}
 	r, err := s.getEBS(ctx, args.Project)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get EBS: %w", err)
