@@ -478,7 +478,7 @@ func (s *mcpServer) writeCachedFile(prefix, format, content string) (string, err
 		s.tempDir = filepath.Join(cwd, ".nobl9")
 
 		// Create .nobl9 directory if it doesn't exist
-		if err := os.MkdirAll(s.tempDir, 0o755); err != nil {
+		if err := os.MkdirAll(s.tempDir, 0o750); err != nil {
 			return "", fmt.Errorf("failed to create .nobl9 directory: %w", err)
 		}
 	}
