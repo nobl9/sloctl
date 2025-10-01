@@ -1,0 +1,12 @@
+defaultContext = "3"
+
+[contexts]
+  [contexts."1"]
+    clientId = "some_client_id"
+    clientSecret = "some_client_secret"
+  [contexts."2"]
+    clientId = "some_client_id"
+    clientSecret = "some_client_secret"
+  [contexts."3"]
+    clientId = "some_client_id"
+    clientSecret = "some_client_secret"

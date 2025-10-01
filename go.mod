@@ -18,7 +18,7 @@ require (
 	golang.org/x/sync v0.17.0
 )
 
-replace github.com/nobl9/nobl9-go v0.112.0-rc5 => /home/mh/nobl9/nobl9-go
+replace github.com/nobl9/nobl9-go v0.112.0-rc5 => github.com/nobl9/nobl9-go v0.117.0-rc3.0.20251001140552-02d77afa7a91
 
 require (
 	github.com/atotto/clipboard v0.1.4 // indirect

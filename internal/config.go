@@ -1,23 +1,21 @@
 package internal
 
 import (
-	"context"
 	"fmt"
 	"maps"
 	"net/url"
+	"os"
 	"slices"
 	"strings"
 
 	"github.com/charmbracelet/huh"
-	v1alphaProject "github.com/nobl9/nobl9-go/manifest/v1alpha/project"
 	"github.com/nobl9/nobl9-go/sdk"
-	v1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/nobl9/sloctl/internal/csv"
+	"github.com/nobl9/sloctl/internal/form"
 	"github.com/nobl9/sloctl/internal/printer"
-	"github.com/nobl9/sloctl/internal/theme"
 )
 
 type clientGetter interface {
@@ -61,18 +59,6 @@ func (r *RootCmd) NewConfigCmd() *cobra.Command {
 	return cmd
 }
 
-func (c *ConfigCmd) loadFileConfig(configPath string) error {
-	if configPath == "" {
-		var err error
-		configPath, err = sdk.GetDefaultConfigPath()
-		if err != nil {
-			return err
-		}
-	}
-	c.config = new(sdk.FileConfig)
-	return c.config.Load(configPath)
-}
-
 func (c *ConfigCmd) AddContextCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "add-context",
@@ -90,21 +76,21 @@ func (c *ConfigCmd) AddContextCommand() *cobra.Command {
 			config.Project = "default"
 			authInstances := sdk.GetPlatformInstanceAuthConfigs()
 
-			form := huh.NewForm(
+			form := form.New(
 				huh.NewGroup(
 					huh.NewInput().
 						Title("Provide context name").
 						Value(&contextName).
-						Validate(validateMultipleHuhValues(huh.ValidateNotEmpty(), c.validateContextIsInUse)),
+						Validate(validateMultipleHuhValues(validateStringNotEmpty, c.validateContextIsInUse)),
 					huh.NewInput().
 						Title("Provide client ID").
 						Value(&config.ClientID).
-						Validate(huh.ValidateNotEmpty()),
+						Validate(validateStringNotEmpty),
 					huh.NewInput().
 						Title("Provide client secret").
 						Value(&config.ClientSecret).
 						EchoMode(huh.EchoModePassword).
-						Validate(huh.ValidateNotEmpty()),
+						Validate(validateStringNotEmpty),
 					huh.NewSelect[sdk.PlatformInstance]().
 						Title("Select Nobl9 instance").
 						Options(huh.NewOptions(sdk.GetPlatformInstances()...)...).
@@ -122,7 +108,7 @@ func (c *ConfigCmd) AddContextCommand() *cobra.Command {
 						Title("Set organization url").
 						Description("Example: "+authInstances[sdk.PlatformInstanceDefault].URL.String()).
 						// Value(&config.OktaOrgURL). -- Value is set in Validate below.
-						Validate(validateMultipleHuhValues(huh.ValidateNotEmpty(), func(s string) error {
+						Validate(validateMultipleHuhValues(validateStringNotEmpty, func(s string) error {
 							var err error
 							orgURL, err = url.Parse(s)
 							if err != nil {
@@ -136,20 +122,19 @@ func (c *ConfigCmd) AddContextCommand() *cobra.Command {
 						Title("Set auth server id").
 						Description("Example: "+authInstances[sdk.PlatformInstanceDefault].AuthServer).
 						Value(&authConfig.AuthServer).
-						Validate(huh.ValidateNotEmpty()),
+						Validate(validateStringNotEmpty),
 				).
 					WithHideFunc(func() bool { return platformInstance != sdk.PlatformInstanceCustom }),
 				huh.NewGroup(
 					huh.NewInput().
 						Title("Provide default project").
 						Value(&config.Project).
-						Validate(huh.ValidateNotEmpty()),
+						Validate(validateStringNotEmpty),
 					huh.NewConfirm().
 						Title("Set context as default?").
 						Value(&setAsDefault),
 				),
-			).
-				WithTheme(theme.GetDefault())
+			)
 
 			if err := form.RunWithContext(cmd.Context()); err != nil {
 				return errors.Wrap(err, "failed to run context addition form")
@@ -190,13 +175,12 @@ func (c *ConfigCmd) UseContextCommand() *cobra.Command {
 			var contextName string
 			switch {
 			case len(args) == 0:
-				form := huh.NewForm(huh.NewGroup(
+				form := form.New(huh.NewGroup(
 					huh.NewSelect[string]().
 						Title("Select the new context:").
-						Options(huh.NewOptions(slices.Collect(maps.Keys(c.config.Contexts))...)...).
+						Options(huh.NewOptions(c.getContextNames()...)...).
 						Value(&contextName),
-				)).
-					WithTheme(theme.GetDefault())
+				))
 				if err := form.RunWithContext(cmd.Context()); err != nil {
 					return errors.Wrap(err, "failed to run context selection prompt")
 				}
@@ -279,15 +263,24 @@ func (c *ConfigCmd) CurrentUserCommand() *cobra.Command {
 }
 
 func (c *ConfigCmd) GetContextsCommand() *cobra.Command {
-	getContextsCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "get-contexts",
 		Short: "Display all available contexts",
 		Long:  "Display all available contexts in the configuration file.",
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
+			return requireFlagsIfFlagIsSet(
+				cmd,
+				flagVerbose,
+				printer.OutputFlagName,
+				csv.RecordSeparatorFlag,
+				csv.FieldSeparatorFlag,
+			)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var names []string
 			switch len(args) {
 			case 0:
-				names = slices.Collect(maps.Keys(c.config.Contexts))
+				names = c.getContextNames()
 			default:
 				names = args
 			}
@@ -312,13 +305,13 @@ func (c *ConfigCmd) GetContextsCommand() *cobra.Command {
 		},
 	}
 
-	registerVerboseFlag(getContextsCmd, &c.verbose)
-
-	return getContextsCmd
+	registerVerboseFlag(cmd, &c.verbose)
+	c.printer.MustRegisterFlags(cmd)
+	return cmd
 }
 
 func (c *ConfigCmd) RenameContextCommand() *cobra.Command {
-	renameContextCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "rename-context",
 		Short: "Rename chosen context",
 		Long: "Rename one of the contexts in the configuration file.\n" +
@@ -330,20 +323,18 @@ func (c *ConfigCmd) RenameContextCommand() *cobra.Command {
 			)
 			switch len(args) {
 			case 0:
-				contexts := slices.Collect(maps.Keys(c.config.Contexts))
-				form := huh.NewForm(
+				form := form.New(
 					huh.NewGroup(
 						huh.NewSelect[string]().
 							Title("Select context to rename").
-							Options(huh.NewOptions(contexts...)...).
+							Options(huh.NewOptions(c.getContextNames()...)...).
 							Value(&oldContext),
 						huh.NewInput().
 							Title("New context name").
 							Value(&newContext).
-							Validate(validateMultipleHuhValues(huh.ValidateNotEmpty(), c.validateContextIsInUse)),
+							Validate(validateMultipleHuhValues(validateStringNotEmpty, c.validateContextIsInUse)),
 					),
-				).
-					WithTheme(theme.GetDefault())
+				)
 				if err := form.RunWithContext(cmd.Context()); err != nil {
 					return errors.Wrap(err, "failed to run context rename form")
 				}
@@ -355,6 +346,9 @@ func (c *ConfigCmd) RenameContextCommand() *cobra.Command {
 					len(args))
 			}
 
+			if err := validateStringNotEmpty(newContext); err != nil {
+				return errors.Errorf("new context cannot be empty")
+			}
 			if err := c.validateContextExists(oldContext); err != nil {
 				return err
 			}
@@ -378,11 +372,11 @@ func (c *ConfigCmd) RenameContextCommand() *cobra.Command {
 		},
 	}
 
-	return renameContextCmd
+	return cmd
 }
 
 func (c *ConfigCmd) DeleteContextCommand() *cobra.Command {
-	delContextCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "delete-context",
 		Short: "Delete chosen context(s)",
 		Long: "Delete one or more of the contexts from the configuration file.\n" +
@@ -392,15 +386,14 @@ func (c *ConfigCmd) DeleteContextCommand() *cobra.Command {
 			var contextNames []string
 			switch len(args) {
 			case 0:
-				contexts := slices.Collect(maps.Keys(c.config.Contexts))
+				contexts := c.getContextNames()
 				contexts = slices.DeleteFunc(contexts, func(name string) bool { return name == c.config.DefaultContext })
-				form := huh.NewForm(huh.NewGroup(
+				form := form.New(huh.NewGroup(
 					huh.NewMultiSelect[string]().
 						Title("Select context(s) for deletion").
 						Options(huh.NewOptions(contexts...)...).
 						Value(&contextNames),
-				)).
-					WithTheme(theme.GetDefault())
+				))
 				if err := form.RunWithContext(cmd.Context()); err != nil {
 					return errors.Wrap(err, "failed to run context selection prompt")
 				}
@@ -440,7 +433,23 @@ func (c *ConfigCmd) DeleteContextCommand() *cobra.Command {
 		},
 	}
 
-	return delContextCmd
+	return cmd
+}
+
+func (c *ConfigCmd) loadFileConfig(configPath string) error {
+	if configPath == "" {
+		if v, ok := os.LookupEnv(sdkEnvPrefix + "CONFIG_FILE_PATH"); ok {
+			configPath = strings.TrimSpace(v)
+		} else {
+			var err error
+			configPath, err = sdk.GetDefaultConfigPath()
+			if err != nil {
+				return err
+			}
+		}
+	}
+	c.config = new(sdk.FileConfig)
+	return c.config.Load(configPath)
 }
 
 func (c *ConfigCmd) validateContextIsInUse(name string) error {
@@ -457,25 +466,8 @@ func (c *ConfigCmd) validateContextExists(name string) error {
 	return nil
 }
 
-func (c *ConfigCmd) getProjectsWithFreshClient(
-	ctx context.Context,
-	config *sdk.ContextConfig,
-	authInstance sdk.PlatformInstanceAuthConfig,
-) ([]v1alphaProject.Project, error) {
-	client, err := sdk.NewClient(&sdk.Config{
-		ClientID:       config.ClientID,
-		ClientSecret:   config.ClientSecret,
-		OktaOrgURL:     authInstance.URL,
-		OktaAuthServer: authInstance.AuthServer,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return client.Objects().V1().GetV1alphaProjects(ctx, v1.GetProjectsRequest{})
-}
-
-func newFailedCredentialsVerificationErr(err error) error {
-	return errors.Errorf("Failed to verify credentials.\nError: %s", err.Error())
+func (c *ConfigCmd) getContextNames() []string {
+	return slices.Sorted(maps.Keys(c.config.Contexts))
 }
 
 func sanitizeContextConfig(conf sdk.ContextConfig) sdk.ContextConfig {
@@ -517,4 +509,12 @@ func validateMultipleHuhValues[T any](funcs ...huhValidationFunc[T]) huhValidati
 		}
 		return nil
 	}
+}
+
+func validateStringNotEmpty(s string) error {
+	s = strings.TrimSpace(s)
+	if err := huh.ValidateMinLength(1)(s); err != nil {
+		return fmt.Errorf("input cannot be empty")
+	}
+	return nil
 }

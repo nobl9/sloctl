@@ -80,9 +80,11 @@ func (r *RootCmd) GetClient() *sdk.Client {
 	return r.Client
 }
 
+const sdkEnvPrefix = "SLOCTL_"
+
 // setupClient reads in config file, ENV variables if set and sets up an API client.
 func (r *RootCmd) setupClient() error {
-	options := []sdk.ConfigOption{sdk.ConfigOptionEnvPrefix("SLOCTL_")}
+	options := []sdk.ConfigOption{sdk.ConfigOptionEnvPrefix(sdkEnvPrefix)}
 	if r.Flags.NoConfigFile {
 		options = append(options, sdk.ConfigOptionNoConfigFile())
 	}
