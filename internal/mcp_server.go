@@ -261,7 +261,7 @@ func (s *mcpServer) getObjectsResourceHandler(kind manifest.Kind) server.Resourc
 		if err = sdk.EncodeObjects(objects, &buf, manifest.ObjectFormatYAML); err != nil {
 			return nil, errors.Wrapf(err, "failed to encode %s", pluralForKind(kind))
 		}
-		filename, err := s.writeTempFile(objects[0].GetKind().String(), "yaml", buf.String())
+		filename, err := s.writeCachedFile(objects[0].GetKind().String(), "yaml", buf.String())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to write %s to a file", pluralForKind(kind))
 		}
@@ -316,7 +316,7 @@ func (s *mcpServer) getObjectsToolHandler(kind manifest.Kind) mcp.TypedToolHandl
 		if err = sdk.EncodeObjects(objects, &buf, format); err != nil {
 			return nil, errors.Wrapf(err, "failed to encode %s", pluralForKind(kind))
 		}
-		filename, err := s.writeTempFile(fmt.Sprintf("get_%s", objects[0].GetKind()), args.Format, buf.String())
+		filename, err := s.writeCachedFile(fmt.Sprintf("get_%s", objects[0].GetKind()), args.Format, buf.String())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to write %s to a file", pluralForKind(kind))
 		}
@@ -435,7 +435,7 @@ func (s *mcpServer) EBSTool(
 	if err != nil {
 		return nil, fmt.Errorf("failed to get EBS: %w", err)
 	}
-	outputFile, err := s.writeTempFile("get_ebs", "yaml", r)
+	outputFile, err := s.writeCachedFile("get_ebs", "yaml", r)
 	if err != nil {
 		return nil, err
 	}
@@ -468,13 +468,19 @@ func (s *mcpServer) getEBS(ctx context.Context, project string) (string, error) 
 	return string(b), nil
 }
 
-func (s *mcpServer) writeTempFile(prefix, format, content string) (string, error) {
+func (s *mcpServer) writeCachedFile(prefix, format, content string) (string, error) {
 	if s.tempDir == "" {
-		tempDir, err := os.MkdirTemp("", "sloctl-mcp-*")
+		// Use .nobl9 directory in current working directory
+		cwd, err := os.Getwd()
 		if err != nil {
-			return "", fmt.Errorf("failed to create temp directory: %w", err)
+			return "", fmt.Errorf("failed to get current working directory: %w", err)
 		}
-		s.tempDir = tempDir
+		s.tempDir = filepath.Join(cwd, ".nobl9")
+
+		// Create .nobl9 directory if it doesn't exist
+		if err := os.MkdirAll(s.tempDir, 0o755); err != nil {
+			return "", fmt.Errorf("failed to create .nobl9 directory: %w", err)
+		}
 	}
 	filename := filepath.Join(s.tempDir, fmt.Sprintf("%s_%d.%s", prefix, time.Now().Unix(), format))
 	err := os.WriteFile(filename, []byte(content), 0o600)
