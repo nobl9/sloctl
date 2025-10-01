@@ -61,8 +61,8 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 		Args:    replay.arguments,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			replay.client = r.GetClient()
-			if replay.project != "" {
-				replay.client.Config.Project = replay.project
+			if replay.project == "" {
+				replay.project = replay.client.Config.Project
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error { return replay.Run(cmd) },
@@ -82,7 +82,7 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 }
 
 func (r *ReplayCmd) Run(cmd *cobra.Command) error {
-	if r.client.Config.Project == "*" {
+	if r.project == "*" {
 		return errProjectWildcardIsNotAllowed
 	}
 	r.arePlaylistEnabled(cmd.Context())
@@ -210,7 +210,7 @@ func (r *ReplayCmd) prepareConfigs() ([]ReplayConfig, error) {
 				c[i].From = r.from.Time
 			}
 			if len(c[i].Project) == 0 {
-				c[i].Project = r.client.Config.Project
+				c[i].Project = r.project
 			}
 			if err = val.Struct(c[i]); err != nil {
 				return nil, errors.Wrap(err, "Replay config entry failed validation")
@@ -228,7 +228,7 @@ func (r *ReplayCmd) prepareConfigs() ([]ReplayConfig, error) {
 
 	if len(replays) == 0 {
 		replays = append(replays, ReplayConfig{
-			Project: r.client.Config.Project,
+			Project: r.project,
 			SLO:     r.sloName,
 			From:    r.from.Time,
 		})
@@ -280,8 +280,8 @@ func (r *ReplayCmd) verifySLOs(ctx context.Context, replays []ReplayConfig) erro
 			sloNames = append(sloNames, r.SourceSLO.Slo)
 		}
 	}
-	if r.client.Config.Project == "" {
-		r.client.Config.Project = sdk.ProjectsWildcard
+	if r.project == "" {
+		r.project = sdk.ProjectsWildcard
 	}
 
 	// Find non-existent or RBAC protected SLOs.

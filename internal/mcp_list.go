@@ -43,11 +43,20 @@ func (r *MCPCmd) NewMCPListCmd() *cobra.Command {
 }
 
 func (c *MCPListCmd) listToolsAndResources(cmd *cobra.Command) error {
-	tools, err := c.runMCPRequest(cmd.Context(), "tools/list")
+	toolsResponse, err := c.runMCPRequest(cmd.Context(), "tools/list")
 	if err != nil {
 		return err
 	}
-	resources, err := c.runMCPRequest(cmd.Context(), "resources/list")
+	tools, err := mcpResponseToResult[mcp.ListToolsResult](toolsResponse)
+	if err != nil {
+		return err
+	}
+
+	resourcesResponse, err := c.runMCPRequest(cmd.Context(), "resources/list")
+	if err != nil {
+		return err
+	}
+	resources, err := mcpResponseToResult[mcp.ListResourcesResult](resourcesResponse)
 	if err != nil {
 		return err
 	}
@@ -56,16 +65,16 @@ func (c *MCPListCmd) listToolsAndResources(cmd *cobra.Command) error {
 		Tools     any `json:"tools"`
 		Resources any `json:"resources"`
 	}{
-		Tools:     tools,
-		Resources: resources,
+		Tools:     tools.Tools,
+		Resources: resources.Resources,
 	})
 }
 
-func (c *MCPListCmd) runMCPRequest(ctx context.Context, method string) (mcp.JSONRPCMessage, error) {
+func (c *MCPListCmd) runMCPRequest(ctx context.Context, method string) (*mcp.JSONRPCResponse, error) {
 	c.reqCounter++
 	req := mcp.JSONRPCRequest{
 		JSONRPC: "2.0",
-		ID:      c.reqCounter,
+		ID:      mcp.NewRequestId(c.reqCounter),
 		Request: mcp.Request{
 			Method: method,
 		},
@@ -74,5 +83,18 @@ func (c *MCPListCmd) runMCPRequest(ctx context.Context, method string) (mcp.JSON
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to encode '%s' request", method)
 	}
-	return c.server.HandleMessage(ctx, reqData), nil
+	msg := c.server.HandleMessage(ctx, reqData)
+	resp, ok := msg.(mcp.JSONRPCResponse)
+	if !ok {
+		return nil, errors.Errorf("expected MCP server response to be of type: %T, but was: %T", resp, msg)
+	}
+	return &resp, nil
+}
+
+func mcpResponseToResult[T any](resp *mcp.JSONRPCResponse) (v T, err error) {
+	v, ok := resp.Result.(T)
+	if !ok {
+		return v, errors.Errorf("expected MCP server response results to be of type: %T, but was: %T", v, resp.Result)
+	}
+	return v, nil
 }

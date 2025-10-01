@@ -7,10 +7,10 @@ setup_file() {
   load_lib "bats-assert"
 
   generate_inputs "$BATS_FILE_TMPDIR"
+  generate_outputs
+
   run_sloctl apply -f "'$TEST_INPUTS/**'"
   assert_success_joined_output
-
-  export TEST_OUTPUTS="$TEST_SUITE_OUTPUTS/get"
 }
 
 # teardown_file is run only once for the whole file.
