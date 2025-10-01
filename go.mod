@@ -9,7 +9,7 @@ require (
 	github.com/mark3labs/mcp-go v0.26.0
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/nobl9/go-yaml v1.0.1
-	github.com/nobl9/nobl9-go v0.112.0-rc5
+	github.com/nobl9/nobl9-go v0.117.0-rc4
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/spf13/cobra v1.9.1
@@ -17,8 +17,6 @@ require (
 	github.com/tidwall/sjson v1.2.5
 	golang.org/x/sync v0.17.0
 )
-
-replace github.com/nobl9/nobl9-go v0.112.0-rc5 => github.com/nobl9/nobl9-go v0.117.0-rc3.0.20251001140552-02d77afa7a91
 
 require (
 	github.com/atotto/clipboard v0.1.4 // indirect
