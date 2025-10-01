@@ -29,7 +29,8 @@
     "bin/**",
     "test/**",
     "**/test_data/**",
-    "dist/**"
+    "dist/**",
+    "docs/vhs/**"
   ],
   "words": [
     "armv",
@@ -49,6 +50,7 @@
     "openslo",
     "openslosdk",
     "openslotonobl9",
+    "pflag",
     "plantuml",
     "sjson",
     "sloctl",

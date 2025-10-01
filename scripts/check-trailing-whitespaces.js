@@ -8,7 +8,7 @@
 import {readFile} from 'fs'
 import {spawnSync} from 'child_process'
 
-const fileExtensionsToIgnore = ['.ico', '.png']
+const fileExtensionsToIgnore = ['.ico', '.png', '.gif']
 
 // get all files under git control
 const gitListFiles = spawnSync('git', ['ls-tree', '-r', 'HEAD', '--name-only'])

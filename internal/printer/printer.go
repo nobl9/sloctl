@@ -45,7 +45,7 @@ type Printer struct {
 	jq     *jq.ExpressionRunner
 }
 
-// Validate should be called before [Printer.Print], after the flag values are asigned.
+// Validate should be called before [Printer.Print], after the flag values are assigned.
 func (o *Printer) Validate() error {
 	if !slices.Contains(o.config.SupportedFromats, o.config.OutputFormat) {
 		return errInvalidFormat(o.config.OutputFormat)

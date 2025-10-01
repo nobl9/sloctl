@@ -8,24 +8,24 @@ import (
 	"github.com/charmbracelet/huh"
 )
 
-const accesibleModeEnv = "SLOCTL_ACCESSIBLE_MODE"
+const accessibleModeEnv = "SLOCTL_ACCESSIBLE_MODE"
 
 var defaultTheme = huh.ThemeBase16()
 
 func New(groups ...*huh.Group) *huh.Form {
 	return huh.NewForm(groups...).
 		WithTheme(defaultTheme).
-		WithAccessible(getAccesibleEnvValue())
+		WithAccessible(getAccessibleEnvValue())
 }
 
-func getAccesibleEnvValue() bool {
-	v, ok := os.LookupEnv(accesibleModeEnv)
+func getAccessibleEnvValue() bool {
+	v, ok := os.LookupEnv(accessibleModeEnv)
 	if !ok {
 		return false
 	}
-	accesible, err := strconv.ParseBool(v)
+	accessible, err := strconv.ParseBool(v)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Invalid value: %q for %q environment variable. Error: %v", v, accesibleModeEnv, err)
+		fmt.Fprintf(os.Stderr, "Invalid value: %q for %q environment variable. Error: %v", v, accessibleModeEnv, err)
 	}
-	return accesible
+	return accessible
 }
