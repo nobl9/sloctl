@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"fmt"
 	"maps"
 	"net/url"
@@ -17,6 +18,11 @@ import (
 	"github.com/nobl9/sloctl/internal/form"
 	"github.com/nobl9/sloctl/internal/printer"
 )
+
+// runHuhFormFunc is a global variable so that the unit test can inject their logic inside.
+var runHuhFormFunc = func(ctx context.Context, form *huh.Form) error {
+	return form.RunWithContext(ctx)
+}
 
 type clientGetter interface {
 	GetClient() *sdk.Client
@@ -136,7 +142,7 @@ func (c *ConfigCmd) AddContextCommand() *cobra.Command {
 				),
 			)
 
-			if err := form.RunWithContext(cmd.Context()); err != nil {
+			if err := runHuhFormFunc(cmd.Context(), form); err != nil {
 				return errors.Wrap(err, "failed to run context addition form")
 			}
 
