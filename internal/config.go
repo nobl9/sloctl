@@ -104,7 +104,7 @@ func (c *ConfigCmd) AddContextCommand() *cobra.Command {
 							if pi == sdk.PlatformInstanceCustom {
 								return nil
 							}
-							authConfig = authInstances[platformInstance]
+							authConfig = authInstances[pi]
 							return nil
 						}).
 						Value(&platformInstance),
