@@ -35,4 +35,4 @@ sloctl config rename-context old-ctx new-ctx
 sloctl config delete-context
 
 # Delete "context-1" and "context-2" from your configuration file.
-sloctl config delete-context contetx-1 context-2
+sloctl config delete-context context-1 context-2
