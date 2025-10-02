@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"maps"
 	"net/url"
@@ -23,6 +24,9 @@ import (
 var runHuhFormFunc = func(ctx context.Context, form *huh.Form) error {
 	return form.RunWithContext(ctx)
 }
+
+//go:embed config_example.sh
+var configExample string
 
 type clientGetter interface {
 	GetClient() *sdk.Client
@@ -46,9 +50,10 @@ func (r *RootCmd) NewConfigCmd() *cobra.Command {
 		}}),
 	}
 	cmd := &cobra.Command{
-		Use:   "config",
-		Short: "Configuration management",
-		Long:  `Manage configurations stored in configuration file.`,
+		Use:     "config",
+		Short:   "Configuration management",
+		Long:    `Manage configurations stored in configuration file.`,
+		Example: configExample,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return configCmd.loadFileConfig(r.Flags.ConfigFile)
 		},
@@ -211,8 +216,8 @@ func (c *ConfigCmd) UseContextCommand() *cobra.Command {
 func (c *ConfigCmd) CurrentContextCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "current-context",
-		Short: "Display current context",
-		Long:  "Display configuration for the current context set in the configuration file.",
+		Short: "Display current context name",
+		Long:  "In verbose mode, display configuration for the current context set in the configuration file.",
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			return requireFlagsIfFlagIsSet(
 				cmd,
@@ -223,15 +228,17 @@ func (c *ConfigCmd) CurrentContextCommand() *cobra.Command {
 			)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if c.verbose {
+			switch c.verbose {
+			case true:
 				conf, err := c.config.GetCurrentContextConfig()
 				if err != nil {
 					return err
 				}
 				conf = sanitizeContextConfig(conf)
 				return c.printer.Print(conf)
+			default:
+				fmt.Println(c.config.DefaultContext)
 			}
-			fmt.Println(c.config.DefaultContext)
 			return nil
 		},
 	}
@@ -244,8 +251,8 @@ func (c *ConfigCmd) CurrentContextCommand() *cobra.Command {
 func (c *ConfigCmd) CurrentUserCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "current-user",
-		Short: "Display current user details",
-		Long:  "Display extended details for the user associated with the current context's access key.",
+		Short: "Display current user ID",
+		Long:  "In verbose mode, display extended details for the user associated with the current context's access key.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client := c.clientGetter.GetClient()
 			ctx := cmd.Context()
@@ -257,13 +264,19 @@ func (c *ConfigCmd) CurrentUserCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err = c.printer.Print(user); err != nil {
-				return err
+			switch c.verbose {
+			case true:
+				if err = c.printer.Print(user); err != nil {
+					return err
+				}
+			default:
+				fmt.Println(user.UserID)
 			}
 			return nil
 		},
 	}
 
+	registerVerboseFlag(cmd, &c.verbose)
 	c.printer.MustRegisterFlags(cmd)
 	return cmd
 }
@@ -271,8 +284,8 @@ func (c *ConfigCmd) CurrentUserCommand() *cobra.Command {
 func (c *ConfigCmd) GetContextsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get-contexts",
-		Short: "Display all available contexts",
-		Long:  "Display all available contexts in the configuration file.",
+		Short: "Display all available context names",
+		Long:  "In verbose mode, display configuration for all available contexts set in the configuration file.",
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			return requireFlagsIfFlagIsSet(
 				cmd,
