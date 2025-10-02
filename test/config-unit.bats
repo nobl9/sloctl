@@ -69,6 +69,12 @@ teardown() {
   done
 }
 
+@test "sloctl config current-context, output flag without verbose" {
+  run_sloctl config current-context -o json
+  assert_failure
+  assert_stderr 'Error: --output flag can only be set if --verbose flag is also provided'
+}
+
 @test "sloctl config use-context" {
   run_sloctl config use-context full
   assert_success_joined_output
@@ -108,6 +114,12 @@ minimal'
     assert_success_joined_output
     assert_output <"$TEST_OUTPUTS/get-contexts-verbose.$format"
   done
+}
+
+@test "sloctl config get-contexts, output flag without verbose" {
+  run_sloctl config get-contexts -o json
+  assert_failure
+  assert_stderr 'Error: --output flag can only be set if --verbose flag is also provided'
 }
 
 @test "sloctl config rename-context" {

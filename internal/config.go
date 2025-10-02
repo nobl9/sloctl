@@ -253,6 +253,15 @@ func (c *ConfigCmd) CurrentUserCommand() *cobra.Command {
 		Use:   "current-user",
 		Short: "Display current user ID",
 		Long:  "In verbose mode, display extended details for the user associated with the current context's access key.",
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
+			return requireFlagsIfFlagIsSet(
+				cmd,
+				flagVerbose,
+				printer.OutputFlagName,
+				csv.RecordSeparatorFlag,
+				csv.FieldSeparatorFlag,
+			)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client := c.clientGetter.GetClient()
 			ctx := cmd.Context()

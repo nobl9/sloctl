@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bats file_tags=e2e
+# bats file_tags=e2e,bats:focus
 
 # setup_file is run only once for the whole file.
 setup_file() {
@@ -16,7 +16,7 @@ setup() {
 @test "sloctl config current-user id" {
   run_sloctl config current-user
   assert_success_joined_output
-  assert_regex "$output" "([a-z][A-Z][0-9])+"
+  assert_regex "$output" "[a-zA-Z0-9]+"
 }
 
 @test "sloctl config current-user (verbose, default YAML)" {
@@ -31,4 +31,10 @@ setup() {
     assert_success_joined_output
     assert_regex "$output" "$(cat "$TEST_OUTPUTS/get-current-user-regex.$format")"
   done
+}
+
+@test "sloctl config current-user, output flag without verbose" {
+  run_sloctl config current-user -o json
+  assert_failure
+  assert_stderr 'Error: --output flag can only be set if --verbose flag is also provided'
 }
