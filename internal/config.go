@@ -75,7 +75,7 @@ sloctl config add-context`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
 				contextName      string
-				setAsDefault     bool
+				setAsDefault     = len(c.config.Contexts) == 0
 				platformInstance = sdk.PlatformInstanceDefault
 				config           = new(sdk.ContextConfig)
 				orgURL           *url.URL
@@ -84,32 +84,47 @@ sloctl config add-context`,
 			config.Project = "default"
 			authInstances := sdk.GetPlatformInstanceAuthConfigs()
 
+			generalGroupFields := []huh.Field{
+				huh.NewInput().
+					Title("Provide context name").
+					Value(&contextName).
+					Validate(validateMultipleHuhValues(validateStringNotEmpty, c.validateContextIsInUse)),
+				huh.NewInput().
+					Title("Provide client ID").
+					Value(&config.ClientID).
+					Validate(validateStringNotEmpty),
+				huh.NewInput().
+					Title("Provide client secret").
+					Value(&config.ClientSecret).
+					EchoMode(huh.EchoModePassword).
+					Validate(validateStringNotEmpty),
+				huh.NewSelect[sdk.PlatformInstance]().
+					Title("Select Nobl9 instance").
+					Options(huh.NewOptions(sdk.GetPlatformInstances()...)...).
+					Validate(func(pi sdk.PlatformInstance) error {
+						if pi == sdk.PlatformInstanceCustom {
+							return nil
+						}
+						authConfig = authInstances[pi]
+						return nil
+					}).
+					Value(&platformInstance),
+				huh.NewInput().
+					Title("Provide default project").
+					Value(&config.Project).
+					Validate(validateStringNotEmpty),
+			}
+			if !setAsDefault {
+				generalGroupFields = append(generalGroupFields,
+					huh.NewConfirm().
+						Title("Set context as default?").
+						Value(&setAsDefault),
+				)
+			}
+
 			form := form.New(
 				huh.NewGroup(
-					huh.NewInput().
-						Title("Provide context name").
-						Value(&contextName).
-						Validate(validateMultipleHuhValues(validateStringNotEmpty, c.validateContextIsInUse)),
-					huh.NewInput().
-						Title("Provide client ID").
-						Value(&config.ClientID).
-						Validate(validateStringNotEmpty),
-					huh.NewInput().
-						Title("Provide client secret").
-						Value(&config.ClientSecret).
-						EchoMode(huh.EchoModePassword).
-						Validate(validateStringNotEmpty),
-					huh.NewSelect[sdk.PlatformInstance]().
-						Title("Select Nobl9 instance").
-						Options(huh.NewOptions(sdk.GetPlatformInstances()...)...).
-						Validate(func(pi sdk.PlatformInstance) error {
-							if pi == sdk.PlatformInstanceCustom {
-								return nil
-							}
-							authConfig = authInstances[pi]
-							return nil
-						}).
-						Value(&platformInstance),
+					generalGroupFields...,
 				),
 				huh.NewGroup(
 					huh.NewInput().
@@ -133,15 +148,6 @@ sloctl config add-context`,
 						Validate(validateStringNotEmpty),
 				).
 					WithHideFunc(func() bool { return platformInstance != sdk.PlatformInstanceCustom }),
-				huh.NewGroup(
-					huh.NewInput().
-						Title("Provide default project").
-						Value(&config.Project).
-						Validate(validateStringNotEmpty),
-					huh.NewConfirm().
-						Title("Set context as default?").
-						Value(&setAsDefault),
-				),
 			)
 
 			if err := runHuhFormFunc(cmd.Context(), form); err != nil {
@@ -163,6 +169,10 @@ sloctl config add-context`,
 				return err
 			}
 			fmt.Printf("Added context %q.\n", contextName)
+			// If we've added the first context, use it as default.
+			if setAsDefault {
+				fmt.Printf("Switched to context \"%s\".\n", contextName)
+			}
 			return nil
 		},
 	}
@@ -491,6 +501,26 @@ sloctl config delete-context context-1 context-2`,
 	return cmd
 }
 
+// getProjectAndContextSelectionGroup dynamically constructs project and context selection form group.
+// If we've added the first context ever,
+// we want ot automatically switch to it and don't ask the user whether to set it as default.
+func (c *ConfigCmd) getProjectAndContextSelectionGroup(projectPtr *string, setAsDefaultPtr *bool) *huh.Group {
+	fields := []huh.Field{
+		huh.NewInput().
+			Title("Provide default project").
+			Value(projectPtr).
+			Validate(validateStringNotEmpty),
+	}
+	if len(c.config.Contexts) > 0 {
+		fields = append(fields,
+			huh.NewConfirm().
+				Title("Set context as default?").
+				Value(setAsDefaultPtr),
+		)
+	}
+	return huh.NewGroup(fields...)
+}
+
 func (c *ConfigCmd) loadFileConfig(configPath string) error {
 	if configPath == "" {
 		if v, ok := os.LookupEnv(sdkEnvPrefix + "CONFIG_FILE_PATH"); ok {
@@ -504,7 +534,13 @@ func (c *ConfigCmd) loadFileConfig(configPath string) error {
 		}
 	}
 	c.config = new(sdk.FileConfig)
-	return c.config.Load(configPath)
+	if err := c.config.Load(configPath); err != nil {
+		return nil
+	}
+	if c.config.Contexts == nil {
+		c.config.Contexts = make(map[string]sdk.ContextConfig)
+	}
+	return nil
 }
 
 func (c *ConfigCmd) validateContextIsInUse(name string) error {
