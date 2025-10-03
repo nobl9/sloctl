@@ -1,0 +1,10 @@
+defaultContext = "default"
+
+[contexts]
+  [contexts.default]
+    clientId = "client-id"
+    clientSecret = "client-secret"
+  [contexts.new-context]
+    clientId = "client-id"
+    clientSecret = "super-secret"
+    project = "default"

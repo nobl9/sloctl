@@ -10,6 +10,7 @@ import (
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/manifest/v1alpha"
 	"github.com/nobl9/nobl9-go/sdk"
+	v2 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v2"
 
 	"github.com/nobl9/sloctl/internal/flags"
 )
@@ -71,9 +72,6 @@ func (r *RootCmd) NewApplyCmd() *cobra.Command {
 }
 
 func (a ApplyCmd) Run(cmd *cobra.Command) error {
-	if a.dryRun {
-		a.client.WithDryRun()
-	}
 	if len(a.definitionPaths) == 0 {
 		return cmd.Usage()
 	}
@@ -88,7 +86,10 @@ func (a ApplyCmd) Run(cmd *cobra.Command) error {
 		return err
 	}
 	printSourcesDetails("Applying", objects, os.Stdout)
-	if err = a.client.Objects().V1().Apply(cmd.Context(), objects); err != nil {
+	if err = a.client.Objects().V2().Apply(cmd.Context(), v2.ApplyRequest{
+		Objects: objects,
+		DryRun:  a.dryRun,
+	}); err != nil {
 		return err
 	}
 	printCommandResult("The resources were successfully applied.", a.dryRun)

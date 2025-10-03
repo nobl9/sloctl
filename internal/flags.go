@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	flagFile   = "file"
-	flagDryRun = "dry-run"
+	flagFile    = "file"
+	flagDryRun  = "dry-run"
+	flagVerbose = "verbose"
 )
 
 func notifyDryRunFlag() {
@@ -32,7 +33,7 @@ func registerDryRunFlag(cmd *cobra.Command, storeIn *bool) {
 }
 
 func registerVerboseFlag(cmd *cobra.Command, storeIn *bool) {
-	cmd.Flags().BoolVarP(storeIn, "verbose", "v", false,
+	cmd.Flags().BoolVarP(storeIn, flagVerbose, "v", false,
 		"Display verbose information about configuration")
 }
 
@@ -83,4 +84,18 @@ func objectKindSupportsLabelsFlag(kind manifest.Kind) bool {
 func registerLabelsFlag(cmd *cobra.Command, storeIn *[]string) {
 	cmd.Flags().StringArrayVarP(storeIn, "label", "l", []string{},
 		`Filter resource by label. Example: key=value,key2=value2,key2=value3.`)
+}
+
+// requireFlagsIfFlagIsSet validates that the provided deps are only set if the "parent" flag is set.
+// This one way dependency is not supported natively by cobra and requires custom verification.
+func requireFlagsIfFlagIsSet(cmd *cobra.Command, flag string, deps ...string) error {
+	if cmd.Flags().Changed(flag) {
+		return nil
+	}
+	for _, d := range deps {
+		if cmd.Flags().Changed(d) {
+			return fmt.Errorf("--%s flag can only be set if --%s flag is also provided", d, flag)
+		}
+	}
+	return nil
 }

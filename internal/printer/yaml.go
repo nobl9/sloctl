@@ -12,7 +12,7 @@ type yamlPrinter struct {
 	out io.Writer
 }
 
-func (p *yamlPrinter) Print(content any) error {
+func (p yamlPrinter) Print(content any) error {
 	switch v := content.(type) {
 	case []manifest.Object:
 		return sdk.PrintObjects(v, p.out, manifest.ObjectFormatYAML)

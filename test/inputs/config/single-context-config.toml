@@ -1,0 +1,6 @@
+defaultContext = "single"
+
+[contexts]
+  [contexts.single]
+    clientId = "minimal_client_id"
+    clientSecret = "minimal_client_secret"
