@@ -182,7 +182,7 @@ func (c *ConfigCmd) UseContextCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "use-context [context name]",
 		Short: "Set the default context",
-		Long:  "Set a default context in the existing config file.",
+		Long:  "Set a default context in the existing configuration file.",
 		Example: `# Display interactive selection of contexts to use as default.
 sloctl config use-context
 
@@ -377,6 +377,9 @@ sloctl config rename-context
 # Rename "old-ctx" to "new-ctx".
 sloctl config rename-context old-ctx new-ctx`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(c.config.Contexts) == 0 {
+				return errors.New("there are no contexts defined in your configuration file")
+			}
 			var (
 				oldContext string
 				newContext string
@@ -451,6 +454,10 @@ sloctl config delete-context context-1 context-2`,
 			var contextNames []string
 			switch len(args) {
 			case 0:
+				if len(c.config.Contexts) == 1 && c.config.DefaultContext == slices.Collect(maps.Keys(c.config.Contexts))[0] {
+					return errors.Errorf("cannot remove context currently set as default; " +
+						"there's only a single context set in your configuration file and it is marked as default")
+				}
 				contexts := c.getContextNames()
 				contexts = slices.DeleteFunc(contexts, func(name string) bool { return name == c.config.DefaultContext })
 				form := form.New(huh.NewGroup(
@@ -501,26 +508,6 @@ sloctl config delete-context context-1 context-2`,
 	return cmd
 }
 
-// getProjectAndContextSelectionGroup dynamically constructs project and context selection form group.
-// If we've added the first context ever,
-// we want ot automatically switch to it and don't ask the user whether to set it as default.
-func (c *ConfigCmd) getProjectAndContextSelectionGroup(projectPtr *string, setAsDefaultPtr *bool) *huh.Group {
-	fields := []huh.Field{
-		huh.NewInput().
-			Title("Provide default project").
-			Value(projectPtr).
-			Validate(validateStringNotEmpty),
-	}
-	if len(c.config.Contexts) > 0 {
-		fields = append(fields,
-			huh.NewConfirm().
-				Title("Set context as default?").
-				Value(setAsDefaultPtr),
-		)
-	}
-	return huh.NewGroup(fields...)
-}
-
 func (c *ConfigCmd) loadFileConfig(configPath string) error {
 	if configPath == "" {
 		if v, ok := os.LookupEnv(sdkEnvPrefix + "CONFIG_FILE_PATH"); ok {
@@ -535,7 +522,7 @@ func (c *ConfigCmd) loadFileConfig(configPath string) error {
 	}
 	c.config = new(sdk.FileConfig)
 	if err := c.config.Load(configPath); err != nil {
-		return nil
+		return err
 	}
 	if c.config.Contexts == nil {
 		c.config.Contexts = make(map[string]sdk.ContextConfig)
