@@ -2,7 +2,6 @@ package internal
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 	"maps"
 	"net/url"
@@ -24,9 +23,6 @@ import (
 var runHuhFormFunc = func(ctx context.Context, form *huh.Form) error {
 	return form.RunWithContext(ctx)
 }
-
-//go:embed config_example.sh
-var configExample string
 
 type clientGetter interface {
 	GetClient() *sdk.Client
@@ -50,10 +46,9 @@ func (r *RootCmd) NewConfigCmd() *cobra.Command {
 		}}),
 	}
 	cmd := &cobra.Command{
-		Use:     "config",
-		Short:   "Configuration management",
-		Long:    `Manage configurations stored in configuration file.`,
-		Example: configExample,
+		Use:   "config",
+		Short: "Configuration management",
+		Long:  `Manage configurations stored in configuration file.`,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return configCmd.loadFileConfig(r.Flags.ConfigFile)
 		},
@@ -75,6 +70,8 @@ func (c *ConfigCmd) AddContextCommand() *cobra.Command {
 		Use:   "add-context",
 		Short: "Add new sloctl configuration context",
 		Long:  "Add new sloctl configuration context, an interactive command which collects parameters in wizard mode.",
+		Example: `# Run interactive form which adds a new context to your config.toml file.
+sloctl config add-context`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
 				contextName      string
@@ -176,6 +173,11 @@ func (c *ConfigCmd) UseContextCommand() *cobra.Command {
 		Use:   "use-context [context name]",
 		Short: "Set the default context",
 		Long:  "Set a default context in the existing config file.",
+		Example: `# Display interactive selection of contexts to use as default.
+sloctl config use-context
+
+# Use "my-context" as a default context.
+sloctl config use-context my-context`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(c.config.Contexts) == 0 {
 				return errors.New("You don't have any contexts in the current configuration file.\n" +
@@ -218,6 +220,11 @@ func (c *ConfigCmd) CurrentContextCommand() *cobra.Command {
 		Use:   "current-context",
 		Short: "Display current context name",
 		Long:  "In verbose mode, display configuration for the current context set in the configuration file.",
+		Example: `# Fetch the current context name.
+sloctl config current-context
+
+# Display detailed information about the current context in YAML format.
+sloctl config current-context --verbose`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			return requireFlagsIfFlagIsSet(
 				cmd,
@@ -253,6 +260,11 @@ func (c *ConfigCmd) CurrentUserCommand() *cobra.Command {
 		Use:   "current-user",
 		Short: "Display current user ID",
 		Long:  "In verbose mode, display extended details for the user associated with the current context's access key.",
+		Example: `# Fetch the current user ID.
+sloctl config current-user
+
+# Display detailed information about the current user in YAML format.
+sloctl config current-user --verbose`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			return requireFlagsIfFlagIsSet(
 				cmd,
@@ -295,6 +307,11 @@ func (c *ConfigCmd) GetContextsCommand() *cobra.Command {
 		Use:   "get-contexts",
 		Short: "Display all available context names",
 		Long:  "In verbose mode, display configuration for all available contexts set in the configuration file.",
+		Example: `# List all context names.
+sloctl config get-contexts
+
+# Display detailed information about every context in TOML format.
+sloctl config get-contexts --verbose --output=toml`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			return requireFlagsIfFlagIsSet(
 				cmd,
@@ -344,6 +361,11 @@ func (c *ConfigCmd) RenameContextCommand() *cobra.Command {
 		Short: "Rename chosen context",
 		Long: "Rename one of the contexts in the configuration file.\n" +
 			"If no arguments are provided, the command displays an interactive prompt.",
+		Example: `# Display interactive form which lets you select the old context name and type in the new one.
+sloctl config rename-context
+
+# Rename "old-ctx" to "new-ctx".
+sloctl config rename-context old-ctx new-ctx`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
 				oldContext string
@@ -410,6 +432,11 @@ func (c *ConfigCmd) DeleteContextCommand() *cobra.Command {
 		Long: "Delete one or more of the contexts from the configuration file.\n" +
 			"Each argument is treated as a context name, " +
 			"when no arguments are provided a multi-selection prompt is desplayed.",
+		Example: `# Display interactive selection of context to delete (multiple choice).
+sloctl config delete-context
+
+# Delete "context-1" and "context-2" from your configuration file.
+sloctl config delete-context context-1 context-2`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var contextNames []string
 			switch len(args) {
