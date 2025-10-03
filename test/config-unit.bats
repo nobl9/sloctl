@@ -161,6 +161,12 @@ minimal'
   assert_output 'Renamed context "fullish" to "full".'
 }
 
+@test "sloctl config rename-context, no contexts" {
+  run_sloctl config --config="$TEST_INPUTS/empty-config.toml" rename-context
+  assert_failure
+  assert_stderr 'Error: there are no contexts defined in your configuration file'
+}
+
 @test "sloctl config rename-context, invalid args" {
   run_sloctl config rename-context mini
   assert_failure
@@ -195,6 +201,18 @@ minimal'
   run_sloctl config delete-context minimal
   assert_failure
   assert_stderr 'Error: cannot remove context currently set as default'
+}
+
+@test "sloctl config delete-context, no contexts" {
+  run_sloctl config --config="$TEST_INPUTS/empty-config.toml" delete-context
+  assert_failure
+  assert_stderr 'Error: there are no contexts defined in your configuration file'
+}
+
+@test "sloctl config delete-context, single context set as default" {
+  run_sloctl config --config="$TEST_INPUTS/single-context-config.toml" delete-context
+  assert_failure
+  assert_stderr 'Error: cannot remove context currently set as default; there'"'"'s only a single context set in your configuration file and it is marked as default'
 }
 
 @test "sloctl config delete-context" {

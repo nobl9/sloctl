@@ -454,6 +454,9 @@ sloctl config delete-context context-1 context-2`,
 			var contextNames []string
 			switch len(args) {
 			case 0:
+				if len(c.config.Contexts) == 0 {
+					return errors.New("there are no contexts defined in your configuration file")
+				}
 				if len(c.config.Contexts) == 1 && c.config.DefaultContext == slices.Collect(maps.Keys(c.config.Contexts))[0] {
 					return errors.Errorf("cannot remove context currently set as default; " +
 						"there's only a single context set in your configuration file and it is marked as default")
