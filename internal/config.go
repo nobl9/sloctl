@@ -444,7 +444,7 @@ func (c *ConfigCmd) DeleteContextCommand() *cobra.Command {
 		Short: "Delete chosen context(s)",
 		Long: "Delete one or more of the contexts from the configuration file.\n" +
 			"Each argument is treated as a context name, " +
-			"when no arguments are provided a multi-selection prompt is desplayed.",
+			"when no arguments are provided a multi-selection prompt is displayed.",
 		Example: `# Display interactive selection of context to delete (multiple choice).
 sloctl config delete-context
 
@@ -552,30 +552,20 @@ func (c *ConfigCmd) getContextNames() []string {
 }
 
 func sanitizeContextConfig(conf sdk.ContextConfig) sdk.ContextConfig {
-	conf.ClientSecret = censorField(conf.ClientSecret)
+	conf.ClientSecret = maskField(conf.ClientSecret)
 	conf.AccessToken = ""
 	return conf
 }
 
-func censorField(field string) (censored string) {
-	if len(field) > 3 {
+func maskField(field string) string {
+	switch {
+	case len(field) == 0:
+		return ""
+	case len(field) > 6:
 		return field[:2] + "***" + field[len(field)-2:]
-	} else if len(field) != 0 {
-		return generateMissingSecretMessage()
+	default:
+		return "***"
 	}
-	return censored
-}
-
-func generateMissingSecretMessage() string {
-	secretMessages := map[string]struct{}{
-		"who needs security anyway?":                                {},
-		"this secret could be guessed by any PC in less than 0.01s": {},
-		"I know it is easier to remember":                           {},
-	}
-	for key := range secretMessages {
-		return key
-	}
-	return ""
 }
 
 type huhValidationFunc[T any] func(v T) error

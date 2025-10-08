@@ -6,6 +6,7 @@ import (
 	_ "embed"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -75,6 +76,26 @@ func TestConfigAddContext(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, expectedConfig, string(data))
+}
+
+func TestMaskField(t *testing.T) {
+	tests := []struct {
+		in  string
+		out string
+	}{
+		{in: "", out: ""},
+		{in: "asd", out: "***"},
+		{in: "foo-ba", out: "***"},
+		{in: "foo-bar", out: "fo***ar"},
+		{in: "super-secret-long-string", out: "su***ng"},
+	}
+
+	for i, test := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			out := maskField(test.in)
+			assert.Equal(t, test.out, out)
+		})
+	}
 }
 
 func teaKeyEnter() tea.KeyMsg {

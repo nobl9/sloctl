@@ -36,8 +36,8 @@ func NewRootCmd() *cobra.Command {
 		Use:   programName,
 		Short: "Create, get and delete SLO definitions from command line easily.",
 		Long: `All available commands for execution are listed below.
-Use this tool to work with definitions of SLO in YAML files.
-For every command more detailed help is available.`,
+Use this tool to work with Nobl9 YAML configuration files (including, but not limited to SLOs).
+More detailed help is available for each command.`,
 		SilenceUsage: true,
 	}
 

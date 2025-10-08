@@ -9,6 +9,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// accessibleModeEnv can be set to turn on [huh] accessible mode.
+// It can be useful in old terminal emulators (e.g. remote shells).
 const accessibleModeEnv = "SLOCTL_ACCESSIBLE_MODE"
 
 var defaultTheme = themeNobl9()
