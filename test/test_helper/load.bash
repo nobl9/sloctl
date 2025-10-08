@@ -307,7 +307,7 @@ assert_stderr() {
 # The output of the inspector is captured in $output.
 run_mcp_inspector() {
   bats_require_minimum_version 1.5.0
-  run npx -y @modelcontextprotocol/inspector --cli sloctl mcp "$@"
+  run npx -y @modelcontextprotocol/inspector@0.16.8 --cli sloctl mcp "$@"
 }
 
 # generate_outputs
