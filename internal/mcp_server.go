@@ -22,6 +22,7 @@ import (
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/sdk"
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
+	v2 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v2"
 
 	"github.com/nobl9/sloctl/internal/flags"
 	"github.com/nobl9/sloctl/internal/printer"
@@ -379,7 +380,7 @@ func (s mcpServer) ApplyTool(
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read objects from '%s' file", args.FileName)
 	}
-	if err = s.client.Objects().V1().Apply(ctx, objects); err != nil {
+	if err = s.client.Objects().V2().Apply(ctx, v2.ApplyRequest{Objects: objects}); err != nil {
 		return nil, errors.Wrap(err, "failed to apply objects")
 	}
 
