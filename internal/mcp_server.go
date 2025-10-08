@@ -173,12 +173,12 @@ func (s mcpServer) RegisterToolsAndResources() error {
 	return nil
 }
 
-func (s *mcpServer) Start() error {
+func (s mcpServer) Start() error {
 	slog.Info("Starting Nobl9 MCP server", "version", getBuildVersion())
 	return server.ServeStdio(s.server)
 }
 
-func (s *mcpServer) addToolForObject(kind manifest.Kind) {
+func (s mcpServer) addToolForObject(kind manifest.Kind) {
 	kindPlural := pluralForKind(kind)
 	opts := []mcp.ToolOption{
 		mcp.WithDescription("Get " + kindPlural),
@@ -205,7 +205,7 @@ func (s *mcpServer) addToolForObject(kind manifest.Kind) {
 	)
 }
 
-func (s *mcpServer) addResourceForObject(kind manifest.Kind, description string) {
+func (s mcpServer) addResourceForObject(kind manifest.Kind, description string) {
 	kindPlural := pluralForKind(kind)
 	var uri string
 	if objectKindSupportsProjectFlag(kind) {
@@ -221,7 +221,7 @@ func (s *mcpServer) addResourceForObject(kind manifest.Kind, description string)
 	s.server.AddResource(r, s.getObjectsResourceHandler(kind))
 }
 
-func (s *mcpServer) getObjectsResourceHandler(kind manifest.Kind) server.ResourceHandlerFunc {
+func (s mcpServer) getObjectsResourceHandler(kind manifest.Kind) server.ResourceHandlerFunc {
 	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 		uri := req.Params.URI
 		kindPlural := strings.ToLower(pluralForKind(kind))
@@ -289,7 +289,7 @@ func (s *mcpServer) getObjectsResourceHandler(kind manifest.Kind) server.Resourc
 	}
 }
 
-func (s *mcpServer) getObjectsToolHandler(kind manifest.Kind) mcp.TypedToolHandlerFunc[mcpToolArguments] {
+func (s mcpServer) getObjectsToolHandler(kind manifest.Kind) mcp.TypedToolHandlerFunc[mcpToolArguments] {
 	return func(ctx context.Context, _ mcp.CallToolRequest, args mcpToolArguments) (*mcp.CallToolResult, error) {
 		header := http.Header{}
 		query := url.Values{}
@@ -335,7 +335,7 @@ func (s *mcpServer) getObjectsToolHandler(kind manifest.Kind) mcp.TypedToolHandl
 	}
 }
 
-func (s *mcpServer) SLOStatusTool(
+func (s mcpServer) SLOStatusTool(
 	ctx context.Context,
 	_ mcp.CallToolRequest,
 	args mcpToolArguments,
@@ -360,7 +360,7 @@ func (s *mcpServer) SLOStatusTool(
 	return mcp.NewToolResultText(string(b)), nil
 }
 
-func (s *mcpServer) ApplyTool(
+func (s mcpServer) ApplyTool(
 	ctx context.Context,
 	_ mcp.CallToolRequest,
 	args mcpToolArguments,
@@ -386,7 +386,7 @@ func (s *mcpServer) ApplyTool(
 	return mcp.NewToolResultText("The objects were successfully applied."), nil
 }
 
-func (s *mcpServer) ReplayTool(
+func (s mcpServer) ReplayTool(
 	ctx context.Context,
 	_ mcp.CallToolRequest,
 	args mcpToolArguments,
@@ -423,7 +423,7 @@ func (s *mcpServer) ReplayTool(
 	return mcp.NewToolResultText(out.String()), nil
 }
 
-func (s *mcpServer) EBSTool(
+func (s mcpServer) EBSTool(
 	ctx context.Context,
 	_ mcp.CallToolRequest,
 	args mcpToolArguments,
@@ -443,7 +443,7 @@ func (s *mcpServer) EBSTool(
 	return mcp.NewToolResultText("Retrieved Error Budget status. Saved it in file " + outputFile), nil
 }
 
-func (s *mcpServer) getEBS(ctx context.Context, project string) (string, error) {
+func (s mcpServer) getEBS(ctx context.Context, project string) (string, error) {
 	search := `{}`
 	if project != "" {
 		search = fmt.Sprintf(`{"textSearch":"%s"}`, project)
@@ -468,7 +468,7 @@ func (s *mcpServer) getEBS(ctx context.Context, project string) (string, error) 
 	return string(b), nil
 }
 
-func (s *mcpServer) writeCachedFile(prefix, format, content string) (string, error) {
+func (s mcpServer) writeCachedFile(prefix, format, content string) (string, error) {
 	if s.tempDir == "" {
 		// Use .nobl9 directory in current working directory
 		cwd, err := os.Getwd()
