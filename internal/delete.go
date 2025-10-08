@@ -11,6 +11,7 @@ import (
 
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/sdk"
+	v2 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v2"
 )
 
 type DeleteCmd struct {
@@ -92,9 +93,6 @@ func (r *RootCmd) NewDeleteCmd() *cobra.Command {
 }
 
 func (d DeleteCmd) Run(cmd *cobra.Command) error {
-	if d.dryRun {
-		d.client.WithDryRun()
-	}
 	if len(d.definitionPaths) == 0 {
 		return cmd.Usage()
 	}
@@ -109,7 +107,10 @@ func (d DeleteCmd) Run(cmd *cobra.Command) error {
 		return err
 	}
 	printSourcesDetails("Deleting", objects, os.Stdout)
-	if err = d.client.Objects().V1().Delete(cmd.Context(), objects); err != nil {
+	if err = d.client.Objects().V2().Delete(cmd.Context(), v2.DeleteRequest{
+		Objects: objects,
+		DryRun:  d.dryRun,
+	}); err != nil {
 		return err
 	}
 	printCommandResult("The resources were successfully deleted.", d.dryRun)
@@ -140,12 +141,12 @@ func newSubcommand(
 }
 
 func runSubcommand(ctx context.Context, deleteCmd *DeleteCmd, kind manifest.Kind, args []string) error {
-	if err := deleteCmd.client.Objects().V1().DeleteByName(
-		ctx,
-		kind,
-		deleteCmd.client.Config.Project,
-		args...,
-	); err != nil {
+	if err := deleteCmd.client.Objects().V2().DeleteByName(ctx, v2.DeleteByNameRequest{
+		Kind:    kind,
+		Project: deleteCmd.client.Config.Project,
+		Names:   args,
+		DryRun:  deleteCmd.dryRun,
+	}); err != nil {
 		return err
 	}
 	printCommandResult("The resources were successfully deleted.", deleteCmd.dryRun)

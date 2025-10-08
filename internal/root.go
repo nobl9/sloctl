@@ -36,8 +36,8 @@ func NewRootCmd() *cobra.Command {
 		Use:   programName,
 		Short: "Create, get and delete SLO definitions from command line easily.",
 		Long: `All available commands for execution are listed below.
-Use this tool to work with definitions of SLO in YAML files.
-For every command more detailed help is available.`,
+Use this tool to work with Nobl9 YAML configuration files (including, but not limited to SLOs).
+More detailed help is available for each command.`,
 		SilenceUsage: true,
 	}
 
@@ -80,9 +80,11 @@ func (r *RootCmd) GetClient() *sdk.Client {
 	return r.Client
 }
 
+const sdkEnvPrefix = "SLOCTL_"
+
 // setupClient reads in config file, ENV variables if set and sets up an API client.
 func (r *RootCmd) setupClient() error {
-	options := []sdk.ConfigOption{sdk.ConfigOptionEnvPrefix("SLOCTL_")}
+	options := []sdk.ConfigOption{sdk.ConfigOptionEnvPrefix(sdkEnvPrefix)}
 	if r.Flags.NoConfigFile {
 		options = append(options, sdk.ConfigOptionNoConfigFile())
 	}
