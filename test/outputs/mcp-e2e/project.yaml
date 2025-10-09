@@ -1,0 +1,9 @@
+apiVersion: n9/v1alpha
+kind: Project
+metadata:
+  name: <PROJECT>
+  labels:
+    origin:
+      - sloctl-e2e-tests
+spec:
+  description: Sample Project for sloctl mcp e2e tests

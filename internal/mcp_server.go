@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -40,9 +41,18 @@ func newMCPServer(cmd *cobra.Command, client *sdk.Client) mcpServer {
 }
 
 type mcpServer struct {
-	cmd    *cobra.Command
-	client *sdk.Client
-	server *server.MCPServer
+	cmd     *cobra.Command
+	client  *sdk.Client
+	server  *server.MCPServer
+	tempDir string
+}
+
+type mcpToolArguments struct {
+	Project  string `json:"project"`
+	Format   string `json:"format"`
+	From     string `json:"from"`
+	Name     string `json:"name"`
+	FileName string `json:"file_name"`
 }
 
 func (s mcpServer) RegisterToolsAndResources() error {
@@ -125,7 +135,7 @@ func (s mcpServer) RegisterToolsAndResources() error {
 			mcp.Description("The Project name"),
 		),
 	)
-	s.server.AddTool(t, s.SLOStatusTool)
+	s.server.AddTool(t, mcp.NewTypedToolHandler(s.SLOStatusTool))
 
 	t = mcp.NewTool("get_ebs",
 		mcp.WithDescription("Get Error Budget Status for multiple SLOs"),
@@ -133,7 +143,7 @@ func (s mcpServer) RegisterToolsAndResources() error {
 			mcp.Description("The Project name"),
 		),
 	)
-	s.server.AddTool(t, s.EBSTool)
+	s.server.AddTool(t, mcp.NewTypedToolHandler(s.EBSTool))
 
 	t = mcp.NewTool("apply",
 		mcp.WithDescription("Apply changes to nobl9"),
@@ -142,11 +152,11 @@ func (s mcpServer) RegisterToolsAndResources() error {
 			mcp.Required(),
 		),
 	)
-	s.server.AddTool(t, s.ApplyTool)
+	s.server.AddTool(t, mcp.NewTypedToolHandler(s.ApplyTool))
 
 	t = mcp.NewTool("replay",
 		mcp.WithDescription("Replay slo"),
-		mcp.WithString("slo",
+		mcp.WithString("name",
 			mcp.Description("The SLO name"),
 			mcp.Required(),
 		),
@@ -159,13 +169,13 @@ func (s mcpServer) RegisterToolsAndResources() error {
 			mcp.Required(),
 		),
 	)
-	s.server.AddTool(t, s.ReplayTool)
+	s.server.AddTool(t, mcp.NewTypedToolHandler(s.ReplayTool))
 
 	return nil
 }
 
 func (s mcpServer) Start() error {
-	slog.Info("Starting Nobl9 MCP server", "version", "0.1.0")
+	slog.Info("Starting Nobl9 MCP server", "version", getBuildVersion())
 	return server.ServeStdio(s.server)
 }
 
@@ -192,7 +202,7 @@ func (s mcpServer) addToolForObject(kind manifest.Kind) {
 	}
 	s.server.AddTool(
 		mcp.NewTool("get_"+strings.ToLower(kindPlural), opts...),
-		s.getObjectsToolHandler(kind),
+		mcp.NewTypedToolHandler(s.getObjectsToolHandler(kind)),
 	)
 }
 
@@ -248,8 +258,12 @@ func (s mcpServer) getObjectsResourceHandler(kind manifest.Kind) server.Resource
 			}, nil
 		}
 
-		filename := fmt.Sprintf("%s_%d.yaml", objects[0].GetKind(), time.Now().Unix())
-		if err := s.writeObjectsToFile(filename, "yaml", objects); err != nil {
+		var buf bytes.Buffer
+		if err = sdk.EncodeObjects(objects, &buf, manifest.ObjectFormatYAML); err != nil {
+			return nil, errors.Wrapf(err, "failed to encode %s", pluralForKind(kind))
+		}
+		filename, err := s.writeCachedFile(objects[0].GetKind().String(), "yaml", buf.String())
+		if err != nil {
 			return nil, errors.Wrapf(err, "failed to write %s to a file", pluralForKind(kind))
 		}
 
@@ -276,19 +290,15 @@ func (s mcpServer) getObjectsResourceHandler(kind manifest.Kind) server.Resource
 	}
 }
 
-func (s mcpServer) getObjectsToolHandler(kind manifest.Kind) server.ToolHandlerFunc {
-	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		format, _ := req.Params.Arguments["format"].(string)
-		project, _ := req.Params.Arguments["project"].(string)
-		name, _ := req.Params.Arguments["name"].(string)
-
+func (s mcpServer) getObjectsToolHandler(kind manifest.Kind) mcp.TypedToolHandlerFunc[mcpToolArguments] {
+	return func(ctx context.Context, _ mcp.CallToolRequest, args mcpToolArguments) (*mcp.CallToolResult, error) {
 		header := http.Header{}
 		query := url.Values{}
-		if project != "" {
-			header.Set(sdk.HeaderProject, project)
+		if args.Project != "" {
+			header.Set(sdk.HeaderProject, args.Project)
 		}
-		if name != "" {
-			query.Set(objectsV1.QueryKeyName, name)
+		if args.Name != "" {
+			query.Set(objectsV1.QueryKeyName, args.Name)
 		}
 		objects, err := s.client.Objects().V1().Get(ctx, kind, header, query)
 		if err != nil {
@@ -299,50 +309,46 @@ func (s mcpServer) getObjectsToolHandler(kind manifest.Kind) server.ToolHandlerF
 			return mcp.NewToolResultText(fmt.Sprintf("Found no %s\n", pluralForKind(kind))), nil
 		}
 
-		filename := fmt.Sprintf("get_%s_%d.%s", objects[0].GetKind(), time.Now().Unix(), format)
-		if err := s.writeObjectsToFile(filename, format, objects); err != nil {
+		var buf bytes.Buffer
+		format, err := manifest.ParseObjectFormat(strings.ToUpper(args.Format))
+		if err != nil {
+			return nil, err
+		}
+		if err = sdk.EncodeObjects(objects, &buf, format); err != nil {
+			return nil, errors.Wrapf(err, "failed to encode %s", pluralForKind(kind))
+		}
+		filename, err := s.writeCachedFile(fmt.Sprintf("get_%s", objects[0].GetKind()), args.Format, buf.String())
+		if err != nil {
 			return nil, errors.Wrapf(err, "failed to write %s to a file", pluralForKind(kind))
 		}
 
-		buf := strings.Builder{}
-		buf.WriteString(fmt.Sprintf("Retrieved %d %s. Output written to: %s\n", len(objects), pluralForKind(kind), filename))
+		result := strings.Builder{}
+		result.WriteString(fmt.Sprintf(
+			"Retrieved %d %s. Output written to: %s\n", len(objects), pluralForKind(kind), filename,
+		))
 
 		for _, obj := range objects {
-			buf.WriteString(obj.GetName())
-			buf.WriteString("\n")
+			result.WriteString(obj.GetName())
+			result.WriteString("\n")
 		}
 
-		return mcp.NewToolResultText(buf.String()), nil
+		return mcp.NewToolResultText(result.String()), nil
 	}
 }
 
-func (s mcpServer) writeObjectsToFile(outFilename, formatStr string, objects []manifest.Object) error {
-	format, err := manifest.ParseObjectFormat(strings.ToUpper(formatStr))
-	if err != nil {
-		return err
+func (s mcpServer) SLOStatusTool(
+	ctx context.Context,
+	_ mcp.CallToolRequest,
+	args mcpToolArguments,
+) (*mcp.CallToolResult, error) {
+	if args.Name == "" {
+		return nil, fmt.Errorf("'name' argument is required")
 	}
-	outFile, err := os.Create(outFilename) // #nosec: G304
-	if err != nil {
-		slog.Error("Failed to create output file",
-			slog.String("error", err.Error()),
-			slog.String("filename", outFilename))
-		return err
-	}
-	defer func() { _ = outFile.Close() }()
-	return sdk.EncodeObjects(objects, outFile, format)
-}
-
-func (s mcpServer) SLOStatusTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	sloName, okSlo := req.Params.Arguments["name"].(string)
-	if !okSlo || sloName == "" {
-		return nil, fmt.Errorf("SLO name is required")
-	}
-	projectName, okProject := req.Params.Arguments["project"].(string)
-	if !okProject || projectName == "" {
-		return nil, fmt.Errorf("project name is required")
+	if args.Project == "" {
+		return nil, fmt.Errorf("'project' argument is required")
 	}
 
-	status, err := s.client.SLOStatusAPI().V2().GetSLO(ctx, projectName, sloName)
+	status, err := s.client.SLOStatusAPI().V2().GetSLO(ctx, args.Project, args.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get SLO status: %w", err)
 	}
@@ -355,18 +361,24 @@ func (s mcpServer) SLOStatusTool(ctx context.Context, req mcp.CallToolRequest) (
 	return mcp.NewToolResultText(string(b)), nil
 }
 
-func (s mcpServer) ApplyTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	fileName := req.Params.Arguments["file_name"].(string)
+func (s mcpServer) ApplyTool(
+	ctx context.Context,
+	_ mcp.CallToolRequest,
+	args mcpToolArguments,
+) (*mcp.CallToolResult, error) {
+	if args.FileName == "" {
+		return nil, fmt.Errorf("'file_name' argument is required")
+	}
 
 	objects, err := readObjectsDefinitions(
 		ctx,
 		s.client.Config,
 		nil,
-		[]string{fileName},
+		[]string{args.FileName},
 		newFilesPrompt(s.client.Config.FilesPromptEnabled, true, s.client.Config.FilesPromptThreshold),
 		false)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read objects from '%s' file", fileName)
+		return nil, errors.Wrapf(err, "failed to read objects from '%s' file", args.FileName)
 	}
 	if err = s.client.Objects().V2().Apply(ctx, v2.ApplyRequest{Objects: objects}); err != nil {
 		return nil, errors.Wrap(err, "failed to apply objects")
@@ -375,13 +387,22 @@ func (s mcpServer) ApplyTool(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	return mcp.NewToolResultText("The objects were successfully applied."), nil
 }
 
-func (s mcpServer) ReplayTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	sloName := req.Params.Arguments["slo"].(string)
-	projectName := req.Params.Arguments["project"].(string)
-	fromStr := req.Params.Arguments["from"].(string)
-
+func (s mcpServer) ReplayTool(
+	ctx context.Context,
+	_ mcp.CallToolRequest,
+	args mcpToolArguments,
+) (*mcp.CallToolResult, error) {
+	if args.From == "" {
+		return nil, fmt.Errorf("'from' argument is required")
+	}
+	if args.Name == "" {
+		return nil, fmt.Errorf("'name' argument is required")
+	}
+	if args.Project == "" {
+		return nil, fmt.Errorf("'project' argument is required")
+	}
 	fromValue := new(flags.TimeValue)
-	if err := fromValue.Set(fromStr); err != nil {
+	if err := fromValue.Set(args.From); err != nil {
 		return nil, err
 	}
 
@@ -393,8 +414,8 @@ func (s mcpServer) ReplayTool(ctx context.Context, req mcp.CallToolRequest) (*mc
 			OutputFormat: printer.YAMLFormat,
 		}),
 		from:    *fromValue,
-		sloName: sloName,
-		project: projectName,
+		sloName: args.Name,
+		project: args.Project,
 	}
 
 	if err := replayCmd.Run(s.cmd); err != nil {
@@ -403,21 +424,22 @@ func (s mcpServer) ReplayTool(ctx context.Context, req mcp.CallToolRequest) (*mc
 	return mcp.NewToolResultText(out.String()), nil
 }
 
-func (s mcpServer) EBSTool(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	project := req.Params.Arguments["project"].(string)
-
-	r, err := s.getEBS(ctx, project)
+func (s mcpServer) EBSTool(
+	ctx context.Context,
+	_ mcp.CallToolRequest,
+	args mcpToolArguments,
+) (*mcp.CallToolResult, error) {
+	if args.Project == "" {
+		return nil, fmt.Errorf("'project' argument is required")
+	}
+	r, err := s.getEBS(ctx, args.Project)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get EBS: %w", err)
 	}
-	outputFile := fmt.Sprintf("%s_%d.yaml", "get_ebs", time.Now().Unix())
-	outFile, err := os.Create(outputFile) // #nosec: G304
+	outputFile, err := s.writeCachedFile("get_ebs", "yaml", r)
 	if err != nil {
-		slog.Error("Failed to create output file", "error", err)
 		return nil, err
 	}
-	defer func() { _ = outFile.Close() }()
-	_, _ = outFile.WriteString(r)
 
 	return mcp.NewToolResultText("Retrieved Error Budget status. Saved it in file " + outputFile), nil
 }
@@ -428,26 +450,15 @@ func (s mcpServer) getEBS(ctx context.Context, project string) (string, error) {
 		search = fmt.Sprintf(`{"textSearch":"%s"}`, project)
 	}
 	body := strings.NewReader(search)
-	url := fmt.Sprintf("%s/dashboards/servicehealth/error-budget", s.client.Config.URL)
-	req, err := http.NewRequestWithContext(ctx, "POST", url, body)
+	req, err := s.client.CreateRequest(ctx, http.MethodPost, "/dashboards/servicehealth/error-budget", nil, nil, body)
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.client.Config.AccessToken))
-	req.Header.Set("organization", s.client.Config.Organization)
 
-	httpClient := http.Client{
-		Timeout: time.Second * 20,
-	}
-	resp, err := httpClient.Do(req)
+	resp, err := s.client.Do(req)
 	if err != nil {
 		return "", err
 	}
-	// TODO call sloctl to refresh token, redo the request
-	// if resp.StatusCode == http.StatusUnauthorized {
-	// }
 	defer func() { _ = resp.Body.Close() }()
 
 	b, err := io.ReadAll(resp.Body)
@@ -456,4 +467,27 @@ func (s mcpServer) getEBS(ctx context.Context, project string) (string, error) {
 	}
 
 	return string(b), nil
+}
+
+func (s mcpServer) writeCachedFile(prefix, format, content string) (string, error) {
+	if s.tempDir == "" {
+		// Use .nobl9 directory in current working directory
+		cwd, err := os.Getwd()
+		if err != nil {
+			return "", fmt.Errorf("failed to get current working directory: %w", err)
+		}
+		s.tempDir = filepath.Join(cwd, ".nobl9")
+
+		// Create .nobl9 directory if it doesn't exist
+		if err := os.MkdirAll(s.tempDir, 0o750); err != nil {
+			return "", fmt.Errorf("failed to create .nobl9 directory: %w", err)
+		}
+	}
+	filename := filepath.Join(s.tempDir, fmt.Sprintf("%s_%d.%s", prefix, time.Now().Unix(), format))
+	err := os.WriteFile(filename, []byte(content), 0o600)
+	if err != nil {
+		slog.Error("Failed to write temp file", "error", err, "filename", filename)
+		return "", err
+	}
+	return filename, nil
 }

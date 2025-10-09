@@ -7,13 +7,7 @@ setup_file() {
   load_lib "bats-assert"
 
   generate_inputs "$BATS_FILE_TMPDIR"
-
-  export TEST_OUTPUTS="$TEST_SUITE_OUTPUTS/move-e2e"
-
-  # Use generated project name in the outputs too.
-  for file in "$TEST_OUTPUTS"/*; do
-    run sed -i "s/<PROJECT>/$TEST_PROJECT/g" "$file"
-  done
+  generate_outputs
 
   run_sloctl apply -f "'$TEST_INPUTS/**'"
   assert_success_joined_output

@@ -293,3 +293,51 @@ assert_stderr() {
   output="$stderr"
   assert_output "$@"
 }
+
+# run_mcp_inspector
+# ==========
+#
+# Summary: Run the modelcontextprotocol/inspector via npx.
+#
+# Usage: run_mcp_inspector <args>
+#
+# Options:
+#   <args>    Arguments to inspector invocation.
+#
+# The output of the inspector is captured in $output.
+run_mcp_inspector() {
+  bats_require_minimum_version 1.5.0
+  run npx -y @modelcontextprotocol/inspector@0.16.8 --cli sloctl mcp "$@"
+}
+
+# generate_outputs
+# ===============
+#
+# Summary: Prepare test outputs for the current test file.
+#
+# Usage: generate_outputs
+#
+# Each occurrence of <PROJECT> in the expected output files will be replaced
+# with $TEST_PROJECT value.
+# TEST_PROJECT must be set before calling generate_outputs.
+#
+# The function exports TEST_OUTPUTS environment variable which points
+# at the specific file's test outputs.
+generate_outputs() {
+  load_lib "bats-support"
+
+  test_filename=$(basename "$BATS_TEST_FILENAME" .bats)
+  TEST_OUTPUTS="$TEST_SUITE_OUTPUTS/$test_filename"
+
+  if [[ -z "$TEST_PROJECT" ]]; then
+    fail "TEST_PROJECT environment variable is not set. Call generate_inputs() before generate_outputs()."
+  fi
+
+  # Use generated project name in the outputs.
+  for file in "$TEST_OUTPUTS"/*; do
+    run sed -i "s/<PROJECT>/$TEST_PROJECT/g" "$file"
+  done
+
+  export TEST_OUTPUTS
+}
+
