@@ -26,13 +26,14 @@ import (
 var getAlertExample string
 
 type GetCmd struct {
-	client      *sdk.Client
-	printer     *printer.Printer
-	labels      []string
-	project     string
-	services    []string
-	allProjects bool
-	slo         string
+	client               *sdk.Client
+	printer              *printer.Printer
+	labels               []string
+	project              string
+	services             []string
+	allProjects          bool
+	slo                  string
+	removeComputedFields bool
 }
 
 // NewGetCmd returns cobra command get with all flags for it.
@@ -58,6 +59,13 @@ To get more details in output use one of the available flags.`,
 
 	// All shared flags for 'get' and its subcommands.
 	get.printer.MustRegisterFlags(cmd)
+	cmd.PersistentFlags().BoolVarP(
+		&get.removeComputedFields,
+		"no-computed",
+		"",
+		false,
+		"Do not return computed fields in Objects' definitions.",
+	)
 
 	// All subcommands for get.
 	for _, subCmd := range []struct {
@@ -380,6 +388,11 @@ func (g *GetCmd) getObjects(ctx context.Context, kind manifest.Kind, args []stri
 }
 
 func (g *GetCmd) printObjects(kind manifest.Kind, objects []manifest.Object) error {
+	if g.removeComputedFields {
+		fmt.Println("here")
+		fmt.Printf("%T\n", objects[0])
+		objects = sdk.RemoveComputedFieldsFromObjects(objects)
+	}
 	if len(objects) == 0 {
 		switch {
 		case objectKindSupportsProjectFlag(kind):

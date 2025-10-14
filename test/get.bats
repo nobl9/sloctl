@@ -55,6 +55,12 @@ setup() {
   test_get "Direct" "$aliases" "${TEST_INPUTS}/directs.yaml" "$output"
 }
 
+@test "directs (no computed fields)" {
+  run_sloctl get direct -p "death-star" "$flag"
+  assert_success_joined_output
+  verify_get_success "$output" "$(read_files "${TEST_OUTPUTS}/direct-no-computed.yaml")"
+}
+
 @test "user groups" {
   aliases="usergroup usergroups"
   test_get "UserGroup" "$aliases" "" "$output"
