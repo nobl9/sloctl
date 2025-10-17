@@ -1,0 +1,28 @@
+apiVersion: n9/v1alpha
+kind: SLO
+metadata:
+  name: test-slo-for-review
+  project: <PROJECT>
+spec:
+  description: Test SLO for review command testing
+  service: test-service
+  indicator:
+    metricSource:
+      kind: Direct
+      name: test-direct
+  timeWindows:
+    - unit: Day
+      count: 1
+      isRolling: true
+  budgetingMethod: Occurrences
+  objectives:
+    - displayName: Test Objective
+      value: 100
+      name: objective-1
+      target: 0.95
+      op: lte
+      primary: true
+      rawMetric:
+        query:
+          direct:
+            query: "test query"
