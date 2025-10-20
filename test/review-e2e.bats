@@ -3,11 +3,18 @@
 
 # setup_file is run only once for the whole file.
 setup_file() {
-  export SLOCTL_CLIENT_ID="$SLOCTL_E2E_CLIENT_ID"
-  export SLOCTL_CLIENT_SECRET="$SLOCTL_E2E_CLIENT_SECRET"
+  load "test_helper/load"
+  load_lib "bats-assert"
 
-  generate_inputs "$BATS_TMPDIR"
-  generate_outputs
+  generate_inputs "$BATS_FILE_TMPDIR"
+
+  run_sloctl apply -f "'$TEST_INPUTS/**'"
+  assert_success_joined_output
+}
+
+# teardown_file is run only once for the whole file.
+teardown_file() {
+  run_sloctl delete -f "'$TEST_INPUTS/**'"
 }
 
 # setup is run before each test.
@@ -17,43 +24,65 @@ setup() {
   load_lib "bats-assert"
 }
 
-# teardown_file is run only once for the whole file.
-teardown_file() {
-  # Clean up any created SLOs
-  run_sloctl delete slo test-slo-for-review -p "$TEST_PROJECT" --ignore-not-found
+@test "review set-status with cycle" {
+  run_sloctl get slo slo-with-cycle -p "$TEST_PROJECT" -o json
+  assert_success_joined_output
+  assert_slo_review_status "toReview"
+
+  # Test reviewed status
+  run_sloctl review set-status reviewed slo-with-cycle -p "$TEST_PROJECT"
+  assert_success_joined_output
+  # Verify the status was set
+  run_sloctl get slo slo-with-cycle -p "$TEST_PROJECT" -o json
+  assert_success_joined_output
+  assert_slo_review_status "reviewed"
+
+  # Test skipped status
+  run_sloctl review set-status skipped slo-with-cycle -p "$TEST_PROJECT"
+  assert_success_joined_output
+  # Verify the status was set
+  run_sloctl get slo slo-with-cycle -p "$TEST_PROJECT" -o json
+  assert_success_joined_output
+  assert_slo_review_status "skipped"
+
+  # Test toReview status
+  run_sloctl review set-status to-review slo-with-cycle -p "$TEST_PROJECT"
+  assert_success_joined_output
+  # Verify the status was set
+  run_sloctl get slo slo-with-cycle -p "$TEST_PROJECT" -o json
+  assert_success_joined_output
+  assert_slo_review_status "toReview"
 }
 
-@test "review set with all valid statuses" {
-  # First apply the test SLO
-  run_sloctl apply -f "$TEST_INPUTS/test-slo.yaml"
-  assert_success
+@test "review set-status without cycle" {
+  run_sloctl get slo slo-without-review-cycle -p "$TEST_PROJECT" -o json
+  assert_success_joined_output
+  assert_slo_review_status "notStarted"
 
-  # Test each valid status
-  statuses=("reviewed" "skipped" "pending" "overdue" "notStarted")
+  # Test reviewed status
+  run_sloctl review set-status reviewed slo-without-review-cycle -p "$TEST_PROJECT"
+  assert_success_joined_output
+  # Verify the status was set
+  run_sloctl get slo slo-without-review-cycle -p "$TEST_PROJECT" -o json
+  assert_success_joined_output
+  assert_slo_review_status "reviewed"
 
-  for status in "${statuses[@]}"; do
-    run_sloctl review set test-slo-for-review --status "$status" -p "$TEST_PROJECT"
-    assert_success
-    assert_output --partial "Successfully set review status to '$status' for SLO 'test-slo-for-review' in project '$TEST_PROJECT'"
-  done
+  # Test notStarted status
+  run_sloctl review set-status not-started slo-without-review-cycle -p "$TEST_PROJECT"
+  assert_success_joined_output
+  # Verify the status was set
+  run_sloctl get slo slo-without-review-cycle -p "$TEST_PROJECT" -o json
+  assert_success_joined_output
+  assert_slo_review_status "notStarted"
 }
 
-@test "review set with note for reviewed status" {
-  # Apply the test SLO if not already present
-  run_sloctl apply -f "$TEST_INPUTS/test-slo.yaml"
-  assert_success
+assert_slo_review_status() {
+  local expected_status="$1"
+  local actual_status
 
-  run_sloctl review set test-slo-for-review --status reviewed -p "$TEST_PROJECT" --note "Test review note"
-  assert_success
-  assert_output --partial "Successfully set review status to 'reviewed' for SLO 'test-slo-for-review' in project '$TEST_PROJECT'"
-}
+  actual_status=$(echo "$output" | yq -r '.[0].status.review.status')
 
-@test "review set with note for skipped status" {
-  # Apply the test SLO if not already present
-  run_sloctl apply -f "$TEST_INPUTS/test-slo.yaml"
-  assert_success
-
-  run_sloctl review set test-slo-for-review --status skipped -p "$TEST_PROJECT" --note "Skipped due to insufficient data"
-  assert_success
-  assert_output --partial "Successfully set review status to 'skipped' for SLO 'test-slo-for-review' in project '$TEST_PROJECT'"
+  if [[ "$actual_status" != "$expected_status" ]]; then
+    fail "Expected review status '$expected_status' but got '$actual_status'"
+  fi
 }

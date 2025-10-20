@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"slices"
-	"strings"
 
 	"github.com/mitchellh/colorstring"
 	"github.com/spf13/cobra"
@@ -19,7 +17,7 @@ import (
 )
 
 var (
-	errReviewTooManyArgs    = errors.New("'review set' command accepts only single SLO name as an argument")
+	errReviewTooManyArgs    = errors.New("command accepts only single SLO name as an argument")
 	errReviewInvalidOptions = errors.New("you must provide the SLO name as an argument")
 )
 
@@ -49,89 +47,125 @@ Note: This feature is only available in Enterprise Edition tier.`,
 		},
 	}
 
-	cmd.AddCommand(review.NewSetCmd())
+	cmd.AddCommand(review.NewSetStatusCmd())
 
 	return cmd
 }
 
-// NewSetCmd creates the set subcommand for reviews
-func (r *ReviewCmd) NewSetCmd() *cobra.Command {
+// NewSetStatusCmd creates the set-status parent command
+func (r *ReviewCmd) NewSetStatusCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "set <SLO_NAME>",
-		Short: "Set SLO review status (Enterprise Edition only)",
+		Use:   "set-status",
+		Short: "Set SLO review status",
 		Long: `Set SLO review status.
 
 This command allows you to update the review status of a specific SLO within a project.
-Available statuses are: reviewed, skipped, pending, overdue, notStarted.
-
-When setting status to 'reviewed' or 'skipped', you can optionally include a note
-using the --note flag to provide additional context or reasoning for the review decision.
-
-The SLO name must be provided as the first argument, and the project can be specified
-using the --project flag or will default to the configured project in your client.
 
 Note: This feature is only available in Enterprise Edition tier.`,
+	}
+
+	cmd.AddCommand(r.NewSetStatusReviewedCmd())
+	cmd.AddCommand(r.NewSetStatusSkippedCmd())
+	cmd.AddCommand(r.NewSetStatusToReviewCmd())
+	cmd.AddCommand(r.NewSetStatusOverdueCmd())
+	cmd.AddCommand(r.NewSetStatusNotStartedCmd())
+
+	return cmd
+}
+
+// NewSetStatusReviewedCmd creates the reviewed subcommand
+func (r *ReviewCmd) NewSetStatusReviewedCmd() *cobra.Command {
+	return r.newSetStatusCmd("reviewed", "reviewed", true)
+}
+
+// NewSetStatusSkippedCmd creates the skipped subcommand
+func (r *ReviewCmd) NewSetStatusSkippedCmd() *cobra.Command {
+	return r.newSetStatusCmd("skipped", "skipped", true)
+}
+
+// NewSetStatusToReviewCmd creates the to-review subcommand
+func (r *ReviewCmd) NewSetStatusToReviewCmd() *cobra.Command {
+	return r.newSetStatusCmd("to-review", "toReview", false)
+}
+
+// NewSetStatusOverdueCmd creates the overdue subcommand
+func (r *ReviewCmd) NewSetStatusOverdueCmd() *cobra.Command {
+	return r.newSetStatusCmd("overdue", "overdue", false)
+}
+
+// NewSetStatusNotStartedCmd creates the not-started subcommand
+func (r *ReviewCmd) NewSetStatusNotStartedCmd() *cobra.Command {
+	return r.newSetStatusCmd("not-started", "notStarted", false)
+}
+
+func (r *ReviewCmd) newSetStatusCmd(commandName, status string, hasNote bool) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     commandName + " <slo-name>",
+		Short:   setStatusShortDescription(status),
+		Long:    setStatusLongDescription(status, hasNote),
 		Example: reviewExample,
 		Args:    r.reviewSetArguments,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if r.project == "" {
 				r.project = r.client.Config.Project
 			}
-			return r.runSetReview(cmd, r.sloName)
+			r.status = status
+			return r.runSetStatusReview(cmd, r.sloName)
 		},
 	}
 
-	cmd.Flags().StringVar(&r.status, "status", "",
-		"Review status: reviewed, skipped, pending, overdue, notStarted (required)")
 	cmd.Flags().StringVarP(&r.project, "project", "p", "",
 		"Project name")
-	cmd.Flags().StringVarP(&r.note, "note", "n", "",
-		"Optional note annotation (only applicable for reviewed and skipped statuses)")
 
-	_ = cmd.MarkFlagRequired("status")
+	if hasNote {
+		cmd.Flags().StringVarP(&r.note, "note", "n", "",
+			"Optional note annotation")
+	}
 
 	return cmd
 }
 
-// ReviewRequest represents the API request structure for review endpoint
-type ReviewRequest struct {
-	Status string `json:"status"`
-	Note   string `json:"note,omitempty"`
+func setStatusShortDescription(status string) string {
+	return fmt.Sprintf("Set SLO review status to %s", status)
+}
+
+func setStatusLongDescription(status string, includeNote bool) string {
+	const (
+		noteLongDescription = `
+You can optionally include a note using the --note flag to provide additional
+context or reasoning for the review decision.
+`
+		projectLongDescription = `
+
+The SLO name must be provided as the first argument, and the project can be specified
+using the --project flag or will default to the configured project in your client.
+
+Note: This feature is only available in Enterprise Edition tier.
+`
+	)
+
+	desc := setStatusShortDescription(status)
+	if includeNote {
+		desc += noteLongDescription
+	}
+	desc += projectLongDescription
+	return desc
 }
 
 func (r *ReviewCmd) reviewSetArguments(cmd *cobra.Command, args []string) error {
-	if len(args) == 0 {
+	switch len(args) {
+	case 0:
 		return errReviewInvalidOptions
-	}
-	if len(args) > 1 {
+	case 1:
+		r.sloName = args[0]
+		return nil
+	default:
 		return errReviewTooManyArgs
 	}
-	if len(args) == 1 {
-		r.sloName = args[0]
-	}
-
-	if err := r.validateArguments(); err != nil {
-		return err
-	}
-
-	return nil
 }
 
-func (r *ReviewCmd) validateArguments() error {
-	validStatuses := []string{"reviewed", "skipped", "pending", "overdue", "notStarted"}
-	if !slices.Contains(validStatuses, r.status) {
-		return fmt.Errorf("invalid status '%s': must be one of: %s", r.status, strings.Join(validStatuses, ", "))
-	}
-
-	if r.note != "" && r.status != "reviewed" && r.status != "skipped" {
-		return fmt.Errorf("note annotation is only applicable for reviewed and skipped statuses")
-	}
-
-	return nil
-}
-
-func (r *ReviewCmd) runSetReview(cmd *cobra.Command, sloName string) error {
-	ctx := context.Background()
+func (r *ReviewCmd) runSetStatusReview(cmd *cobra.Command, sloName string) error {
+	ctx := cmd.Context()
 
 	if err := r.doSetReviewRequest(sloName, ctx); err != nil {
 		return err
@@ -152,22 +186,19 @@ func (r *ReviewCmd) runSetReview(cmd *cobra.Command, sloName string) error {
 }
 
 func (r *ReviewCmd) doSetReviewRequest(sloName string, ctx context.Context) error {
-	// Create request payload
-	reviewReq := ReviewRequest{
-		Status: r.status,
-		Note:   r.note,
+	type reviewRequest struct {
+		Status string `json:"status"`
+		Note   string `json:"note,omitempty"`
 	}
-
-	// Encode payload
-	buf := new(bytes.Buffer)
-	if err := json.NewEncoder(buf).Encode(reviewReq); err != nil {
+	data, err := json.Marshal(reviewRequest{Status: r.status, Note: r.note})
+	if err != nil {
 		return fmt.Errorf("failed to encode review request: %w", err)
 	}
 
 	endpoint := fmt.Sprintf("/objects/v1/slos/%s/review", sloName)
 	header := http.Header{sdk.HeaderProject: []string{r.project}}
 
-	req, err := r.client.CreateRequest(ctx, http.MethodPost, endpoint, header, nil, buf)
+	req, err := r.client.CreateRequest(ctx, http.MethodPost, endpoint, header, nil, bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("failed to create review request: %w", err)
 	}
@@ -178,17 +209,18 @@ func (r *ReviewCmd) doSetReviewRequest(sloName string, ctx context.Context) erro
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	respBody, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("failed to read response: %w", err)
 	}
 
 	if resp.StatusCode >= http.StatusBadRequest {
-		var prettyJSON bytes.Buffer
-		if err := json.Indent(&prettyJSON, respBody, "", "  "); err != nil {
-			return fmt.Errorf("review request failed (status: %d): %s", resp.StatusCode, string(respBody))
+		errMsg := fmt.Sprintf("review request failed (HTTP status: %d):", resp.StatusCode)
+		var pretty bytes.Buffer
+		if err := json.Indent(&pretty, body, "", "  "); err != nil {
+			return fmt.Errorf("%s %s", errMsg, string(body))
 		}
-		return fmt.Errorf("review request failed (status: %d): %s", resp.StatusCode, prettyJSON.String())
+		return fmt.Errorf("%s %s", errMsg, pretty.String())
 	}
 
 	return nil

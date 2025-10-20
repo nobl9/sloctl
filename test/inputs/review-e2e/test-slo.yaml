@@ -1,28 +1,56 @@
-apiVersion: n9/v1alpha
-kind: SLO
-metadata:
-  name: test-slo-for-review
-  project: <PROJECT>
-spec:
-  description: Test SLO for review command e2e testing
-  service: test-service
-  indicator:
-    metricSource:
-      kind: Direct
-      name: test-direct
-  timeWindows:
-    - unit: Day
-      count: 1
-      isRolling: true
-  budgetingMethod: Occurrences
-  objectives:
-    - displayName: Test Objective
-      value: 100
-      name: objective-1
-      target: 0.95
-      op: lte
-      primary: true
-      rawMetric:
-        query:
-          direct:
-            query: "test query"
+- apiVersion: n9/v1alpha
+  kind: SLO
+  metadata:
+    name: slo-with-cycle
+    project: <PROJECT>
+  spec:
+    description: This SLO is just for the e2e 'sloctl get' tests, it's not supposed to work!
+    service: service-with-review-cycle
+    indicator:
+      metricSource:
+        kind: Direct
+        name: newrelic-direct
+    timeWindows:
+      - count: 1
+        isRolling: true
+        unit: Hour
+    budgetingMethod: Timeslices
+    objectives:
+      - target: 0.99
+        op: lte
+        rawMetric:
+          query:
+            newRelic:
+              nrql: SELECT average(duration) FROM Transaction TIMESERIES
+        displayName: stretched
+        timeSliceTarget: 0.99
+        value: 1.2
+        name: objective-1
+- apiVersion: n9/v1alpha
+  kind: SLO
+  metadata:
+    name: slo-without-review-cycle
+    project: <PROJECT>
+  spec:
+    description: This SLO is just for the e2e 'sloctl get' tests, it's not supposed to work!
+    service: service-without-review-cycle
+    indicator:
+      metricSource:
+        kind: Direct
+        name: newrelic-direct
+    timeWindows:
+      - count: 1
+        isRolling: true
+        unit: Hour
+    budgetingMethod: Timeslices
+    objectives:
+      - target: 0.99
+        op: lte
+        rawMetric:
+          query:
+            newRelic:
+              nrql: SELECT average(duration) FROM Transaction TIMESERIES
+        displayName: stretched
+        timeSliceTarget: 0.99
+        value: 1.2
+        name: objective-1

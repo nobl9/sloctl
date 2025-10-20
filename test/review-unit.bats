@@ -14,39 +14,65 @@ setup() {
   load_lib "bats-assert"
 }
 
-@test "missing --status flag" {
-  run_sloctl review set test-slo
+@test "note flag with to-review status should fail" {
+  run_sloctl review set-status to-review test-slo --note=note-text
 
   assert_failure
-  assert_stderr "Error: invalid status '': must be one of: reviewed, skipped, pending, overdue, notStarted"
+  assert_stderr 'Error: unknown flag: --note'
 }
 
-@test "invalid status value" {
-  run_sloctl review set test-slo --status=invalid
+@test "note flag with overdue status should fail" {
+  run_sloctl review set-status overdue test-slo --note=note-text
 
   assert_failure
-  assert_stderr "Error: invalid status 'invalid': must be one of: reviewed, skipped, pending, overdue, notStarted"
+  assert_stderr 'Error: unknown flag: --note'
 }
 
-@test "note flag without reviewed or skipped status" {
-  run_sloctl review set test-slo --status=pending --note=note-text
+@test "note flag with not-started status should fail" {
+  run_sloctl review set-status not-started test-slo --note=note-text
 
   assert_failure
-  assert_stderr 'Error: note annotation is only applicable for reviewed and skipped statuses'
+  assert_stderr 'Error: unknown flag: --note'
 }
 
-
-
-@test "missing SLO name argument" {
-  run_sloctl review set
+@test "missing SLO name argument for reviewed" {
+  run_sloctl review set-status reviewed
 
   assert_failure
   assert_stderr 'Error: you must provide the SLO name as an argument'
 }
 
-@test "too many arguments" {
-  run_sloctl review set slo1 slo2
+@test "missing SLO name argument for skipped" {
+  run_sloctl review set-status skipped
 
   assert_failure
-  assert_stderr "Error: 'review set' command accepts only single SLO name as an argument"
+  assert_stderr 'Error: you must provide the SLO name as an argument'
+}
+
+@test "missing SLO name argument for to-review" {
+  run_sloctl review set-status to-review
+
+  assert_failure
+  assert_stderr 'Error: you must provide the SLO name as an argument'
+}
+
+@test "too many arguments for reviewed" {
+  run_sloctl review set-status reviewed slo1 slo2
+
+  assert_failure
+  assert_stderr "Error: command accepts only single SLO name as an argument"
+}
+
+@test "too many arguments for skipped" {
+  run_sloctl review set-status skipped slo1 slo2
+
+  assert_failure
+  assert_stderr "Error: command accepts only single SLO name as an argument"
+}
+
+@test "too many arguments for to-review" {
+  run_sloctl review set-status to-review slo1 slo2
+
+  assert_failure
+  assert_stderr "Error: command accepts only single SLO name as an argument"
 }
