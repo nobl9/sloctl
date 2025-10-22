@@ -32,7 +32,6 @@ type ReviewCmd struct {
 //go:embed review_example.sh
 var reviewExample string
 
-// NewReviewCmd returns cobra command review with all its flags and subcommands.
 func (r *RootCmd) NewReviewCmd() *cobra.Command {
 	review := &ReviewCmd{}
 
@@ -52,14 +51,13 @@ Note: This feature is only available in Enterprise Edition tier.`,
 	return cmd
 }
 
-// NewSetStatusCmd creates the set-status parent command
 func (r *ReviewCmd) NewSetStatusCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set-status",
 		Short: "Set SLO review status",
 		Long: `Set SLO review status.
 
-This command allows you to update the review status of a specific SLO within a project.
+This command allows you to update the review status of a specific SLO.
 
 Note: This feature is only available in Enterprise Edition tier.`,
 	}
@@ -73,27 +71,22 @@ Note: This feature is only available in Enterprise Edition tier.`,
 	return cmd
 }
 
-// NewSetStatusReviewedCmd creates the reviewed subcommand
 func (r *ReviewCmd) NewSetStatusReviewedCmd() *cobra.Command {
 	return r.newSetStatusCmd("reviewed", "reviewed", true)
 }
 
-// NewSetStatusSkippedCmd creates the skipped subcommand
 func (r *ReviewCmd) NewSetStatusSkippedCmd() *cobra.Command {
 	return r.newSetStatusCmd("skipped", "skipped", true)
 }
 
-// NewSetStatusToReviewCmd creates the to-review subcommand
 func (r *ReviewCmd) NewSetStatusToReviewCmd() *cobra.Command {
 	return r.newSetStatusCmd("to-review", "toReview", false)
 }
 
-// NewSetStatusOverdueCmd creates the overdue subcommand
 func (r *ReviewCmd) NewSetStatusOverdueCmd() *cobra.Command {
 	return r.newSetStatusCmd("overdue", "overdue", false)
 }
 
-// NewSetStatusNotStartedCmd creates the not-started subcommand
 func (r *ReviewCmd) NewSetStatusNotStartedCmd() *cobra.Command {
 	return r.newSetStatusCmd("not-started", "notStarted", false)
 }
@@ -115,7 +108,7 @@ func (r *ReviewCmd) newSetStatusCmd(commandName, status string, hasNote bool) *c
 	}
 
 	cmd.Flags().StringVarP(&r.project, "project", "p", "",
-		"Project name")
+		"Project name. Optional, fall backs to your default Project.")
 
 	if hasNote {
 		cmd.Flags().StringVarP(&r.note, "note", "n", "",

@@ -10,6 +10,14 @@ setup_file() {
 
   run_sloctl apply -f "'$TEST_INPUTS/**'"
   assert_success_joined_output
+
+  run_sloctl get slo slo-with-cycle -p "$TEST_PROJECT" -o json
+  assert_success_joined_output
+  assert_slo_review_status "toReview"
+
+  run_sloctl get slo slo-without-review-cycle -p "$TEST_PROJECT" -o json
+  assert_success_joined_output
+  assert_slo_review_status "notStarted"
 }
 
 # teardown_file is run only once for the whole file.
@@ -24,53 +32,41 @@ setup() {
   load_lib "bats-assert"
 }
 
-@test "review set-status with cycle" {
-  run_sloctl get slo slo-with-cycle -p "$TEST_PROJECT" -o json
-  assert_success_joined_output
-  assert_slo_review_status "toReview"
-
-  # Test reviewed status
+@test "review set-status with cycle to reviewed" {
   run_sloctl review set-status reviewed slo-with-cycle -p "$TEST_PROJECT"
   assert_success_joined_output
-  # Verify the status was set
   run_sloctl get slo slo-with-cycle -p "$TEST_PROJECT" -o json
   assert_success_joined_output
   assert_slo_review_status "reviewed"
+}
 
-  # Test skipped status
+@test "review set-status with cycle to skipped" {
   run_sloctl review set-status skipped slo-with-cycle -p "$TEST_PROJECT"
   assert_success_joined_output
-  # Verify the status was set
   run_sloctl get slo slo-with-cycle -p "$TEST_PROJECT" -o json
   assert_success_joined_output
   assert_slo_review_status "skipped"
+}
 
-  # Test toReview status
+@test "review set-status with cycle to toReview" {
   run_sloctl review set-status to-review slo-with-cycle -p "$TEST_PROJECT"
   assert_success_joined_output
-  # Verify the status was set
   run_sloctl get slo slo-with-cycle -p "$TEST_PROJECT" -o json
   assert_success_joined_output
   assert_slo_review_status "toReview"
 }
 
-@test "review set-status without cycle" {
-  run_sloctl get slo slo-without-review-cycle -p "$TEST_PROJECT" -o json
-  assert_success_joined_output
-  assert_slo_review_status "notStarted"
-
-  # Test reviewed status
+@test "review set-status without cycle to reviewed" {
   run_sloctl review set-status reviewed slo-without-review-cycle -p "$TEST_PROJECT"
   assert_success_joined_output
-  # Verify the status was set
   run_sloctl get slo slo-without-review-cycle -p "$TEST_PROJECT" -o json
   assert_success_joined_output
   assert_slo_review_status "reviewed"
+}
 
-  # Test notStarted status
+@test "review set-status without cycle to notStarted" {
   run_sloctl review set-status not-started slo-without-review-cycle -p "$TEST_PROJECT"
   assert_success_joined_output
-  # Verify the status was set
   run_sloctl get slo slo-without-review-cycle -p "$TEST_PROJECT" -o json
   assert_success_joined_output
   assert_slo_review_status "notStarted"
