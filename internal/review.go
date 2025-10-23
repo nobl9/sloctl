@@ -130,7 +130,7 @@ context or reasoning for the review decision.
 `
 		projectLongDescription = `
 
-The SLO name must be provided as the first argument, and the project can be specified
+The SLO name must be provided as an argument, and the project can be specified
 using the --project flag or will default to the configured project in your client.
 
 Note: This feature is only available in Enterprise Edition tier.
