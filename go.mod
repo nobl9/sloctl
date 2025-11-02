@@ -1,6 +1,6 @@
 module github.com/nobl9/sloctl
 
-go 1.25.3
+go 1.24.9
 
 require (
 	github.com/charmbracelet/bubbletea v1.3.10
