@@ -1,6 +1,6 @@
 module github.com/nobl9/sloctl
 
-go 1.24.7
+go 1.24.9
 
 require (
 	github.com/charmbracelet/bubbletea v1.3.10
@@ -9,7 +9,7 @@ require (
 	github.com/charmbracelet/x/exp/teatest v0.0.0-20250930200525-31788bbe6486
 	github.com/go-playground/validator/v10 v10.28.0
 	github.com/itchyny/gojq v0.12.17
-	github.com/mark3labs/mcp-go v0.42.0
+	github.com/mark3labs/mcp-go v0.43.0
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/nobl9/go-yaml v1.0.1
 	github.com/nobl9/nobl9-go v0.117.0-rc4
