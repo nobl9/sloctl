@@ -4,9 +4,10 @@ package csv
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/nobl9/sloctl/internal/collections"
 )
 
 const (
@@ -198,21 +199,8 @@ func getUniqueHeaders(nodes []*Node) ([]string, error) {
 		}
 		headersList = append(headersList, nodeHeaders...)
 	}
-	headersSet := removeDuplicates(headersList)
+	headersSet := collections.RemoveDuplicates(headersList)
 	return headersSet, nil
-}
-
-func removeDuplicates(values []string) []string {
-	keys := make(map[string]struct{})
-	var uniqueValues []string
-	for _, value := range values {
-		if _, ok := keys[value]; !ok {
-			keys[value] = struct{}{}
-			uniqueValues = append(uniqueValues, value)
-		}
-	}
-	sort.Strings(uniqueValues)
-	return uniqueValues
 }
 
 func generateFullHeader(prefix, conjunction, suffix string) string {

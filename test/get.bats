@@ -45,6 +45,11 @@ setup() {
   test_get "Annotation" "$aliases" "${TEST_INPUTS}/annotations.yaml" "$output"
 }
 
+@test "annotations filtered by slo-name" {
+    run_sloctl get annotation -p "death-star" "$first_obj_name"
+    verify_get_success "$output" "$(yq -Y '[.[0]]' "$input")"
+}
+
 @test "data exports" {
   aliases="dataexport dataexports"
   test_get "DataExport" "$aliases" "" "$output"

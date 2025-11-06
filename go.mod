@@ -1,6 +1,6 @@
 module github.com/nobl9/sloctl
 
-go 1.24.7
+go 1.24.9
 
 require (
 	github.com/charmbracelet/bubbletea v1.3.10
@@ -20,6 +20,8 @@ require (
 	github.com/tidwall/sjson v1.2.5
 	golang.org/x/sync v0.17.0
 )
+
+replace github.com/nobl9/nobl9-go => github.com/nobl9/nobl9-go v0.119.0-rc8.0.20251106123242-5229a4753853
 
 require (
 	github.com/atotto/clipboard v0.1.4 // indirect
@@ -61,8 +63,6 @@ require (
 
 require (
 	github.com/BurntSushi/toml v1.5.0
-	github.com/MicahParks/jwkset v0.11.0 // indirect
-	github.com/MicahParks/keyfunc/v3 v3.6.2 // indirect
 	github.com/OpenSLO/go-sdk v0.8.0
 	github.com/aws/aws-sdk-go v1.55.8 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.9.1 // indirect
@@ -80,19 +80,18 @@ require (
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/nobl9/govy v0.20.0 // indirect
+	github.com/nobl9/govy v0.22.0 // indirect
 	github.com/nobl9/nobl9-openslo v0.1.0
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/spf13/pflag v1.0.9 // indirect
+	github.com/spf13/pflag v1.0.9
 	github.com/teambition/rrule-go v1.8.2 // indirect
 	golang.org/x/crypto v0.42.0 // indirect
-	golang.org/x/mod v0.27.0 // indirect
+	golang.org/x/mod v0.28.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/term v0.35.0 // indirect
-	golang.org/x/text v0.29.0 // indirect
-	golang.org/x/time v0.13.0 // indirect
-	golang.org/x/tools v0.36.0 // indirect
+	golang.org/x/text v0.30.0 // indirect
+	golang.org/x/tools v0.37.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
