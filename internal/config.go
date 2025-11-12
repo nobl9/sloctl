@@ -287,7 +287,7 @@ sloctl config current-user --verbose`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client := c.clientGetter.GetClient()
 			ctx := cmd.Context()
-			userID, err := client.GetUser(ctx)
+			userID, err := client.GetUserID(ctx)
 			if err != nil {
 				return err
 			}

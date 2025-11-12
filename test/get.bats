@@ -46,8 +46,14 @@ setup() {
 }
 
 @test "annotations filtered by slo-name" {
-    run_sloctl get annotation -p "death-star" "$first_obj_name"
-    verify_get_success "$output" "$(yq -Y '[.[0]]' "$input")"
+  run_sloctl get annotation -p "death-star" "$first_obj_name"
+  verify_get_success "$output" "$(yq -Y '[.[0]]' "$input")"
+}
+
+@test "invalid annotation category" {
+  run_sloctl get annotation --category Invalid
+  assert_failure
+  assert_stderr "Error: invalid 'category' flag value: Invalid is not a valid Category"
 }
 
 @test "data exports" {

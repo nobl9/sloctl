@@ -28,6 +28,9 @@ import (
 //go:embed get_alert_example.sh
 var getAlertExample string
 
+//go:embed get_annotation_example.sh
+var getAnnotationExample string
+
 type GetCmd struct {
 	client      *sdk.Client
 	printer     *printer.Printer
@@ -132,9 +135,8 @@ func (g *GetCmd) newGetAlertCommand(cmd *cobra.Command) *cobra.Command {
 	cmd.Long = "Get alerts based on search criteria. You can use specific criteria using flags to find alerts " +
 		"related to specific SLO, objective, service, alert policy, time range, or alert status.\n\n" +
 		"For example, you can use the same flag multiple times to find alerts triggered for a given SLO OR " +
-		"another SLO. Keep in mind that the different types of flags are linked by the AND logical operator.\n\n" +
-		"Only alerts triggered in given project only (alert project is the same as the SLO project). If you don't " +
-		"have permission to view SLO in a given project, alerts from that project will not be returned.\n\n"
+		"another SLO. Keep in mind that the different types of flags are linked by the logical AND operator.\n\n" +
+		"If you don't have permission to view SLO in a given project, alerts from that project will not be returned.\n\n"
 
 	params := objectsV1.GetAlertsRequest{
 		Resolved:  new(bool),
@@ -297,9 +299,14 @@ func (g *GetCmd) newGetBudgetAdjustmentCommand(cmd *cobra.Command) *cobra.Comman
 }
 
 func (g *GetCmd) newGetAnnotationCommand(cmd *cobra.Command) *cobra.Command {
+	cmd.Example = getAnnotationExample
+	cmd.Long = "Get annotations based on search criteria. You can use specific criteria using flags to find annotations " +
+		"related to specific project, SLO, time range, or categories.\n\n" +
+		"Keep in mind that the different types of flags are linked by the logical AND operator.\n\n"
+
 	params := objectsV2.GetAnnotationsRequest{}
 	var (
-		categoriesFlag   flags.TextArray[*v1alphaAnnotation.Category]
+		categoriesFlag   []string
 		userCategories   bool
 		systemCategories bool
 	)
@@ -313,14 +320,14 @@ func (g *GetCmd) newGetAnnotationCommand(cmd *cobra.Command) *cobra.Command {
 		cmd,
 		&params.From,
 		"from",
-		"Get annotations which were created after given time.",
-	) // TODO: fix this
+		"Get annotations which have 'spec.startTime' after or equal to the given time.",
+	)
 	flags.RegisterTimeVar(
 		cmd,
 		&params.To,
 		"to",
-		"Get annotations which were created before given time.",
-	) // TODO: fix this
+		"Get annotations which have 'spec.endTime' before or equal to the given time.",
+	)
 	cmd.Flags().BoolVar(
 		&userCategories,
 		"user",
@@ -333,9 +340,10 @@ func (g *GetCmd) newGetAnnotationCommand(cmd *cobra.Command) *cobra.Command {
 		false,
 		"Get annotations which were automatically created by Nobl9 platform.",
 	)
-	cmd.Flags().Var(
+	cmd.Flags().StringArrayVar(
 		&categoriesFlag,
 		"category",
+		stringsTypeToStrings(v1alphaAnnotation.GetUserCategories()),
 		fmt.Sprintf(
 			"Filter annotations by their category (one of: %s).",
 			strings.Join(stringsTypeToStrings(v1alphaAnnotation.CategoryValues()), ", "),
@@ -347,16 +355,17 @@ func (g *GetCmd) newGetAnnotationCommand(cmd *cobra.Command) *cobra.Command {
 			params.Names = args
 		}
 		for _, cat := range categoriesFlag {
-			params.Categories = append(params.Categories, *cat)
+			parsed, err := v1alphaAnnotation.ParseCategory(cat)
+			if err != nil {
+				return fmt.Errorf("invalid 'category' flag value: %w", err)
+			}
+			params.Categories = append(params.Categories, parsed)
 		}
 		if systemCategories {
 			params.Categories = append(params.Categories, v1alphaAnnotation.GetSystemCategories()...)
 		}
 		if userCategories {
 			params.Categories = append(params.Categories, v1alphaAnnotation.GetUserCategories()...)
-		}
-		if len(params.Categories) == 0 {
-			params.Categories = v1alphaAnnotation.GetUserCategories()
 		}
 		params.Categories = collections.RemoveDuplicates(params.Categories)
 
