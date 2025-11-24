@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bats file_tags=e2e
+# bats file_tags=e2e,bats:focus
 
 # setup_file is run only once for the whole file.
 setup_file() {
@@ -46,8 +46,10 @@ setup() {
 }
 
 @test "annotations filtered by slo-name" {
-  run_sloctl get annotation -p "death-star" "$first_obj_name"
-  verify_get_success "$output" "$(yq -Y '[.[0]]' "$input")"
+  want=$(read_files "${TEST_OUTPUTS}/annotations-for-slo.yaml")
+
+  run_sloctl get annotation -p "death-star" --slo=splunk-raw-rolling
+  verify_get_success "$output" "$want"
 }
 
 @test "invalid annotation category" {
