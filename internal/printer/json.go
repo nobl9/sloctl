@@ -18,7 +18,7 @@ type jsonPrinter struct {
 func (p jsonPrinter) Print(content any) error {
 	switch v := content.(type) {
 	case []manifest.Object:
-		return sdk.PrintObjects(v, p.out, manifest.ObjectFormatJSON)
+		return sdk.EncodeObjects(v, p.out, manifest.ObjectFormatJSON)
 	default:
 		if str, ok := p.jsonScalarToString(content); ok {
 			_, err := fmt.Fprintln(p.out, str)
