@@ -210,3 +210,24 @@ The resources were successfully deleted.
 EOF
   assert_deleted "$(read_files "${inputs[@]}")"
 }
+
+# bats test_tags=bats:focus
+@test "object validation formatting" {
+  input="${TEST_INPUTS}/wrong-name-objects.yaml"
+
+  run_sloctl apply -f "$input"
+  assert_failure
+  output="$stderr"
+  assert_output - <<EOF
+Error: Bad Request (code: 400, endpoint: PUT https://app.nobl9.com/api/apply?dry_run=false, traceId: 355630005647914321)
+---
+Validation for Project 'wrong name' has failed for the following fields:
+  - 'metadata.name' with value 'wrong name':
+    - string must match regular expression: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$' (e.g. 'my-name', '123-abc'); an RFC-1123 compliant label name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character
+Manifest source: ${input}
+Validation for Service 'very wrong name' in project 'some-project' has failed for the following fields:
+  - 'metadata.name' with value 'very wrong name':
+    - string must match regular expression: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$' (e.g. 'my-name', '123-abc'); an RFC-1123 compliant label name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character
+Manifest source: ${input}
+EOF
+}
