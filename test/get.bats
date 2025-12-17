@@ -42,13 +42,83 @@ setup() {
 
 @test "annotations" {
   aliases="annotation annotations"
-  test_get "Annotation" "$aliases" "${TEST_INPUTS}/annotations.yaml" "$output"
+  test_get "Annotation" "$aliases" "${TEST_OUTPUTS}/annotations-death-star.yaml" "$output"
 }
 
 @test "annotations filtered by slo-name" {
   want=$(read_files "${TEST_OUTPUTS}/annotations-for-slo.yaml")
 
   run_sloctl get annotation -p "death-star" --slo=splunk-raw-rolling
+  verify_get_success "$output" "$want"
+}
+
+@test "annotations filtered by category Comment" {
+  want=$(read_files "${TEST_OUTPUTS}/annotations-by-category-comment.yaml")
+
+  run_sloctl get annotation -p "death-star" --category=Comment
+  verify_get_success "$output" "$want"
+}
+
+@test "annotations filtered by category ReviewNote" {
+  want=$(read_files "${TEST_OUTPUTS}/annotations-by-category-reviewnote.yaml")
+
+  run_sloctl get annotation -p "death-star" --category=ReviewNote
+  verify_get_success "$output" "$want"
+}
+
+@test "annotations filtered by multiple categories" {
+  want=$(read_files "${TEST_OUTPUTS}/annotations-death-star.yaml")
+
+  run_sloctl get annotation -p "death-star" --category=Comment --category=ReviewNote
+  verify_get_success "$output" "$want"
+}
+
+@test "annotations filtered by --user flag" {
+  want=$(read_files "${TEST_OUTPUTS}/annotations-death-star.yaml")
+
+  run_sloctl get annotation -p "death-star" --user
+  verify_get_success "$output" "$want"
+}
+
+@test "annotations filtered by --system flag" {
+  run_sloctl get annotation -p "$TEST_PROJECT" --system
+  assert_success_joined_output
+  assert_output "No resources found in '$TEST_PROJECT' project."
+}
+
+@test "annotations filtered by --from flag" {
+  want=$(read_files "${TEST_OUTPUTS}/annotations-death-star.yaml")
+  run_sloctl get annotation -p "death-star" --from=2023-01-01T00:00:00Z
+  verify_get_success "$output" "$want"
+}
+
+@test "annotations filtered by --to flag" {
+  want=$(read_files "${TEST_OUTPUTS}/annotations-by-time-january.yaml")
+  run_sloctl get annotation -p "death-star" --to=2023-01-31T23:59:59Z
+  verify_get_success "$output" "$want"
+}
+
+@test "annotations filtered by --from and --to combined" {
+  want=$(read_files "${TEST_OUTPUTS}/annotations-by-time-january.yaml")
+  run_sloctl get annotation -p "death-star" --from=2023-01-01T00:00:00Z --to=2023-01-31T23:59:59Z
+  verify_get_success "$output" "$want"
+}
+
+@test "annotations with no results in time range" {
+  run_sloctl get annotation -p "death-star" --from=2020-01-01T00:00:00Z --to=2020-12-31T23:59:59Z
+  assert_success_joined_output
+  assert_output "No resources found in 'death-star' project."
+}
+
+@test "annotations filtered by --slo and --category" {
+  want=$(read_files "${TEST_OUTPUTS}/annotations-by-category-reviewnote.yaml")
+  run_sloctl get annotation -p "death-star" --slo=splunk-raw-rolling --category=ReviewNote
+  verify_get_success "$output" "$want"
+}
+
+@test "annotations filtered by --slo and --from" {
+  want=$(read_files "${TEST_OUTPUTS}/annotations-for-slo.yaml")
+  run_sloctl get annotation -p "death-star" --slo=splunk-raw-rolling --from=2023-01-01T00:00:00Z
   verify_get_success "$output" "$want"
 }
 
@@ -85,12 +155,12 @@ setup() {
 
 @test "services" {
   aliases="services svc svcs service"
-  test_get "Service" "$aliases" "${TEST_INPUTS}/services.yaml" "$output"
+  test_get "Service" "$aliases" "${TEST_OUTPUTS}/services-death-star.yaml" "$output"
 }
 
 @test "slos" {
   aliases="slo slos"
-  test_get "SLO" "$aliases" "${TEST_INPUTS}/slos.yaml" "$output"
+  test_get "SLO" "$aliases" "${TEST_OUTPUTS}/slos-death-star.yaml" "$output"
 }
 
 @test "slos filtered by service name" {
@@ -115,7 +185,7 @@ setup() {
   verify_get_success "$output" "$want"
 
   # Multiple services.
-  want=$(read_files "${TEST_INPUTS}/slos.yaml")
+  want=$(read_files "${TEST_OUTPUTS}/slos-death-star.yaml")
   run_sloctl get slo -s deputy-office -s destroyer -p death-star
   verify_get_success "$output" "$want"
 }

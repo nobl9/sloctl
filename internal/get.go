@@ -300,9 +300,11 @@ func (g *GetCmd) newGetBudgetAdjustmentCommand(cmd *cobra.Command) *cobra.Comman
 
 func (g *GetCmd) newGetAnnotationCommand(cmd *cobra.Command) *cobra.Command {
 	cmd.Example = getAnnotationExample
-	cmd.Long = "Get annotations based on search criteria. You can use specific criteria using flags to find annotations " +
-		"related to specific project, SLO, time range, or categories.\n\n" +
-		"Keep in mind that the different types of flags are linked by the logical AND operator.\n\n"
+	cmd.Long = fmt.Sprintf("Get annotations based on search criteria. You can use specific criteria using flags to find annotations "+
+		"related to specific project, SLO, time range, or categories.\n"+
+		"By default only %s categories are returned.\n\n"+
+		"Keep in mind that the different types of flags are linked by the logical AND operator.\n\n",
+		strings.Join(stringsTypeToStrings(v1alphaAnnotation.GetUserCategories()), ","))
 
 	params := objectsV2.GetAnnotationsRequest{}
 	var (
@@ -343,7 +345,7 @@ func (g *GetCmd) newGetAnnotationCommand(cmd *cobra.Command) *cobra.Command {
 	cmd.Flags().StringArrayVar(
 		&categoriesFlag,
 		"category",
-		stringsTypeToStrings(v1alphaAnnotation.GetUserCategories()),
+		nil,
 		fmt.Sprintf(
 			"Filter annotations by their category (one of: %s).",
 			strings.Join(stringsTypeToStrings(v1alphaAnnotation.CategoryValues()), ", "),
@@ -366,6 +368,9 @@ func (g *GetCmd) newGetAnnotationCommand(cmd *cobra.Command) *cobra.Command {
 		}
 		if userCategories {
 			params.Categories = append(params.Categories, v1alphaAnnotation.GetUserCategories()...)
+		}
+		if len(params.Categories) == 0 {
+			params.Categories = v1alphaAnnotation.GetUserCategories()
 		}
 		params.Categories = collections.RemoveDuplicates(params.Categories)
 
