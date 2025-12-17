@@ -300,7 +300,8 @@ func (g *GetCmd) newGetBudgetAdjustmentCommand(cmd *cobra.Command) *cobra.Comman
 
 func (g *GetCmd) newGetAnnotationCommand(cmd *cobra.Command) *cobra.Command {
 	cmd.Example = getAnnotationExample
-	cmd.Long = fmt.Sprintf("Get annotations based on search criteria. You can use specific criteria using flags to find annotations "+
+	cmd.Long = fmt.Sprintf("Get annotations based on search criteria. "+
+		"You can use specific criteria using flags to find annotations "+
 		"related to specific project, SLO, time range, or categories.\n"+
 		"By default only %s categories are returned.\n\n"+
 		"Keep in mind that the different types of flags are linked by the logical AND operator.\n\n",
