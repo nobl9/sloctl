@@ -23,7 +23,7 @@ sloctl get alert --slo usersapi-latency --objective objective-1 --objective obje
 # We're assuming the current date is 2023-03-23T12:00:00Z:
 # - Alerts that were active yesterday:
 sloctl get alert --from 2023-03-22T00:00:00Z --to 2023-03-22T23:59:59Z -A
-# - Alerts that have been active since yesterday and are still active now:
+# - Alerts that have been active since yesterday:
 sloctl get alert --from 2023-03-22T00:00:00Z -A
 # - Alerts that have been active until today:
 sloctl get alert --to 2023-03-23T00:00:00Z -A
