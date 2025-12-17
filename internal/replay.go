@@ -449,12 +449,12 @@ func (r *ReplayCmd) getReplayAvailability(
 	}
 	data, _, err := r.doRequest(ctx, http.MethodGet, endpointReplayGetAvailability, config.Project, values, nil)
 	if err != nil {
-		return
+		return availability, err
 	}
 	if err = json.Unmarshal(data, &availability); err != nil {
-		return
+		return availability, err
 	}
-	return
+	return availability, err
 }
 
 func (r *ReplayCmd) getReplayStatus(

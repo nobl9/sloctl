@@ -18,7 +18,7 @@ LDFLAGS := -s -w \
 # renovate datasource=github-releases depName=securego/gosec
 GOSEC_VERSION := v2.22.11
 # renovate datasource=github-releases depName=golangci/golangci-lint
-GOLANGCI_LINT_VERSION := v1.64.8
+GOLANGCI_LINT_VERSION := v2.7.2
 # renovate datasource=go depName=golang.org/x/vuln/cmd/govulncheck
 GOVULNCHECK_VERSION := v1.1.4
 # renovate datasource=go depName=golang.org/x/tools/cmd/goimports
@@ -198,9 +198,8 @@ format: format/go format/cspell
 ## Format Go files.
 format/go:
 	echo "Formatting Go files..."
-	$(call _ensure_installed,binary,goimports)
-	gofmt -w -l -s .
-	$(BIN_DIR)/goimports -local=github.com/nobl9/sloctl -w .
+	$(call _ensure_installed,binary,golangci-lint)
+	$(BIN_DIR)/golangci-lint fmt
 
 ## Format cspell config file.
 format/cspell:
