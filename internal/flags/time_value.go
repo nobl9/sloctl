@@ -29,8 +29,8 @@ func (t *TimeValue) Set(s string) error {
 	parsed, err := time.Parse(TimeLayout, s)
 	if err != nil {
 		return fmt.Errorf(
-			"invalid time format, expected RFC3339 layout " +
-				"(e.g. '2006-01-02T15:04:05Z' or '2006-01-02T08:04:05-07:00')",
+			"invalid time format, expected %s layout (e.g. '2006-01-02T15:04:05Z' or '2006-01-02T08:04:05-07:00')",
+			TimeLayoutName,
 		)
 	}
 	*t.value = parsed

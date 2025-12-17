@@ -305,7 +305,7 @@ func (g *GetCmd) newGetAnnotationCommand(cmd *cobra.Command) *cobra.Command {
 		"related to specific project, SLO, time range, or categories.\n"+
 		"By default only %s categories are returned.\n\n"+
 		"Keep in mind that the different types of flags are linked by the logical AND operator.\n\n",
-		strings.Join(stringsTypeToStrings(v1alphaAnnotation.GetUserCategories()), ","))
+		strings.Join(stringsTypeToStrings(v1alphaAnnotation.GetUserCategories()), ", "))
 
 	params := objectsV2.GetAnnotationsRequest{}
 	var (

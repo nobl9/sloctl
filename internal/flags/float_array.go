@@ -27,10 +27,6 @@ func (a *FloatArray) Set(s string) error {
 	if err != nil {
 		return err
 	}
-	if a == nil {
-		a = new(FloatArray)
-		*a = make(FloatArray, 0, len(values))
-	}
 	for _, v := range values {
 		f, err := strconv.ParseFloat(v, 64)
 		if err != nil {
