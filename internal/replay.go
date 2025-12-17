@@ -115,7 +115,6 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 		if r.playlistsAvailable {
 			cmd.Println("Replay is added to the queue...")
 			err = r.runReplay(cmd.Context(), replay)
-
 			if err != nil {
 				cmd.Println(colorstring.Color("[red]Failed to add Replay to the queue:[reset] " + err.Error()))
 				failedIndexes = append(failedIndexes, i)
@@ -446,12 +445,12 @@ func (r *ReplayCmd) getReplayAvailability(
 	}
 	data, _, err := r.doRequest(ctx, http.MethodGet, endpointReplayGetAvailability, config.Project, values, nil)
 	if err != nil {
-		return
+		return availability, err
 	}
 	if err = json.Unmarshal(data, &availability); err != nil {
-		return
+		return availability, err
 	}
-	return
+	return availability, err
 }
 
 func (r *ReplayCmd) getReplayStatus(

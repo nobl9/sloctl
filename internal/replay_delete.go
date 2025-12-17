@@ -66,7 +66,6 @@ func (r *ReplayCmd) deleteAllReplays(cmd *cobra.Command) error {
 			All: true,
 		},
 	)
-
 	if err != nil {
 		return err
 	}
@@ -98,7 +97,6 @@ func (r *ReplayCmd) deleteReplaysForSLO(cmd *cobra.Command, sloName string) erro
 			Slo:     sloName,
 		},
 	)
-
 	if err != nil {
 		return err
 	}

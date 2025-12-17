@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/nobl9/sloctl/internal/csv"
-	"github.com/nobl9/sloctl/internal/form"
+	"github.com/nobl9/sloctl/internal/huhform"
 	"github.com/nobl9/sloctl/internal/printer"
 )
 
@@ -122,7 +122,7 @@ sloctl config add-context`,
 				)
 			}
 
-			form := form.New(
+			form := huhform.New(
 				huh.NewGroup(
 					generalGroupFields...,
 				),
@@ -198,7 +198,7 @@ sloctl config use-context my-context`,
 			var contextName string
 			switch {
 			case len(args) == 0:
-				form := form.New(huh.NewGroup(
+				form := huhform.New(huh.NewGroup(
 					huh.NewSelect[string]().
 						Title("Select the new context:").
 						Options(huh.NewOptions(c.getContextNames()...)...).
@@ -386,7 +386,7 @@ sloctl config rename-context old-ctx new-ctx`,
 			)
 			switch len(args) {
 			case 0:
-				form := form.New(
+				form := huhform.New(
 					huh.NewGroup(
 						huh.NewSelect[string]().
 							Title("Select context to rename").
@@ -463,7 +463,7 @@ sloctl config delete-context context-1 context-2`,
 				}
 				contexts := c.getContextNames()
 				contexts = slices.DeleteFunc(contexts, func(name string) bool { return name == c.config.DefaultContext })
-				form := form.New(huh.NewGroup(
+				form := huhform.New(huh.NewGroup(
 					huh.NewMultiSelect[string]().
 						Title("Select context(s) for deletion").
 						Options(huh.NewOptions(contexts...)...).
