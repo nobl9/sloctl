@@ -198,9 +198,8 @@ format: format/go format/cspell
 ## Format Go files.
 format/go:
 	echo "Formatting Go files..."
-	$(call _ensure_installed,binary,goimports)
-	gofmt -w -l -s .
-	$(BIN_DIR)/goimports -local=github.com/nobl9/sloctl -w .
+	$(call _ensure_installed,binary,golangci-lint)
+	$(BIN_DIR)/golangci-lint fmt
 
 ## Format cspell config file.
 format/cspell:
