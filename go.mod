@@ -62,7 +62,7 @@ require (
 )
 
 require (
-	github.com/BurntSushi/toml v1.5.0
+	github.com/BurntSushi/toml v1.6.0
 	github.com/MicahParks/jwkset v0.11.0 // indirect
 	github.com/MicahParks/keyfunc/v3 v3.6.2 // indirect
 	github.com/OpenSLO/go-sdk v0.8.0
