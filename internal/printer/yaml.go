@@ -15,7 +15,7 @@ type yamlPrinter struct {
 func (p yamlPrinter) Print(content any) error {
 	switch v := content.(type) {
 	case []manifest.Object:
-		return sdk.PrintObjects(v, p.out, manifest.ObjectFormatYAML)
+		return sdk.EncodeObjects(v, p.out, manifest.ObjectFormatYAML)
 	default:
 		b, err := yaml.Marshal(content)
 		if err != nil {

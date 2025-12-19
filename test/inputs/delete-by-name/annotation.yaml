@@ -1,7 +1,7 @@
 apiVersion: n9/v1alpha
 kind: Annotation
 metadata:
-  name: ano-tat-e
+  name: anakin
   project: death-star
 spec:
   slo: newrelic-rolling-timeslices-threshold

@@ -24,7 +24,6 @@ import (
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
 	v2 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v2"
 
-	"github.com/nobl9/sloctl/internal/flags"
 	"github.com/nobl9/sloctl/internal/printer"
 )
 
@@ -48,11 +47,11 @@ type mcpServer struct {
 }
 
 type mcpToolArguments struct {
-	Project  string `json:"project"`
-	Format   string `json:"format"`
-	From     string `json:"from"`
-	Name     string `json:"name"`
-	FileName string `json:"file_name"`
+	Project  string    `json:"project"`
+	Format   string    `json:"format"`
+	From     time.Time `json:"from"`
+	Name     string    `json:"name"`
+	FileName string    `json:"file_name"`
 }
 
 func (s mcpServer) RegisterToolsAndResources() error {
@@ -392,7 +391,7 @@ func (s mcpServer) ReplayTool(
 	_ mcp.CallToolRequest,
 	args mcpToolArguments,
 ) (*mcp.CallToolResult, error) {
-	if args.From == "" {
+	if args.From.IsZero() {
 		return nil, fmt.Errorf("'from' argument is required")
 	}
 	if args.Name == "" {
@@ -400,10 +399,6 @@ func (s mcpServer) ReplayTool(
 	}
 	if args.Project == "" {
 		return nil, fmt.Errorf("'project' argument is required")
-	}
-	fromValue := new(flags.TimeValue)
-	if err := fromValue.Set(args.From); err != nil {
-		return nil, err
 	}
 
 	out := new(bytes.Buffer)
@@ -413,7 +408,7 @@ func (s mcpServer) ReplayTool(
 			Output:       out,
 			OutputFormat: printer.YAMLFormat,
 		}),
-		from:    *fromValue,
+		from:    args.From,
 		sloName: args.Name,
 		project: args.Project,
 	}

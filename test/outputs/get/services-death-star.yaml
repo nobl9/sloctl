@@ -16,10 +16,3 @@
     project: death-star
   spec:
     description: Dummy Service for 'sloctl get' e2e tests
-- apiVersion: n9/v1alpha
-  kind: Service
-  metadata:
-    name: api-server
-    project: <PROJECT>
-  spec:
-    description: Dummy Service for 'sloctl get' e2e tests

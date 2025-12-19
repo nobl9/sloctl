@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -22,7 +23,7 @@ type ApplyCmd struct {
 	dryRun            bool
 	autoConfirm       bool
 	replay            bool
-	replayFrom        flags.TimeValue
+	replayFrom        time.Time
 	project           string
 }
 
@@ -65,7 +66,12 @@ func (r *RootCmd) NewApplyCmd() *cobra.Command {
 	)
 	cmd.Flags().BoolVar(&apply.replay, replayFlagName, false,
 		"Run Replay for the applied SLOs. If Replay fails, the applied changes are not rolled back.")
-	cmd.Flags().Var(&apply.replayFrom, replayFromFlagName, "Sets the start of Replay time window.")
+	flags.RegisterTimeVar(
+		cmd,
+		&apply.replayFrom,
+		replayFromFlagName,
+		"Sets the start of Replay time window.",
+	)
 	cmd.MarkFlagsRequiredTogether(replayFlagName, replayFromFlagName)
 
 	return cmd
@@ -116,7 +122,7 @@ func (a ApplyCmd) runReplay(cmd *cobra.Command, objects []manifest.Object) error
 		replays = append(replays, ReplayConfig{
 			Project: slo.GetProject(),
 			SLO:     slo.GetName(),
-			From:    a.replayFrom.Time,
+			From:    a.replayFrom,
 		})
 	}
 	failedReplays, err := replayCmd.RunReplays(cmd, replays)

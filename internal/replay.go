@@ -34,7 +34,7 @@ import (
 type ReplayCmd struct {
 	client             *sdk.Client
 	printer            *printer.Printer
-	from               flags.TimeValue
+	from               time.Time
 	configPaths        []string
 	sloName            string
 	project            string
@@ -70,9 +70,13 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 
 	replay.printer.MustRegisterFlags(cmd)
 	registerFileFlag(cmd, false, &replay.configPaths)
-	cmd.Flags().StringVarP(&replay.project, "project", "p", "",
-		`Specifies the Project for the SLOs you want to Replay.`)
-	cmd.Flags().Var(&replay.from, "from", "Sets the start of Replay time window.")
+	cmd.Flags().StringVarP(&replay.project, "project", "p", "", `Specifies the Project for the SLOs you want to Replay.`)
+	flags.RegisterTimeVar(
+		cmd,
+		&replay.from,
+		"from",
+		"Sets the start of Replay time window.",
+	)
 
 	cmd.AddCommand(replay.AddDeleteCommand())
 	cmd.AddCommand(replay.AddCancelCommand())
@@ -206,7 +210,7 @@ func (r *ReplayCmd) prepareConfigs() ([]ReplayConfig, error) {
 		}
 		for i := range c {
 			if c[i].From.IsZero() {
-				c[i].From = r.from.Time
+				c[i].From = r.from
 			}
 			if len(c[i].Project) == 0 {
 				c[i].Project = r.project
@@ -229,7 +233,7 @@ func (r *ReplayCmd) prepareConfigs() ([]ReplayConfig, error) {
 		replays = append(replays, ReplayConfig{
 			Project: r.project,
 			SLO:     r.sloName,
-			From:    r.from.Time,
+			From:    r.from,
 		})
 	}
 	return replays, nil
