@@ -62,7 +62,7 @@ require (
 )
 
 require (
-	github.com/BurntSushi/toml v1.5.0
+	github.com/BurntSushi/toml v1.6.0
 	github.com/OpenSLO/go-sdk v0.8.0
 	github.com/aws/aws-sdk-go v1.55.8 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.9.1 // indirect
