@@ -72,7 +72,10 @@ func NewGetCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 }
 
 func (g *GetCmd) run(cmd *cobra.Command) error {
-	values := url.Values{"from": {g.from.String()}, "to": {g.to.String()}}
+	values := url.Values{
+		"from": {g.from.Format(time.RFC3339)},
+		"to":   {g.to.Format(time.RFC3339)},
+	}
 	if g.sloName != "" {
 		values.Add("sloName", g.sloName)
 	}
@@ -80,11 +83,11 @@ func (g *GetCmd) run(cmd *cobra.Command) error {
 		values.Add("sloProject", g.project)
 	}
 
-	resBody, err := DoRequest(
+	resBody, err := doRequest(
 		g.client,
 		cmd.Context(),
 		http.MethodGet,
-		fmt.Sprintf("%s/%s/events", BudgetAdjustmentAPI, g.adjustment),
+		fmt.Sprintf("%s/%s/events", budgetAdjustmentAPI, g.adjustment),
 		values,
 		nil,
 	)

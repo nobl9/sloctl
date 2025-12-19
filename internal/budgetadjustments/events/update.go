@@ -53,11 +53,11 @@ func (g *UpdateCmd) run(cmd *cobra.Command) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to convert input data to JSON")
 		}
-		_, err = DoRequest(
+		_, err = doRequest(
 			g.client,
 			cmd.Context(),
 			http.MethodPut,
-			fmt.Sprintf("%s/%s/events/update", BudgetAdjustmentAPI, g.adjustment),
+			fmt.Sprintf("%s/%s/events/update", budgetAdjustmentAPI, g.adjustment),
 			nil,
 			bytes.NewReader(jsonBytes),
 		)
