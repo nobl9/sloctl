@@ -16,11 +16,14 @@ sloctl get annotations -A --system
 # Get all annotations (both system and user) from all projects.
 sloctl get annotations -A --system --user
 
-# Get user annotations which apply to a specific time range.
-# We're assuming the current date is 2023-03-23T12:00:00Z:
+# Get user annotations which overlap a specific time window.
+# Both `--from` and `--to` flags define a time window which filters overlapping annotations.
+# Annotation's time window is defined by `spec.startTime` and `spec.endTime`.
+#
+# We're assuming the current date is 2023-03-23T12:00:00Z.
 # - Annotations that apply only to yesterday:
 sloctl get annotation --from 2023-03-22T00:00:00Z --to 2023-03-22T23:59:59Z -A
-# - Annotations that have 'spec.startTime' AFTER yesterday:
+# - Annotations which time window overlaps a time period starting from yesterday (no upper bound):
 sloctl get annotation --from 2023-03-22T00:00:00Z -A
-# - Annotations that have 'spec.endTime' BEFORE today:
+# - Annotations which time window overlaps a time period ending with today (no lower bound):
 sloctl get annotation --to 2023-03-23T00:00:00Z -A
