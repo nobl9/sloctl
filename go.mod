@@ -7,7 +7,7 @@ require (
 	github.com/charmbracelet/huh v0.8.0
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/x/exp/teatest v0.0.0-20250930200525-31788bbe6486
-	github.com/go-playground/validator/v10 v10.30.0
+	github.com/go-playground/validator/v10 v10.30.1
 	github.com/itchyny/gojq v0.12.18
 	github.com/mark3labs/mcp-go v0.43.2
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
