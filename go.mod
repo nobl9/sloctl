@@ -14,7 +14,7 @@ require (
 	github.com/nobl9/go-yaml v1.0.1
 	github.com/nobl9/nobl9-go v0.120.0-rc2
 	github.com/pkg/errors v0.9.1
-	github.com/schollz/progressbar/v3 v3.18.0
+	github.com/schollz/progressbar/v3 v3.19.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/sjson v1.2.5
