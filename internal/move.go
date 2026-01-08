@@ -48,19 +48,23 @@ func (r *RootCmd) NewMoveCmd() *cobra.Command {
 func (m *MoveCmd) newMoveSLOCmd() *cobra.Command {
 	moveSubCmd := &cobra.Command{
 		Use:   "slo",
-		Short: "Move SLOs between Projects.",
-		Long: `Moves one or more SLOs to a different project.
+		Short: "Move SLOs between Projects or to a different Service within the same Project.",
+		Long: `Moves one or more SLOs to a different project or to a different Service within the same project.
 The command will also create a new Project and/or Service if the specified target objects do not yet exist.
+
+For cross-project moves, use --to-project flag. For same-project service moves, use --to-service without --to-project.
 
 Moving an SLO between Projects updates references of this SLO in other objects.
 If you've adopted SLOs as Code approach, ensure you update these references in your configuration:
-  - Component SLO’s project in the composite SLO definition.
+  - Component SLO's project in the composite SLO definition.
   - Budget Adjustment filters.
 
-Furthermore, the operation:
-  - Updates its link — the former link won't work anymore.
-  - Removes it from reports filtered by its previous path.
-  - Unlinks Alert Policies (only if --detach-alert-policies flag is provided).`,
+Furthermore, cross-project move operations:
+  - Update SLO links — former links won't work anymore.
+  - Remove SLOs from reports filtered by their previous path.
+
+Both cross-project and same-project service moves:
+  - Unlink Alert Policies (only if --detach-alert-policies flag is provided).`,
 		Example: moveSLOExample,
 		RunE:    m.moveSLO,
 	}
@@ -78,14 +82,14 @@ Furthermore, the operation:
 		toProjectFlagName,
 		"",
 		"",
-		`Target Project for the moved SLOs.`,
+		`Target Project for the moved SLOs (required for cross-project moves, omit for same-project service moves).`,
 	)
 	moveSubCmd.Flags().StringVarP(
 		&m.newService,
 		"to-service",
 		"",
 		"",
-		`Target Service for the moved SLOs (if not specified, the source Service name will be used).`,
+		`Target Service for the moved SLOs (required for same-project moves; if not specified for cross-project moves, source Service name is used).`,
 	)
 	moveSubCmd.Flags().BoolVarP(
 		&m.detachAlertPolicies,
@@ -94,9 +98,6 @@ Furthermore, the operation:
 		false,
 		`Detach all Alert Policies from the moved SLOs.`,
 	)
-	if err := moveSubCmd.MarkFlagRequired(toProjectFlagName); err != nil {
-		panic(err)
-	}
 
 	return moveSubCmd
 }
@@ -107,6 +108,14 @@ func (m *MoveCmd) moveSLO(cmd *cobra.Command, sloNames []string) error {
 		m.client.Config.Project = m.oldProject
 	}
 	oldProject := m.client.Config.Project
+
+	// Validate flag combinations
+	isCrossProjectMove := m.newProject != ""
+	isSameProjectMove := m.newProject == "" && m.newService != ""
+
+	if !isCrossProjectMove && !isSameProjectMove {
+		return errors.New("Either --to-project (for cross-project move) or --to-service (for same-project service move) must be provided.")
+	}
 
 	if len(sloNames) == 0 {
 		var err error
@@ -133,11 +142,21 @@ func (m *MoveCmd) moveSLO(cmd *cobra.Command, sloNames []string) error {
 	buf := bytes.Buffer{}
 	switch len(sloNames) {
 	case 1:
-		buf.WriteString(fmt.Sprintf("Moving '%s' SLO from '%s' Project to '%s' Project.\n",
-			sloNames[0], oldProject, m.newProject))
+		if isCrossProjectMove {
+			buf.WriteString(fmt.Sprintf("Moving '%s' SLO from '%s' Project to '%s' Project.\n",
+				sloNames[0], oldProject, m.newProject))
+		} else {
+			buf.WriteString(fmt.Sprintf("Moving '%s' SLO to a different Service within '%s' Project.\n",
+				sloNames[0], oldProject))
+		}
 	default:
-		buf.WriteString(fmt.Sprintf("Moving the following SLOs from '%s' Project to '%s' Project:\n",
-			oldProject, m.newProject))
+		if isCrossProjectMove {
+			buf.WriteString(fmt.Sprintf("Moving the following SLOs from '%s' Project to '%s' Project:\n",
+				oldProject, m.newProject))
+		} else {
+			buf.WriteString(fmt.Sprintf("Moving the following SLOs to a different Service within '%s' Project:\n",
+				oldProject))
+		}
 		for _, sloName := range sloNames {
 			buf.WriteString(" - ")
 			buf.WriteString(sloName)
@@ -145,10 +164,18 @@ func (m *MoveCmd) moveSLO(cmd *cobra.Command, sloNames []string) error {
 		}
 	}
 	if m.newService != "" {
+		targetProject := m.newProject
+		if !isCrossProjectMove {
+			targetProject = oldProject
+		}
 		buf.WriteString(fmt.Sprintf("'%s' Service in '%s' Project will be assigned to all the moved SLOs.\n",
-			m.newService, m.newProject))
+			m.newService, targetProject))
 	}
-	buf.WriteString("If the target Service in the new Project does not exist, it will be created.\n")
+	if isCrossProjectMove {
+		buf.WriteString("If the target Service in the new Project does not exist, it will be created.\n")
+	} else {
+		buf.WriteString("If the target Service does not exist in this Project, it will be created.\n")
+	}
 	if m.detachAlertPolicies {
 		buf.WriteString("Attached Alert Policies will be detached from all the moved SLOs.\n")
 	}
