@@ -109,7 +109,6 @@ func (m *MoveCmd) moveSLO(cmd *cobra.Command, sloNames []string) error {
 	}
 	oldProject := m.client.Config.Project
 
-	// Validate flag combinations
 	isCrossProjectMove := m.newProject != ""
 	isSameProjectMove := m.newProject == "" && m.newService != ""
 
@@ -139,6 +138,43 @@ func (m *MoveCmd) moveSLO(cmd *cobra.Command, sloNames []string) error {
 		return err
 	}
 
+	m.printMoveDetails(sloNames, isCrossProjectMove, oldProject)
+
+	if err := m.client.Objects().V1().MoveSLOs(ctx, payload); err != nil {
+		_, _ = m.out.Write([]byte("\n"))
+		var httpErr *sdk.HTTPError
+		if errors.As(err, &httpErr) {
+			if len(httpErr.Errors) > 0 && strings.Contains(httpErr.Errors[0].Title, "it has assigned Alert Policies") {
+				return errors.New("Cannot move SLOs with attached Alert Policies.\n" +
+					"Detach them manually or use the '--detach-alert-policies' flag to detach them automatically.")
+			}
+		}
+		return err
+	}
+	_, _ = m.out.Write([]byte("\nThe SLOs were successfully moved.\n"))
+	return nil
+}
+
+func (m *MoveCmd) getSLONamesForProject(ctx context.Context, project string) ([]string, error) {
+	_, _ = fmt.Fprintf(m.out, "Fetching all SLOs from '%s' Project...\n", project)
+	slos, err := m.client.Objects().V1().Get(
+		ctx,
+		manifest.KindSLO,
+		http.Header{sdk.HeaderProject: []string{project}},
+		nil,
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to fetch all SLOs for '%s' Project", project)
+	}
+	sloNames := make([]string, 0, len(slos))
+	for _, slo := range slos {
+		sloNames = append(sloNames, slo.GetName())
+	}
+	slices.Sort(sloNames)
+	return sloNames, nil
+}
+
+func (m *MoveCmd) printMoveDetails(sloNames []string, isCrossProjectMove bool, oldProject string) {
 	buf := bytes.Buffer{}
 	switch len(sloNames) {
 	case 1:
@@ -180,37 +216,4 @@ func (m *MoveCmd) moveSLO(cmd *cobra.Command, sloNames []string) error {
 		buf.WriteString("Attached Alert Policies will be detached from all the moved SLOs.\n")
 	}
 	_, _ = m.out.Write(buf.Bytes())
-
-	if err := m.client.Objects().V1().MoveSLOs(ctx, payload); err != nil {
-		_, _ = m.out.Write([]byte("\n"))
-		var httpErr *sdk.HTTPError
-		if errors.As(err, &httpErr) {
-			if len(httpErr.Errors) > 0 && strings.Contains(httpErr.Errors[0].Title, "it has assigned Alert Policies") {
-				return errors.New("Cannot move SLOs with attached Alert Policies.\n" +
-					"Detach them manually or use the '--detach-alert-policies' flag to detach them automatically.")
-			}
-		}
-		return err
-	}
-	_, _ = m.out.Write([]byte("\nThe SLOs were successfully moved.\n"))
-	return nil
-}
-
-func (m *MoveCmd) getSLONamesForProject(ctx context.Context, project string) ([]string, error) {
-	_, _ = fmt.Fprintf(m.out, "Fetching all SLOs from '%s' Project...\n", project)
-	slos, err := m.client.Objects().V1().Get(
-		ctx,
-		manifest.KindSLO,
-		http.Header{sdk.HeaderProject: []string{project}},
-		nil,
-	)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to fetch all SLOs for '%s' Project", project)
-	}
-	sloNames := make([]string, 0, len(slos))
-	for _, slo := range slos {
-		sloNames = append(sloNames, slo.GetName())
-	}
-	slices.Sort(sloNames)
-	return sloNames, nil
 }
