@@ -53,11 +53,11 @@ func (g *DeleteCmd) run(cmd *cobra.Command) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to convert input data to JSON")
 		}
-		if _, err = DoRequest(
+		if _, err = doRequest(
 			g.client,
 			cmd.Context(),
 			http.MethodPost,
-			fmt.Sprintf("%s/%s/events/delete", BudgetAdjustmentAPI, g.adjustment),
+			fmt.Sprintf("%s/%s/events/delete", budgetAdjustmentAPI, g.adjustment),
 			nil,
 			bytes.NewReader(jsonBytes),
 		); err != nil {

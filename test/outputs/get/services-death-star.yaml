@@ -1,0 +1,18 @@
+- apiVersion: n9/v1alpha
+  kind: Service
+  metadata:
+    displayName: Destroyer
+    name: destroyer
+    project: death-star
+    annotations:
+      registry: docker.io
+  spec:
+    description: Dummy Service for 'sloctl get' e2e tests
+- apiVersion: n9/v1alpha
+  kind: Service
+  metadata:
+    displayName: Deputy Office
+    name: deputy-office
+    project: death-star
+  spec:
+    description: Dummy Service for 'sloctl get' e2e tests

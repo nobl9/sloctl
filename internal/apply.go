@@ -4,12 +4,14 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/manifest/v1alpha"
 	"github.com/nobl9/nobl9-go/sdk"
+	v2 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v2"
 
 	"github.com/nobl9/sloctl/internal/flags"
 )
@@ -21,7 +23,7 @@ type ApplyCmd struct {
 	dryRun            bool
 	autoConfirm       bool
 	replay            bool
-	replayFrom        flags.TimeValue
+	replayFrom        time.Time
 	project           string
 }
 
@@ -64,16 +66,18 @@ func (r *RootCmd) NewApplyCmd() *cobra.Command {
 	)
 	cmd.Flags().BoolVar(&apply.replay, replayFlagName, false,
 		"Run Replay for the applied SLOs. If Replay fails, the applied changes are not rolled back.")
-	cmd.Flags().Var(&apply.replayFrom, replayFromFlagName, "Sets the start of Replay time window.")
+	flags.RegisterTimeVar(
+		cmd,
+		&apply.replayFrom,
+		replayFromFlagName,
+		"Sets the start of Replay time window.",
+	)
 	cmd.MarkFlagsRequiredTogether(replayFlagName, replayFromFlagName)
 
 	return cmd
 }
 
 func (a ApplyCmd) Run(cmd *cobra.Command) error {
-	if a.dryRun {
-		a.client.WithDryRun()
-	}
 	if len(a.definitionPaths) == 0 {
 		return cmd.Usage()
 	}
@@ -88,7 +92,10 @@ func (a ApplyCmd) Run(cmd *cobra.Command) error {
 		return err
 	}
 	printSourcesDetails("Applying", objects, os.Stdout)
-	if err = a.client.Objects().V1().Apply(cmd.Context(), objects); err != nil {
+	if err = a.client.Objects().V2().Apply(cmd.Context(), v2.ApplyRequest{
+		Objects: objects,
+		DryRun:  a.dryRun,
+	}); err != nil {
 		return err
 	}
 	printCommandResult("The resources were successfully applied.", a.dryRun)
@@ -115,7 +122,7 @@ func (a ApplyCmd) runReplay(cmd *cobra.Command, objects []manifest.Object) error
 		replays = append(replays, ReplayConfig{
 			Project: slo.GetProject(),
 			SLO:     slo.GetName(),
-			From:    a.replayFrom.Time,
+			From:    a.replayFrom,
 		})
 	}
 	failedReplays, err := replayCmd.RunReplays(cmd, replays)

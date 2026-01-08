@@ -16,24 +16,21 @@ setup() {
   load_lib "bats-assert"
 }
 
-@test "date to is before from" {
-  from=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-  run_sloctl budgetadjustments events get --adjustment-name=foo --to=2024-01-01T00:00:00Z --from=$from
+@test "date 'to' is before 'from'" {
+  from="2024-01-02T00:00:00Z"
+  run_sloctl budgetadjustments events get --adjustment-name=foo --from="$from" --to=2024-01-01T00:00:00Z
   assert_failure
-  output="$stderr"
-  assert_output "Error: - 'to' date must be be after 'from' date (source: 'to', value: '{\"Adjustment\":\"foo\",\"From\":\"${from}\",\"To\":\"2024-01-01T00:00:00Z\",\"SloProject\":\"\",\"SloNa...')"
+  assert_stderr "Error: - 'to' date must be be after 'from' date (source: 'to', value: '{\"Adjustment\":\"foo\",\"From\":\"${from}\",\"To\":\"2024-01-01T00:00:00Z\",\"SloProject\":\"\",\"SloNa...')"
 }
 
 @test "get events for non-existent adjustment" {
-  run_sloctl budgetadjustments events get --adjustment-name=foo --from=2024-01-01T00:00:00Z --to=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  run_sloctl budgetadjustments events get --adjustment-name=foo --from=2024-01-01T00:00:00Z --to=2024-01-02T00:00:00Z
   assert_failure
-  output="$stderr"
-  assert_output "Error: - adjustment 'foo' was not found"
+  assert_stderr "Error: - adjustment 'foo' was not found"
 
   for action in delete update; do
     run_sloctl budgetadjustments events $action  --adjustment-name=foo -f "'$TEST_INPUTS/sample-events.yaml'"
     assert_failure
-    output="$stderr"
-    assert_output "Error: - adjustment 'foo' was not found"
+    assert_stderr "Error: - adjustment 'foo' was not found"
   done
 }

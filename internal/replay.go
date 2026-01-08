@@ -34,7 +34,7 @@ import (
 type ReplayCmd struct {
 	client             *sdk.Client
 	printer            *printer.Printer
-	from               flags.TimeValue
+	from               time.Time
 	configPaths        []string
 	sloName            string
 	project            string
@@ -61,8 +61,8 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 		Args:    replay.arguments,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			replay.client = r.GetClient()
-			if replay.project != "" {
-				replay.client.Config.Project = replay.project
+			if replay.project == "" {
+				replay.project = replay.client.Config.Project
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error { return replay.Run(cmd) },
@@ -70,9 +70,13 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 
 	replay.printer.MustRegisterFlags(cmd)
 	registerFileFlag(cmd, false, &replay.configPaths)
-	cmd.Flags().StringVarP(&replay.project, "project", "p", "",
-		`Specifies the Project for the SLOs you want to Replay.`)
-	cmd.Flags().Var(&replay.from, "from", "Sets the start of Replay time window.")
+	cmd.Flags().StringVarP(&replay.project, "project", "p", "", `Specifies the Project for the SLOs you want to Replay.`)
+	flags.RegisterTimeVar(
+		cmd,
+		&replay.from,
+		"from",
+		"Sets the start of Replay time window.",
+	)
 
 	cmd.AddCommand(replay.AddDeleteCommand())
 	cmd.AddCommand(replay.AddCancelCommand())
@@ -82,7 +86,7 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 }
 
 func (r *ReplayCmd) Run(cmd *cobra.Command) error {
-	if r.client.Config.Project == "*" {
+	if r.project == "*" {
 		return errProjectWildcardIsNotAllowed
 	}
 	r.arePlaylistEnabled(cmd.Context())
@@ -115,7 +119,6 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 		if r.playlistsAvailable {
 			cmd.Println("Replay is added to the queue...")
 			err = r.runReplay(cmd.Context(), replay)
-
 			if err != nil {
 				cmd.Println(colorstring.Color("[red]Failed to add Replay to the queue:[reset] " + err.Error()))
 				failedIndexes = append(failedIndexes, i)
@@ -207,10 +210,10 @@ func (r *ReplayCmd) prepareConfigs() ([]ReplayConfig, error) {
 		}
 		for i := range c {
 			if c[i].From.IsZero() {
-				c[i].From = r.from.Time
+				c[i].From = r.from
 			}
 			if len(c[i].Project) == 0 {
-				c[i].Project = r.client.Config.Project
+				c[i].Project = r.project
 			}
 			if err = val.Struct(c[i]); err != nil {
 				return nil, errors.Wrap(err, "Replay config entry failed validation")
@@ -228,9 +231,9 @@ func (r *ReplayCmd) prepareConfigs() ([]ReplayConfig, error) {
 
 	if len(replays) == 0 {
 		replays = append(replays, ReplayConfig{
-			Project: r.client.Config.Project,
+			Project: r.project,
 			SLO:     r.sloName,
-			From:    r.from.Time,
+			From:    r.from,
 		})
 	}
 	return replays, nil
@@ -280,8 +283,8 @@ func (r *ReplayCmd) verifySLOs(ctx context.Context, replays []ReplayConfig) erro
 			sloNames = append(sloNames, r.SourceSLO.Slo)
 		}
 	}
-	if r.client.Config.Project == "" {
-		r.client.Config.Project = sdk.ProjectsWildcard
+	if r.project == "" {
+		r.project = sdk.ProjectsWildcard
 	}
 
 	// Find non-existent or RBAC protected SLOs.
@@ -446,12 +449,12 @@ func (r *ReplayCmd) getReplayAvailability(
 	}
 	data, _, err := r.doRequest(ctx, http.MethodGet, endpointReplayGetAvailability, config.Project, values, nil)
 	if err != nil {
-		return
+		return availability, err
 	}
 	if err = json.Unmarshal(data, &availability); err != nil {
-		return
+		return availability, err
 	}
-	return
+	return availability, err
 }
 
 func (r *ReplayCmd) getReplayStatus(

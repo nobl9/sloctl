@@ -10,7 +10,16 @@ type yamlPrinter struct {
 	out io.Writer
 }
 
-func (p *yamlPrinter) Print(content any) error {
-	enc := yamlenc.NewEncoder(p.out)
-	return enc.Encode(content)
+func (p yamlPrinter) Print(content any) error {
+	switch v := content.(type) {
+	case []manifest.Object:
+		return sdk.EncodeObjects(v, p.out, manifest.ObjectFormatYAML)
+	default:
+		b, err := yaml.Marshal(content)
+		if err != nil {
+			return err
+		}
+		_, err = p.out.Write(b)
+		return err
+	}
 }

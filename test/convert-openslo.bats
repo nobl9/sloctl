@@ -7,7 +7,7 @@ setup_file() {
   load_lib "bats-assert"
 
   generate_inputs "$BATS_TEST_TMPDIR"
-  export TEST_OUTPUTS="$TEST_SUITE_OUTPUTS/convert-openslo"
+  generate_outputs
 }
 
 # setup is run before each test.
@@ -21,8 +21,7 @@ setup() {
   run_sloctl convert openslo
 
   assert_failure
-  output="$stderr"
-  assert_output 'Error: required flag(s) "file" not set'
+  assert_stderr 'Error: required flag(s) "file" not set'
 }
 
 @test "from file" {
@@ -57,8 +56,7 @@ setup() {
   run_sloctl convert openslo -f "${TEST_INPUTS}/invalid-alert-notification-target.yaml"
 
   assert_failure
-  output="$stderr"
-  assert_output - <<EOF
+  assert_stderr - <<EOF
 Error: Validation for openslo/v1.AlertNotificationTarget pd-on-call-notification has failed for the following properties:
   - 'spec.target' with value 'PagerDuty':
     - must be one of: discord, email, jira, msteams, opsgenie, pagerduty, servicenow, slack, webhook
@@ -69,8 +67,7 @@ EOF
   run_sloctl convert openslo -f "${TEST_INPUTS}/alert-policy.yaml"
 
   assert_failure
-  output="$stderr"
-  assert_output - <<EOF
+  assert_stderr - <<EOF
 Error: failed to resolve OpenSLO object references: failed to inline OpenSLO referenced objects: failed to inline v1.AlertPolicy 'low-priority-2': v1.AlertCondition 'memory-usage-breach' referenced at 'spec.conditions[0].conditionRef' does not exist
 EOF
 }

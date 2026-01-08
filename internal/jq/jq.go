@@ -54,9 +54,9 @@ func (e ExpressionRunner) Evaluate(v any) (iter.Seq2[any, error], error) {
 	}
 
 	return func(yield func(any, error) bool) {
-		iter := code.Run(anyValue)
+		iterator := code.Run(anyValue)
 		for {
-			v, ok := iter.Next()
+			v, ok := iterator.Next()
 			if !ok {
 				return
 			}

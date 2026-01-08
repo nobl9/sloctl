@@ -14,7 +14,7 @@
 # Stderr is separated from stdout into $stderr and $output.
 run_sloctl() {
   bats_require_minimum_version 1.5.0
-  run --separate-stderr bash -c "set -o pipefail && sloctl $* | sed 's/ *$//'"
+  run --separate-stderr bash -c "set -eo pipefail && sloctl $* | sed 's/ *$//'"
 }
 
 # read_files
@@ -99,7 +99,9 @@ _assert_objects_existence() {
     case "$1" in
     apply)
       run_sloctl "${args[*]}"
-      refute_output --partial "No resources found"
+      if ! refute_output --partial "No resources found"; then
+        printf "Assertion failed for 'sloctl %s'\n" "${args[*]}" >&2
+      fi
       # We can't retrieve the same object we applied so we need to compare the minimum.
       filter='[.[] | {"name": .metadata.name, "project": .metadata.project, "labels": .metadata.labels, "annotations": .metadata.annotations}] | sort_by(.name, .project)'
       # shellcheck disable=2154
@@ -256,3 +258,86 @@ assert_success_joined_output() {
   output+="
 $stderr" assert_success
 }
+
+# assert_stderr
+# =============
+#
+# Summary: Fail if `$stderr' does not match the expected stderr.
+#
+# Usage: assert_stderr [-p | -e] [- | [--] <expected>]
+#
+# Options:
+#   -p, --partial  Match if `expected` is a substring of `$stderr`
+#   -e, --regexp   Treat `expected` as an extended regular expression
+#   -, --stdin     Read `expected` value from STDIN
+#   <expected>     The expected value, substring or regular expression
+#
+# IO:
+#   STDIN - [=$1] expected stderr
+#   STDERR - details, on failure
+#            error message, on error
+# Globals:
+#   stderr
+# Returns:
+#   0 - if stderr matches the expected value/partial/regexp
+#   1 - otherwise
+#
+# Similarly to `assert_output`, this function verifies that a command or function produces the expected stderr.
+# (It is the logical complement of `refute_stderr`.)
+# The stderr matching can be literal (the default), partial or by regular expression.
+# The expected stderr can be specified either by positional argument or read from STDIN by passing the `-`/`--stdin` flag.
+#
+# NOTE: This was copied from bats-assert,
+# once a new version is avilable in the official Docker image, we can abandond this.
+assert_stderr() {
+  output="$stderr"
+  assert_output "$@"
+}
+
+# run_mcp_inspector
+# ==========
+#
+# Summary: Run the modelcontextprotocol/inspector via npx.
+#
+# Usage: run_mcp_inspector <args>
+#
+# Options:
+#   <args>    Arguments to inspector invocation.
+#
+# The output of the inspector is captured in $output.
+run_mcp_inspector() {
+  bats_require_minimum_version 1.5.0
+  run npx -y @modelcontextprotocol/inspector@0.16.8 --cli sloctl mcp "$@"
+}
+
+# generate_outputs
+# ===============
+#
+# Summary: Prepare test outputs for the current test file.
+#
+# Usage: generate_outputs
+#
+# Each occurrence of <PROJECT> in the expected output files will be replaced
+# with $TEST_PROJECT value.
+# TEST_PROJECT must be set before calling generate_outputs.
+#
+# The function exports TEST_OUTPUTS environment variable which points
+# at the specific file's test outputs.
+generate_outputs() {
+  load_lib "bats-support"
+
+  test_filename=$(basename "$BATS_TEST_FILENAME" .bats)
+  TEST_OUTPUTS="$TEST_SUITE_OUTPUTS/$test_filename"
+
+  if [[ -z "$TEST_PROJECT" ]]; then
+    fail "TEST_PROJECT environment variable is not set. Call generate_inputs() before generate_outputs()."
+  fi
+
+  # Use generated project name in the outputs.
+  for file in "$TEST_OUTPUTS"/*; do
+    run sed -i "s/<PROJECT>/$TEST_PROJECT/g" "$file"
+  done
+
+  export TEST_OUTPUTS
+}
+

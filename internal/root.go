@@ -18,7 +18,7 @@ const programName = "sloctl"
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() error {
+func Execute() {
 	return NewRootCmd().Execute()
 }
 
@@ -34,8 +34,8 @@ func NewRootCmd() *cobra.Command {
 		Use:   programName,
 		Short: "Create, get and delete SLO definitions from command line easily.",
 		Long: `All available commands for execution are listed below.
-Use this tool to work with definitions of SLO in YAML files.
-For every command more detailed help is available.`,
+Use this tool to work with Nobl9 YAML configuration files (including, but not limited to SLOs).
+More detailed help is available for each command.`,
 		SilenceUsage: true,
 	}
 
@@ -56,7 +56,9 @@ For every command more detailed help is available.`,
 	rootCmd.AddCommand(root.NewAwsIamIds())
 	rootCmd.AddCommand(budgetadjustments.NewRootCmd(&root))
 	rootCmd.AddCommand(root.NewConvertCmd())
+	rootCmd.AddCommand(root.NewMoveCmd())
 	rootCmd.AddCommand(root.NewMCPCmd())
+	rootCmd.AddCommand(root.NewReviewCmd())
 	rootCmd.AddCommand(root.NewRecipesCmd())
 
 	return rootCmd
@@ -78,9 +80,11 @@ func (r *RootCmd) GetClient() *sdk.Client {
 	return r.Client
 }
 
+const sdkEnvPrefix = "SLOCTL_"
+
 // setupClient reads in config file, ENV variables if set and sets up an API client.
 func (r *RootCmd) setupClient() error {
-	options := []sdk.ConfigOption{sdk.ConfigOptionEnvPrefix("SLOCTL_")}
+	options := []sdk.ConfigOption{sdk.ConfigOptionEnvPrefix(sdkEnvPrefix)}
 	if r.Flags.NoConfigFile {
 		options = append(options, sdk.ConfigOptionNoConfigFile())
 	}

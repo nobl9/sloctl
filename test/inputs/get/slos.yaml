@@ -97,3 +97,38 @@
     alertPolicies:
       - trigger-alert-immediately
       - budget-will-be-burn-in-3days
+- apiVersion: n9/v1alpha
+  kind: SLO
+  metadata:
+    name: api-server-slo
+    project: <PROJECT>
+  spec:
+    description: This SLO is just for the e2e 'sloctl get' tests, it's not supposed to work!
+    indicator:
+      metricSource:
+        kind: Direct
+        name: splunk-direct
+        project: death-star
+    budgetingMethod: Occurrences
+    objectives:
+    - displayName: Good response (200)
+      value: 1.0
+      name: ok
+      target: 0.95
+      countMetrics:
+        incremental: true
+        good:
+          splunk:
+            query: index=* source=udp:5072 sourcetype=syslog status<400 | bucket _time span=1m | stats count as n9value by _time | rename _time as n9time | fields n9time n9value
+        total:
+          splunk:
+            query: index=* source=udp:5072 sourcetype=syslog | bucket _time span=1m | stats count as n9value by _time | rename _time as n9time | fields n9time n9value
+      primary: true
+    service: api-server
+    timeWindows:
+    - unit: Month
+      count: 1
+      isRolling: false
+      calendar:
+        startTime: "2022-12-01 00:00:00"
+        timeZone: UTC

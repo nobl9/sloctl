@@ -1,0 +1,13 @@
+[full]
+  clientId = "full_client_id"
+  clientSecret = "fu***et"
+  project = "default"
+  url = "https://apps.nobl9.com/api"
+  oktaOrgURL = "https://accounts.nobl9.com"
+  oktaAuthServer = "auseg9kiegWKEtJZC416"
+  disableOkta = true
+  timeout = "1m0s"
+
+[minimal]
+  clientId = "minimal_client_id"
+  clientSecret = "mi***et"

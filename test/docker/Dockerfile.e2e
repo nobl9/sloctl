@@ -1,7 +1,7 @@
-FROM bats/bats:1.12.0
+FROM bats/bats:1.13.0
 
 RUN apk --no-cache --update add \
-  gettext jq git python3 py3-pip
+  gettext jq git python3 py3-pip npm
 RUN pip install yq==v3.2.3 --break-system-packages
 
 WORKDIR /sloctl

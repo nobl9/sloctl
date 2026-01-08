@@ -1,6 +1,8 @@
 package events
 
 import (
+	"time"
+
 	"github.com/spf13/cobra"
 
 	"github.com/nobl9/sloctl/internal/flags"
@@ -40,22 +42,25 @@ func registerSloNameFlag(cmd *cobra.Command, storeIn *string) {
 		"Name of the SLO. Required when sloName is defined.")
 }
 
-func mustRegisterFromFlag(
-	cmd *cobra.Command,
-	storeIn *flags.TimeValue,
-) {
-	cmd.Flags().
-		Var(storeIn, FlagFrom, "Specifies the start date and time for the data range (in UTC).")
+func mustRegisterFromFlag(cmd *cobra.Command, storeIn *time.Time) {
+	flags.RegisterTimeVar(
+		cmd,
+		storeIn,
+		FlagFrom,
+		"Specifies the start date and time for the data range (in UTC).",
+	)
 	if err := cmd.MarkFlagRequired(FlagFrom); err != nil {
 		panic(err)
 	}
 }
 
-func mustRegisterToFlag(
-	cmd *cobra.Command,
-	storeIn *flags.TimeValue,
-) {
-	cmd.Flags().Var(storeIn, FlagTo, "Specifies the end date and time for the data range (in UTC).")
+func mustRegisterToFlag(cmd *cobra.Command, storeIn *time.Time) {
+	flags.RegisterTimeVar(
+		cmd,
+		storeIn,
+		FlagTo,
+		"Specifies the end date and time for the data range (in UTC).",
+	)
 	if err := cmd.MarkFlagRequired(FlagTo); err != nil {
 		panic(err)
 	}

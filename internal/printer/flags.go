@@ -9,12 +9,15 @@ import (
 	"github.com/nobl9/sloctl/internal/csv"
 )
 
+const OutputFlagName = "output"
+
+// MustRegisterFlags registers flags related to printing structured data.
 func (o *Printer) MustRegisterFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().VarP(
 		&o.config.OutputFormat,
-		"output",
+		OutputFlagName,
 		"o",
-		fmt.Sprintf("Output format: one of %s.", strings.Join(validFormatStrings, "|")),
+		fmt.Sprintf(`Output format: one of %s.`, strings.Join(toStringSlice(o.config.SupportedFromats), "|")),
 	)
 
 	cmd.PersistentFlags().StringVarP(
@@ -40,4 +43,12 @@ func (o *Printer) MustRegisterFlags(cmd *cobra.Command) {
 	}
 
 	o.jq.MustRegisterFlags(cmd)
+}
+
+func toStringSlice[T ~string](s []T) []string {
+	result := make([]string, len(s))
+	for i := range s {
+		result[i] = string(s[i])
+	}
+	return result
 }
