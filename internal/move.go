@@ -62,8 +62,6 @@ If you've adopted SLOs as Code approach, ensure you update these references in y
 Furthermore, cross-project move operations:
   - Update SLO links — former links won't work anymore.
   - Remove SLOs from reports filtered by their previous path.
-
-Both cross-project and same-project service moves:
   - Unlink Alert Policies (only if --detach-alert-policies flag is provided).`,
 		Example: moveSLOExample,
 		RunE:    m.moveSLO,
@@ -114,8 +112,12 @@ func (m *MoveCmd) moveSLO(cmd *cobra.Command, sloNames []string) error {
 	isSameProjectMove := m.newProject == "" && m.newService != ""
 
 	if !isCrossProjectMove && !isSameProjectMove {
-		return errors.New("Either --to-project (for cross-project move) or --to-service " +
-			"(for same-project service move) must be provided.")
+		return errors.New("Either --to-project or --to-service must be provided.")
+	}
+
+	if isSameProjectMove && m.detachAlertPolicies {
+		return errors.New("The --detach-alert-policies flag is only applicable for cross-project moves. " +
+			"Alert Policies remain valid when moving SLOs within the same Project.")
 	}
 
 	if len(sloNames) == 0 {
