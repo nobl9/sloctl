@@ -89,7 +89,8 @@ Both cross-project and same-project service moves:
 		"to-service",
 		"",
 		"",
-		`Target Service for the moved SLOs (required for same-project moves; if not specified for cross-project moves, source Service name is used).`,
+		"Target Service for the moved SLOs (required for same-project moves; if not specified for cross-project "+
+			"moves, source Service name is used).",
 	)
 	moveSubCmd.Flags().BoolVarP(
 		&m.detachAlertPolicies,
@@ -113,7 +114,8 @@ func (m *MoveCmd) moveSLO(cmd *cobra.Command, sloNames []string) error {
 	isSameProjectMove := m.newProject == "" && m.newService != ""
 
 	if !isCrossProjectMove && !isSameProjectMove {
-		return errors.New("Either --to-project (for cross-project move) or --to-service (for same-project service move) must be provided.")
+		return errors.New("Either --to-project (for cross-project move) or --to-service " +
+			"(for same-project service move) must be provided.")
 	}
 
 	if len(sloNames) == 0 {
