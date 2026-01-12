@@ -116,7 +116,8 @@ var sloctlEnvVars = []string{
 }
 
 func runSloctl(t *testing.T, input io.Reader, sloctlArgs ...string) *bytes.Buffer {
-	args := []string{"run", "-i", "--rm"}
+	args := make([]string, 0, 3+2*len(sloctlEnvVars)+1+len(sloctlArgs))
+	args = append(args, "run", "-i", "--rm")
 	for _, env := range sloctlEnvVars {
 		args = append(args, "-e", fmt.Sprintf("%s=%s", env, os.Getenv(env)))
 	}
