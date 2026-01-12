@@ -18,7 +18,7 @@ setup() {
   run_sloctl move slo splunk-raw-rolling
 
   assert_failure
-  assert_stderr 'Error: Either --to-project (for cross-project move) or --to-service (for same-project service move) must be provided.'
+  assert_stderr 'Error: Either --to-project or --to-service must be provided.'
 }
 
 @test "validation error" {
