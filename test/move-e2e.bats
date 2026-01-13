@@ -15,7 +15,8 @@ setup_file() {
 
 # teardown_file is run only once for the whole file.
 teardown_file() {
-  run_sloctl delete -f "'$TEST_INPUTS/**'" -f "'$TEST_OUTPUTS/**'"
+  run_sloctl delete -f "'$TEST_INPUTS/**'"
+  run_sloctl delete -f "'$TEST_OUTPUTS/**'"
   assert_success_joined_output
 }
 
