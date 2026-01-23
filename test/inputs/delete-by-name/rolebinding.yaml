@@ -5,4 +5,4 @@ metadata:
 spec:
   projectRef: death-star
   roleRef: project-viewer
-  user: 00u4d8j2imVHGmBJH4x1
+  accountId: 00u4d8j2imVHGmBJH4x1
