@@ -14,11 +14,11 @@ setup() {
   load_lib "bats-assert"
 }
 
-@test "missing --to-project flag" {
+@test "missing required flags" {
   run_sloctl move slo splunk-raw-rolling
 
   assert_failure
-  assert_stderr 'Error: required flag(s) "to-project" not set'
+  assert_stderr 'Error: Either --to-project or --to-service must be provided.'
 }
 
 @test "validation error" {
