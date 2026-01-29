@@ -26,7 +26,7 @@ type Recipe struct {
 	Description string           `json:"description"`
 	Example     string           `json:"example,omitempty"`
 	JQ          string           `json:"jq,omitempty"`
-	Validators  RecipeValidators `json:"validators,omitempty,omitzero"`
+	Validators  RecipeValidators `json:"validators,omitzero"`
 	name        string
 }
 
