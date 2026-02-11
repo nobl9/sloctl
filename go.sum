@@ -2,8 +2,8 @@ github.com/BurntSushi/toml v1.6.0 h1:dRaEfpa2VI55EwlIW72hMRHdWouJeRF7TPYhI+AUQjk
 github.com/BurntSushi/toml v1.6.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
-github.com/OpenSLO/go-sdk v0.9.0 h1:k//lQnthYHtv6j/ujqWREgqwqo2zsALO/JBUH1Fc9Ak=
-github.com/OpenSLO/go-sdk v0.9.0/go.mod h1:ch0SE86x4+0r919NnFEMhx0USVkytv+CR8+KkmnoRlY=
+github.com/OpenSLO/go-sdk v0.9.1 h1:7T9isJZzaDSHT23Nb+IoaQWF7ThIpsQZ4ve8htsH8IE=
+github.com/OpenSLO/go-sdk v0.9.1/go.mod h1:OQiaRWQILFiqx2tzUJ3y+X42wbehd9Gpd0cCt0dsB2E=
 github.com/atotto/clipboard v0.1.4 h1:EH0zSVneZPSuFR11BlR9YppQTVDbh5+16AmcJi4g1z4=
 github.com/atotto/clipboard v0.1.4/go.mod h1:ZY9tmq7sm5xIbd9bOK4onWV4S6X0u6GY7Vn0Yu86PYI=
 github.com/aws/aws-sdk-go v1.55.8 h1:JRmEUbU52aJQZ2AjX4q4Wu7t4uZjOu71uyNmaWlUkJQ=
@@ -139,12 +139,12 @@ github.com/muesli/termenv v0.16.0 h1:S5AlUN9dENB57rsbnkPyfdGuWIlkmzJjbFf0Tf5FWUc
 github.com/muesli/termenv v0.16.0/go.mod h1:ZRfOIKPFDYQoDFF4Olj7/QJbW60Ol/kL1pU3VfY/Cnk=
 github.com/nobl9/go-yaml v1.0.1 h1:Aj1kSaYdRQTKlvS6ihvXzQJhCpoHhtf9nfA95zqWH4Q=
 github.com/nobl9/go-yaml v1.0.1/go.mod h1:t7vCO8ctYdBweZxU5lUgxzAw31+ZcqJYeqRtrv+5RHI=
-github.com/nobl9/govy v0.23.0-rc2 h1:lQRRvxIkgd4RgIXeF+SIi9qiZWIsba87wSt52jtZgvI=
-github.com/nobl9/govy v0.23.0-rc2/go.mod h1:DN0zA5jtaHrb+uKPATycrlr7HRJy27QUaUg8LEeTsxo=
+github.com/nobl9/govy v0.23.0 h1:caDtIOtT5UklsK2ML0BVYz1cr5bILcECYZga3SuY3AE=
+github.com/nobl9/govy v0.23.0/go.mod h1:jx69bdhHC18aQnNlK1Gl2C+yxsS2a2/RiRYzK/dmYvM=
 github.com/nobl9/nobl9-go v0.122.2 h1:c1v/DfyYTP+bx2X/FowBqYY4xuqKTjRjG/xxy7bOy/A=
 github.com/nobl9/nobl9-go v0.122.2/go.mod h1:vRsT1uYBI4z/RsbipobLpggW2XQg/9AJhw/9KoRUTJQ=
-github.com/nobl9/nobl9-openslo v0.1.2 h1:gkthPpVAg6n5Face8Clfz9jZ8tGD8GtQToVbsqI2NVg=
-github.com/nobl9/nobl9-openslo v0.1.2/go.mod h1:OSMQFj9qKjSAO6zsBRX1G0pZboiBx8fhKjlJbHczWSA=
+github.com/nobl9/nobl9-openslo v0.1.3 h1:1AbKFvBH8CufK2dydFQD7L2Ayj6yZM5DbOk5TXuRJmY=
+github.com/nobl9/nobl9-openslo v0.1.3/go.mod h1:5ur58Vjd7yhzmhuDnb0KmVui5MjTaScCpAMPylpORwM=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
