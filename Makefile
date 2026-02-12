@@ -16,7 +16,7 @@ LDFLAGS := -s -w \
 	-X $(VERSION_PKG).BuildGitRevision=$(REVISION)
 
 # renovate datasource=github-releases depName=securego/gosec
-GOSEC_VERSION := v2.22.11
+GOSEC_VERSION := v2.23.0
 # renovate datasource=github-releases depName=golangci/golangci-lint
 GOLANGCI_LINT_VERSION := v2.9.0
 # renovate datasource=go depName=golang.org/x/vuln/cmd/govulncheck
