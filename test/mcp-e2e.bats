@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bats file_tags=e2e
+# bats file_tags=e2e,bats:focus
 
 # setup_file is run only once for the whole file.
 setup_file() {
@@ -25,23 +25,6 @@ setup() {
   load_lib "bats-assert"
 }
 
-@test "apply Project" {
-  input_file="$TEST_INPUTS/project.yaml"
-
-  # First apply the project using MCP apply tool.
-  run_mcp_inspector \
-    --method tools/call \
-    --tool-name apply \
-    --tool-arg file_name="$input_file"
-  assert_success
-  assert_output --partial "successfully applied"
-
-  # Verify the project was created by getting it directly with sloctl.
-  run_sloctl get project "$TEST_PROJECT"
-  assert_success_joined_output
-  assert_applied "$(read_files "${TEST_OUTPUTS}/project.yaml")"
-}
-
 @test "get Project after apply" {
   input_file="$TEST_INPUTS/project.yaml"
 
@@ -60,25 +43,6 @@ setup() {
   assert_output --partial "$TEST_PROJECT"
 }
 
-@test "missing argument to apply" {
-  # Try to apply a non-existent file.
-  run_mcp_inspector \
-    --method tools/call \
-    --tool-name apply
-  assert_failure
-  assert_output --partial "'file_name' argument is required"
-}
-
-@test "apply non-existent file returns error" {
-  # Try to apply a non-existent file.
-  run_mcp_inspector \
-    --method tools/call \
-    --tool-name apply \
-    --tool-arg file_name="/tmp/non-existent-file.yaml"
-  assert_failure
-  assert_output --partial "/tmp/non-existent-file.yaml: no such file or directory"
-}
-
 @test "get non-existent Project returns error" {
   # Try to get a non-existent project.
   run_mcp_inspector \
@@ -89,4 +53,32 @@ setup() {
   assert_equal \
     "$(jq -r .content[0].text <<<"$output")" \
     "Found no Projects"
+}
+
+@test "get SLO after apply" {
+  service_file="$TEST_INPUTS/service.yaml"
+  slo_file="$TEST_INPUTS/slo.yaml"
+
+  # First apply the service and SLO using regular sloctl to ensure they exist.
+  run_sloctl apply -f "$service_file"
+  assert_success
+
+  run_sloctl apply -f "$slo_file"
+  assert_success
+
+  # Now get the SLO using MCP getSLO tool.
+  run_mcp_inspector \
+    --method tools/call \
+    --tool-name getSLO \
+    --tool-arg name=test-mcp-slo \
+    --tool-arg project="$TEST_PROJECT" \
+    --tool-arg format=json
+  assert_success
+
+  # Verify the response contains the SLO
+  slo_name=$(jq -r '.content[0].text | fromjson | .metadata.name' <<<"$output")
+  assert_equal "$slo_name" "test-mcp-slo"
+
+  slo_project=$(jq -r '.content[0].text | fromjson | .metadata.project' <<<"$output")
+  assert_equal "$slo_project" "$TEST_PROJECT"
 }

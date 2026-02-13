@@ -1,0 +1,26 @@
+apiVersion: n9/v1alpha
+kind: SLO
+metadata:
+  name: test-mcp-slo
+  displayName: Test MCP SLO
+  project: <PROJECT>
+spec:
+  budgetingMethod: Occurrences
+  description: Sample SLO for sloctl mcp e2e tests
+  service: test-mcp-service
+  indicator:
+    metricSource:
+      name: prometheus-default
+      kind: Agent
+      project: default
+    spec:
+      prometheus:
+        promql: avg(up{job="prometheus"})
+  objectives:
+    - displayName: Good
+      name: good-obj
+      op: gte
+      target: 0.95
+      value: 1
+      rawMetric:
+        metricType: prometheus
