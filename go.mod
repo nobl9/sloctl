@@ -1,6 +1,6 @@
 module github.com/nobl9/sloctl
 
-go 1.24.11
+go 1.25.7
 
 require (
 	github.com/charmbracelet/bubbletea v1.3.10
@@ -9,10 +9,10 @@ require (
 	github.com/charmbracelet/x/exp/teatest v0.0.0-20250930200525-31788bbe6486
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/itchyny/gojq v0.12.18
-	github.com/mark3labs/mcp-go v0.43.2
+	github.com/mark3labs/mcp-go v0.44.0
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/nobl9/go-yaml v1.0.1
-	github.com/nobl9/nobl9-go v0.122.0-rc3
+	github.com/nobl9/nobl9-go v0.122.2
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.19.0
 	github.com/spf13/cobra v1.10.2
@@ -63,15 +63,15 @@ require (
 
 require (
 	github.com/BurntSushi/toml v1.6.0
-	github.com/OpenSLO/go-sdk v0.8.0
+	github.com/OpenSLO/go-sdk v0.9.1
 	github.com/aws/aws-sdk-go v1.55.8 // indirect
-	github.com/bmatcuk/doublestar/v4 v4.9.2 // indirect
+	github.com/bmatcuk/doublestar/v4 v4.10.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.12 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/goccy/go-yaml v1.17.2-0.20250508142621-500180b7b722
+	github.com/goccy/go-yaml v1.19.2
 	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.8 // indirect
@@ -80,8 +80,8 @@ require (
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/nobl9/govy v0.23.0-rc2 // indirect
-	github.com/nobl9/nobl9-openslo v0.1.0
+	github.com/nobl9/govy v0.23.0 // indirect
+	github.com/nobl9/nobl9-openslo v0.1.3
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/spf13/pflag v1.0.10
