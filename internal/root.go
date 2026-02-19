@@ -18,10 +18,8 @@ const programName = "sloctl"
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	if err := NewRootCmd().Execute(); err != nil {
-		os.Exit(1)
-	}
+func Execute() error {
+	return NewRootCmd().Execute()
 }
 
 type globalFlags struct {
@@ -61,6 +59,7 @@ More detailed help is available for each command.`,
 	rootCmd.AddCommand(root.NewMoveCmd())
 	rootCmd.AddCommand(root.NewMCPCmd())
 	rootCmd.AddCommand(root.NewReviewCmd())
+	rootCmd.AddCommand(root.NewRecipesCmd())
 
 	return rootCmd
 }

@@ -1,0 +1,12 @@
+count-services:
+  description: Count number of services
+  args:
+    - get
+    - service
+  jq: length
+list-all-slos:
+  description: List all SLOs
+  args:
+    - get
+    - slo
+    - -A

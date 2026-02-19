@@ -42,7 +42,7 @@ func NewPrinter(config Config) *Printer {
 
 type Printer struct {
 	config Config
-	jq     *jq.ExpressionRunner
+	jq     jq.ExpressionRunner
 }
 
 // Validate should be called before [Printer.Print], after the flag values are assigned.

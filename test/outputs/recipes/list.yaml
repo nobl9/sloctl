@@ -1,0 +1,22 @@
+count-services:
+  description: Count number of services
+  args:
+    - get
+    - service
+  jq: length
+find-by-label:
+  description: Find objects by label
+  args:
+    - get
+  example: |
+    sloctl recipes find-by-label slo env=prod
+  validators:
+    atLeastArgs:
+      - kind
+      - label
+list-all-slos:
+  description: List all SLOs
+  args:
+    - get
+    - slo
+    - -A
