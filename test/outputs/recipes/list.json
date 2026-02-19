@@ -1,0 +1,31 @@
+{
+  "count-services": {
+    "args": [
+      "get",
+      "service"
+    ],
+    "description": "Count number of services",
+    "jq": "length"
+  },
+  "find-by-label": {
+    "args": [
+      "get"
+    ],
+    "description": "Find objects by label",
+    "example": "sloctl recipes find-by-label slo env=prod\n",
+    "validators": {
+      "atLeastArgs": [
+        "kind",
+        "label"
+      ]
+    }
+  },
+  "list-all-slos": {
+    "args": [
+      "get",
+      "slo",
+      "-A"
+    ],
+    "description": "List all SLOs"
+  }
+}

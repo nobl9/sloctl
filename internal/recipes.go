@@ -104,6 +104,17 @@ func (r *RootCmd) NewRecipesCmd() *cobra.Command {
 
 	cmd.AddGroup(configGroup, recipesGroup)
 
+	// Set RunE after all subcommands are added - handles unknown recipes
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		// This RunE is called when no subcommand matches
+		if len(args) > 0 {
+			_ = cmd.Usage()
+			fmt.Fprintln(os.Stderr, "")
+			return fmt.Errorf("unknown recipe: %s", args[0])
+		}
+		return cmd.Help()
+	}
+
 	return cmd
 }
 
