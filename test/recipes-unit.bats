@@ -33,27 +33,27 @@ setup() {
 }
 
 @test "sloctl recipes remove" {
+  export SLOCTL_RECIPES_PATH="$BATS_TEST_TMPDIR/sloctl-recipes.yaml"
+  cp "$TEST_INPUTS/sloctl-recipes.yaml" "$SLOCTL_RECIPES_PATH"
+
   run_sloctl recipes remove find-by-label
   assert_success
 
   run_sloctl recipes list
   assert_success_joined_output
   assert_output <"$TEST_OUTPUTS/list-after-remove.yaml"
-
-  # Restore for other tests
-  cp "$TEST_INPUTS/sloctl-recipes.yaml" "$SLOCTL_RECIPES_PATH"
 }
 
 @test "sloctl recipes remove (multiple)" {
+  export SLOCTL_RECIPES_PATH="$BATS_TEST_TMPDIR/sloctl-recipes.yaml"
+  cp "$TEST_INPUTS/sloctl-recipes.yaml" "$SLOCTL_RECIPES_PATH"
+
   run_sloctl recipes remove find-by-label count-services
   assert_success
 
   run_sloctl recipes list -o json
   assert_success_joined_output
-  assert_output '{"list-all-slos":{"args":["get","slo","-A"],"description":"List all SLOs"}}'
-
-  # Restore for other tests
-  cp "$TEST_INPUTS/sloctl-recipes.yaml" "$SLOCTL_RECIPES_PATH"
+  assert_output <"$TEST_OUTPUTS/list-after-remove-multiple.json"
 }
 
 @test "sloctl recipes remove (non-existent)" {
@@ -81,25 +81,21 @@ setup() {
 }
 
 @test "sloctl recipes with empty config" {
+  export SLOCTL_RECIPES_PATH="$BATS_TEST_TMPDIR/sloctl-recipes.yaml"
   echo "{}" > "$SLOCTL_RECIPES_PATH"
 
   run_sloctl recipes list -o json
   assert_success_joined_output
   assert_output "{}"
-
-  # Restore for other tests
-  cp "$TEST_INPUTS/sloctl-recipes.yaml" "$SLOCTL_RECIPES_PATH"
 }
 
 @test "sloctl recipes with invalid yaml" {
+  export SLOCTL_RECIPES_PATH="$BATS_TEST_TMPDIR/sloctl-recipes.yaml"
   echo "invalid: yaml: content:" > "$SLOCTL_RECIPES_PATH"
 
   run_sloctl recipes list
   assert_failure
   assert_stderr --partial "failed to decode sloctl recipes config"
-
-  # Restore for other tests
-  cp "$TEST_INPUTS/sloctl-recipes.yaml" "$SLOCTL_RECIPES_PATH"
 }
 
 @test "sloctl recipes with missing config file" {

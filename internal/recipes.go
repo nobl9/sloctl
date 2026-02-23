@@ -19,6 +19,8 @@ import (
 	"github.com/nobl9/sloctl/internal/yamlenc"
 )
 
+const recipesPathEnv = "SLOCTL_RECIPES_PATH"
+
 type Recipes map[string]Recipe
 
 type Recipe struct {
@@ -41,10 +43,17 @@ type RecipesCmd struct {
 
 func (r *RootCmd) NewRecipesCmd() *cobra.Command {
 	recipes, recipesErr := readRecipes()
+	var defaultRecipesPath string
+	if recipesErr == nil {
+		defaultRecipesPath, recipesErr = getRecipesDefaultConfigPath()
+	}
 
 	cmd := &cobra.Command{
 		Use:   "recipes",
 		Short: "Run custom recipes",
+		Long: fmt.Sprintf("Recipes are configured in a YAML file, where each key is a recipe name.\n"+
+			"You can change the default recipes path (%s) with %s environment variable.",
+			defaultRecipesPath, recipesPathEnv),
 	}
 	if recipesErr != nil {
 		cmd.RunE = func(*cobra.Command, []string) error { return recipesErr }
@@ -212,16 +221,20 @@ func writeRecipesToTempFile(path string, recipes Recipes) (tmpFileName string, e
 }
 
 func getRecipesConfigPath() (string, error) {
-	configPath := os.Getenv("SLOCTL_RECIPES_PATH")
+	configPath := os.Getenv(recipesPathEnv)
 	if configPath == "" {
-		defaultFilename := "sloctl-recipes.yaml"
-		sdkConfigPath, err := sdk.GetDefaultConfigPath()
-		if err != nil {
-			return "", errors.Wrapf(err, "failed to read default Nobl9 SDK config path")
-		}
-		configPath = filepath.Join(filepath.Dir(sdkConfigPath), defaultFilename)
+		return getRecipesDefaultConfigPath()
 	}
 	return configPath, nil
+}
+
+func getRecipesDefaultConfigPath() (string, error) {
+	defaultFilename := "sloctl-recipes.yaml"
+	sdkConfigPath, err := sdk.GetDefaultConfigPath()
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to read default Nobl9 SDK config path")
+	}
+	return filepath.Join(filepath.Dir(sdkConfigPath), defaultFilename), nil
 }
 
 func recipesArgFunc(requiredArgs []string) cobra.PositionalArgs {
