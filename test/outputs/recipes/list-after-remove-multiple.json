@@ -1,0 +1,10 @@
+{
+  "list-all-slos": {
+    "args": [
+      "get",
+      "slo",
+      "-A"
+    ],
+    "description": "List all SLOs"
+  }
+}
