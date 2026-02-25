@@ -183,19 +183,19 @@ func (m *MoveCmd) printMoveDetails(sloNames []string, isCrossProjectMove bool, o
 	switch len(sloNames) {
 	case 1:
 		if isCrossProjectMove {
-			buf.WriteString(fmt.Sprintf("Moving '%s' SLO from '%s' Project to '%s' Project.\n",
-				sloNames[0], oldProject, m.newProject))
+			fmt.Fprintf(&buf, "Moving '%s' SLO from '%s' Project to '%s' Project.\n",
+				sloNames[0], oldProject, m.newProject)
 		} else {
-			buf.WriteString(fmt.Sprintf("Moving '%s' SLO to a different Service within '%s' Project.\n",
-				sloNames[0], oldProject))
+			fmt.Fprintf(&buf, "Moving '%s' SLO to a different Service within '%s' Project.\n",
+				sloNames[0], oldProject)
 		}
 	default:
 		if isCrossProjectMove {
-			buf.WriteString(fmt.Sprintf("Moving the following SLOs from '%s' Project to '%s' Project:\n",
-				oldProject, m.newProject))
+			fmt.Fprintf(&buf, "Moving the following SLOs from '%s' Project to '%s' Project:\n",
+				oldProject, m.newProject)
 		} else {
-			buf.WriteString(fmt.Sprintf("Moving the following SLOs to a different Service within '%s' Project:\n",
-				oldProject))
+			fmt.Fprintf(&buf, "Moving the following SLOs to a different Service within '%s' Project:\n",
+				oldProject)
 		}
 		for _, sloName := range sloNames {
 			buf.WriteString(" - ")
@@ -208,8 +208,8 @@ func (m *MoveCmd) printMoveDetails(sloNames []string, isCrossProjectMove bool, o
 		if !isCrossProjectMove {
 			targetProject = oldProject
 		}
-		buf.WriteString(fmt.Sprintf("'%s' Service in '%s' Project will be assigned to all the moved SLOs.\n",
-			m.newService, targetProject))
+		fmt.Fprintf(&buf, "'%s' Service in '%s' Project will be assigned to all the moved SLOs.\n",
+			m.newService, targetProject)
 	}
 	if isCrossProjectMove {
 		buf.WriteString("If the target Service in the new Project does not exist, it will be created.\n")
