@@ -15,8 +15,6 @@ LDFLAGS := -s -w \
 	-X $(VERSION_PKG).BuildGitBranch=$(BRANCH) \
 	-X $(VERSION_PKG).BuildGitRevision=$(REVISION)
 
-# renovate datasource=github-releases depName=securego/gosec
-GOSEC_VERSION := v2.22.11
 # renovate datasource=github-releases depName=golangci/golangci-lint
 GOLANGCI_LINT_VERSION := v2.10.1
 # renovate datasource=go depName=golang.org/x/vuln/cmd/govulncheck
@@ -127,9 +125,9 @@ test/bats/e2e:
 		-e SLOCTL_GIT_REVISION=$(REVISION) \
 		sloctl-bats-e2e -F pretty --filter-tags e2e $(TEST_DIR)/*
 
-.PHONY: check check/vet check/lint check/gosec check/spell check/trailing check/markdown check/format check/generate check/vulns
+.PHONY: check check/vet check/lint check/spell check/trailing check/markdown check/format check/generate check/vulns
 ## Run all checks.
-check: check/vet check/lint check/gosec check/spell check/trailing check/markdown check/format check/generate check/vulns
+check: check/vet check/lint check/spell check/trailing check/markdown check/format check/generate check/vulns
 
 ## Run 'go vet' on the whole project.
 check/vet:
@@ -141,12 +139,6 @@ check/lint:
 	$(call _print_step,Running golangci-lint)
 	$(call _ensure_installed,binary,golangci-lint)
 	$(BIN_DIR)/golangci-lint run
-
-## Check for security problems using gosec, which inspects the Go code by scanning the AST.
-check/gosec:
-	$(call _print_step,Running gosec)
-	$(call _ensure_installed,binary,gosec)
-	$(BIN_DIR)/gosec -exclude-generated -quiet ./...
 
 ## Check spelling, rules are defined in cspell.json.
 check/spell:
@@ -207,9 +199,9 @@ format/cspell:
 	$(call _ensure_installed,yarn,yaml)
 	yarn --silent format-cspell-config
 
-.PHONY: install/tools install/yarn install/golangci-lint install/gosec install/govulncheck install/goimports
+.PHONY: install/tools install/yarn install/golangci-lint install/govulncheck install/goimports
 ## Install all dev dependencies.
-install/tools: install/yarn install/golangci-lint install/gosec install/govulncheck install/goimports
+install/tools: install/yarn install/golangci-lint install/govulncheck install/goimports
 
 ## Install JS dependencies with yarn.
 install/yarn:
@@ -221,12 +213,6 @@ install/golangci-lint:
 	echo "Installing golangci-lint..."
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh |\
  		sh -s -- -b $(BIN_DIR) $(GOLANGCI_LINT_VERSION)
-
-## Install gosec (https://github.com/securego/gosec).
-install/gosec:
-	echo "Installing gosec..."
-	curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh |\
- 		sh -s -- -b $(BIN_DIR) $(GOSEC_VERSION)
 
 ## Install govulncheck (https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck).
 install/govulncheck:

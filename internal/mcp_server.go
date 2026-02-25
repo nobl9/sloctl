@@ -322,9 +322,9 @@ func (s mcpServer) getObjectsToolHandler(kind manifest.Kind) mcp.TypedToolHandle
 		}
 
 		result := strings.Builder{}
-		result.WriteString(fmt.Sprintf(
+		fmt.Fprintf(&result,
 			"Retrieved %d %s. Output written to: %s\n", len(objects), pluralForKind(kind), filename,
-		))
+		)
 
 		for _, obj := range objects {
 			result.WriteString(obj.GetName())
