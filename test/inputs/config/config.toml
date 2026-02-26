@@ -1,4 +1,4 @@
-defaultContext = "full"
+defaultContext = "minimal"
 filesPromptEnabled = false
 filesPromptThreshold = 40
 
