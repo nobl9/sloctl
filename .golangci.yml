@@ -18,6 +18,7 @@ linters:
     - gocyclo
     - goheader
     - goprintffuncname
+    - gosec
     - govet
     - importas
     - ineffassign
@@ -43,6 +44,13 @@ linters:
       default-signifies-exhaustive: true
     gocognit:
       min-complexity: 30
+    gosec:
+      excludes:
+        - G204 # Audit use of command execution
+        - G304 # File path provided as taint input
+        - G702 # Command injection via taint analysis
+        - G704 # SSRF (Server-Side Request Forgery) via taint analysis
+        - G705 # XSS (Cross-Site Scripting) via taint analysis
     gocritic:
       disabled-checks:
         - singleCaseSwitch

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/x/exp/teatest"
 	"github.com/nobl9/nobl9-go/sdk"
@@ -98,8 +98,8 @@ func TestMaskField(t *testing.T) {
 	}
 }
 
-func teaKeyEnter() tea.KeyMsg {
-	return tea.KeyMsg{Type: tea.KeyEnter}
+func teaKeyEnter() tea.KeyPressMsg {
+	return tea.KeyPressMsg{Code: tea.KeyEnter}
 }
 
 func waitForTeaText(t *testing.T, tm *teatest.TestModel, text string) {
