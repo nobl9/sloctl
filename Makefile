@@ -112,18 +112,9 @@ test/bats/unit:
 ## Run bats e2e tests.
 test/bats/e2e:
 	$(call _print_step,Running bats e2e tests)
-	$(call _ensure_env_var,SLOCTL_CLIENT_ID)
-	$(call _ensure_env_var,SLOCTL_CLIENT_SECRET)
 	$(call _build_docker,sloctl-e2e-test-bin,$(VERSION),$(BRANCH),$(REVISION))
 	docker build -t sloctl-bats-e2e -f $(TEST_DIR)/docker/Dockerfile.e2e .
-	docker run --rm \
-		-e SLOCTL_URL=$(SLOCTL_URL) \
-		-e SLOCTL_CLIENT_ID=$(SLOCTL_CLIENT_ID) \
-		-e SLOCTL_CLIENT_SECRET=$(SLOCTL_CLIENT_SECRET) \
-		-e SLOCTL_OKTA_ORG_URL=$(SLOCTL_OKTA_ORG_URL) \
-		-e SLOCTL_OKTA_AUTH_SERVER=$(SLOCTL_OKTA_AUTH_SERVER) \
-		-e SLOCTL_GIT_REVISION=$(REVISION) \
-		sloctl-bats-e2e -F pretty --filter-tags e2e $(TEST_DIR)/*
+	./scripts/run-e2e-tests.sh sloctl-bats-e2e $(REVISION)
 
 .PHONY: check check/vet check/lint check/spell check/trailing check/markdown check/format check/generate check/vulns
 ## Run all checks.

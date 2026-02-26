@@ -28,45 +28,43 @@ setup() {
 @test "get Project after apply" {
   input_file="$TEST_INPUTS/project.yaml"
 
-  # First apply the project using regular sloctl to ensure it exists.
   run_sloctl apply -f "$input_file"
   assert_success
 
-  # Now get the project using MCP get tool.
   run_mcp_inspector \
     --method tools/call \
-    --tool-name get_projects \
+    --tool-name getProject \
     --tool-arg name="$TEST_PROJECT" \
     --tool-arg format=yaml
   assert_success
-  assert_output --regexp "Retrieved 1 Projects. Output written to: .*.yaml"
-  assert_output --partial "$TEST_PROJECT"
+
+  actual=$(jq -r '.content[0].text' <<<"$output")
+  expected=$(cat "$TEST_OUTPUTS/get-project.yaml")
+
+  assert_equal "$actual" "$expected"
 }
 
 @test "get non-existent Project returns error" {
-  # Try to get a non-existent project.
   run_mcp_inspector \
     --method tools/call \
-    --tool-name get_projects \
+    --tool-name getProject \
     --tool-arg name="non-existent-project-12345"
   assert_success
   assert_equal \
     "$(jq -r .content[0].text <<<"$output")" \
-    "Found no Projects"
+    "object was not found"
 }
 
 @test "get SLO after apply" {
   service_file="$TEST_INPUTS/service.yaml"
   slo_file="$TEST_INPUTS/slo.yaml"
 
-  # First apply the service and SLO using regular sloctl to ensure they exist.
   run_sloctl apply -f "$service_file"
-  assert_success
+  assert_success_joined_output
 
   run_sloctl apply -f "$slo_file"
-  assert_success
+  assert_success_joined_output
 
-  # Now get the SLO using MCP getSLO tool.
   run_mcp_inspector \
     --method tools/call \
     --tool-name getSLO \
@@ -75,10 +73,8 @@ setup() {
     --tool-arg format=json
   assert_success
 
-  # Verify the response contains the SLO
-  slo_name=$(jq -r '.content[0].text | fromjson | .metadata.name' <<<"$output")
-  assert_equal "$slo_name" "test-mcp-slo"
+  actual=$(jq -S . <<<"$(jq -r '.structuredContent' <<<"$output")")
+  expected=$(jq -S . "$TEST_OUTPUTS/get-slo.json")
 
-  slo_project=$(jq -r '.content[0].text | fromjson | .metadata.project' <<<"$output")
-  assert_equal "$slo_project" "$TEST_PROJECT"
+  assert_equal "$actual" "$expected"
 }
