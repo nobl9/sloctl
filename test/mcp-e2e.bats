@@ -8,6 +8,10 @@ setup_file() {
 
   generate_inputs "$BATS_FILE_TMPDIR"
   generate_outputs
+
+  # Apply all resources once in setup
+  run_sloctl apply -f "'$TEST_INPUTS/**'"
+  assert_success_joined_output
 }
 
 # teardown_file is run only once for the whole file.
@@ -26,47 +30,39 @@ setup() {
 }
 
 @test "get Project after apply" {
-  input_file="$TEST_INPUTS/project.yaml"
+  # Verify project was applied correctly
+  assert_applied "$(read_files "$TEST_INPUTS/project.yaml")"
 
-  # First apply the project using regular sloctl to ensure it exists.
-  run_sloctl apply -f "$input_file"
-  assert_success
-
-  # Now get the project using MCP get tool.
+  # Get the project using MCP
   run_mcp_inspector \
     --method tools/call \
-    --tool-name get_projects \
+    --tool-name getProject \
     --tool-arg name="$TEST_PROJECT" \
     --tool-arg format=yaml
   assert_success
-  assert_output --regexp "Retrieved 1 Projects. Output written to: .*.yaml"
-  assert_output --partial "$TEST_PROJECT"
+
+  # Verify MCP response contains the project
+  json_output=$(echo "$output" | sed -n '/{/,$p')
+  assert_equal "$(jq -r '.structuredContent.kind' <<<"$json_output")" "Project"
+  assert_equal "$(jq -r '.structuredContent.metadata.name' <<<"$json_output")" "$TEST_PROJECT"
 }
 
 @test "get non-existent Project returns error" {
-  # Try to get a non-existent project.
   run_mcp_inspector \
     --method tools/call \
-    --tool-name get_projects \
+    --tool-name getProject \
     --tool-arg name="non-existent-project-12345"
   assert_success
   assert_equal \
     "$(jq -r .content[0].text <<<"$output")" \
-    "Found no Projects"
+    "object was not found"
 }
 
 @test "get SLO after apply" {
-  service_file="$TEST_INPUTS/service.yaml"
-  slo_file="$TEST_INPUTS/slo.yaml"
+  # Verify SLO was applied correctly
+  assert_applied "$(read_files "$TEST_INPUTS/slo.yaml")"
 
-  # First apply the service and SLO using regular sloctl to ensure they exist.
-  run_sloctl apply -f "$service_file"
-  assert_success
-
-  run_sloctl apply -f "$slo_file"
-  assert_success
-
-  # Now get the SLO using MCP getSLO tool.
+  # Get the SLO using MCP
   run_mcp_inspector \
     --method tools/call \
     --tool-name getSLO \
@@ -75,10 +71,9 @@ setup() {
     --tool-arg format=json
   assert_success
 
-  # Verify the response contains the SLO
-  slo_name=$(jq -r '.content[0].text | fromjson | .metadata.name' <<<"$output")
-  assert_equal "$slo_name" "test-mcp-slo"
-
-  slo_project=$(jq -r '.content[0].text | fromjson | .metadata.project' <<<"$output")
-  assert_equal "$slo_project" "$TEST_PROJECT"
+  # Verify MCP response contains the SLO
+  json_output=$(echo "$output" | sed -n '/{/,$p')
+  assert_equal "$(jq -r '.structuredContent.kind' <<<"$json_output")" "SLO"
+  assert_equal "$(jq -r '.structuredContent.metadata.name' <<<"$json_output")" "test-mcp-slo"
+  assert_equal "$(jq -r '.structuredContent.metadata.project' <<<"$json_output")" "$TEST_PROJECT"
 }

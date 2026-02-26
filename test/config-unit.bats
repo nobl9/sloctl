@@ -239,3 +239,18 @@ minimal'
   assert_success_joined_output
   assert_output '3'
 }
+
+@test "sloctl config current-context, show-secret flag without verbose" {
+  run_sloctl config current-context --show-secret
+  assert_failure
+  assert_stderr 'Error: --show-secret flag can only be set if --verbose flag is also provided'
+}
+
+@test "sloctl config current-context (verbose with show-secret)" {
+  run_sloctl config use-context full
+  assert_success
+
+  run_sloctl config current-context -v --show-secret -o yaml
+  assert_success_joined_output
+  assert_output <"$TEST_OUTPUTS/get-current-context-full-show-secret.yaml"
+}

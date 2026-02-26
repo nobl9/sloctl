@@ -1,0 +1,8 @@
+apiVersion: n9/v1alpha
+kind: Agent
+metadata:
+  name: prometheus-default
+  project: default
+spec:
+  prometheus:
+    url: http://prometheus:9090

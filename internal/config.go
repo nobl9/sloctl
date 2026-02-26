@@ -19,6 +19,10 @@ import (
 	"github.com/nobl9/sloctl/internal/printer"
 )
 
+const (
+	flagShowSecret = "show-secret"
+)
+
 // runHuhFormFunc is a global variable so that the unit test can inject their logic inside.
 var runHuhFormFunc = func(ctx context.Context, form *huh.Form) error {
 	return form.RunWithContext(ctx)
@@ -33,6 +37,7 @@ type ConfigCmd struct {
 	config       *sdk.FileConfig
 	printer      *printer.Printer
 	verbose      bool
+	showSecret   bool
 }
 
 func (r *RootCmd) NewConfigCmd() *cobra.Command {
@@ -234,15 +239,22 @@ func (c *ConfigCmd) CurrentContextCommand() *cobra.Command {
 sloctl config current-context
 
 # Display detailed information about the current context in YAML format.
-sloctl config current-context --verbose`,
+sloctl config current-context --verbose
+
+# Display detailed information with the client secret visible.
+sloctl config current-context --verbose --show-secret`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
-			return requireFlagsIfFlagIsSet(
+			if err := requireFlagsIfFlagIsSet(
 				cmd,
 				flagVerbose,
 				printer.OutputFlagName,
 				csv.RecordSeparatorFlag,
 				csv.FieldSeparatorFlag,
-			)
+				flagShowSecret,
+			); err != nil {
+				return err
+			}
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			switch c.verbose {
@@ -251,7 +263,9 @@ sloctl config current-context --verbose`,
 				if err != nil {
 					return err
 				}
-				conf = sanitizeContextConfig(conf)
+				if !c.showSecret {
+					conf = sanitizeContextConfig(conf)
+				}
 				return c.printer.Print(conf)
 			default:
 				fmt.Println(c.config.DefaultContext)
@@ -261,6 +275,8 @@ sloctl config current-context --verbose`,
 	}
 
 	registerVerboseFlag(cmd, &c.verbose)
+	cmd.Flags().BoolVar(&c.showSecret, flagShowSecret, false,
+		"Display the client secret in plain text (requires --verbose)")
 	c.printer.MustRegisterFlags(cmd)
 	return cmd
 }
