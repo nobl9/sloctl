@@ -1,0 +1,7 @@
+apiVersion: n9/v1alpha
+kind: Service
+metadata:
+  name: test-mcp-service
+  project: <PROJECT>
+spec:
+  description: Sample Service for sloctl mcp e2e tests

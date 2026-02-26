@@ -62,7 +62,7 @@ how they're executed.
 
 ## MCP
 
-Sloctl hosts an [MCP server](https://modelcontextprotocol.io/quickstart/server)
+Sloctl proxies to an [MCP server](https://modelcontextprotocol.io/quickstart/server)
 which can be used by LLMs to interact with Nobl9 platform and its resources.
 
 In order to help develop the server's capabilities and test them you can use
@@ -72,18 +72,7 @@ Simply run:
 
 ```bash
 make install # So that sloctl is available in the path.
-npx @modelcontextprotocol/inspector
-```
-
-It will launch the browser for you, once there fill these parameters:
-
-![MCP Inspector connect](./mcp-inspector-connect.png)
-
-Once [this issue](https://github.com/modelcontextprotocol/inspector/issues/636)
-is resolved, you'll be able to run:
-
-```bash
-npx @modelcontextprotocol/inspector --config ./docs/mcp.json --server nobl9
+npx @modelcontextprotocol/inspector@latest --config ./docs/mcp.json --server nobl9
 ```
 
 ## Releases
