@@ -17,6 +17,13 @@
         "project": "default"
       }
     },
+    "timeWindows": [
+      {
+        "unit": "Day",
+        "count": 1,
+        "isRolling": true
+      }
+    ],
     "objectives": [
       {
         "displayName": "Good",
@@ -25,7 +32,11 @@
         "target": 0.95,
         "value": 1,
         "rawMetric": {
-          "metricType": "prometheus"
+          "query": {
+            "prometheus": {
+              "promql": "avg(up{job=\"prometheus\"})"
+            }
+          }
         }
       }
     ]

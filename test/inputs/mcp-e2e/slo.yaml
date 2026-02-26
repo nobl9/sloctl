@@ -13,9 +13,10 @@ spec:
       name: prometheus-default
       kind: Agent
       project: default
-    spec:
-      prometheus:
-        promql: avg(up{job="prometheus"})
+  timeWindows:
+    - unit: Day
+      count: 1
+      isRolling: true
   objectives:
     - displayName: Good
       name: good-obj
@@ -23,4 +24,6 @@ spec:
       target: 0.95
       value: 1
       rawMetric:
-        metricType: prometheus
+        query:
+          prometheus:
+            promql: avg(up{job="prometheus"})

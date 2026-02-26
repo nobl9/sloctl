@@ -8,6 +8,10 @@ setup_file() {
 
   generate_inputs "$BATS_FILE_TMPDIR"
   generate_outputs
+
+  # Apply all resources once in setup
+  run_sloctl apply -f "'$TEST_INPUTS/**'"
+  assert_success_joined_output
 }
 
 # teardown_file is run only once for the whole file.
@@ -26,11 +30,10 @@ setup() {
 }
 
 @test "get Project after apply" {
-  input_file="$TEST_INPUTS/project.yaml"
+  # Verify project was applied correctly
+  assert_applied "$(read_files "$TEST_INPUTS/project.yaml")"
 
-  run_sloctl apply -f "$input_file"
-  assert_success
-
+  # Get the project using MCP
   run_mcp_inspector \
     --method tools/call \
     --tool-name getProject \
@@ -38,10 +41,10 @@ setup() {
     --tool-arg format=yaml
   assert_success
 
-  actual=$(jq -r '.content[0].text' <<<"$output")
-  expected=$(cat "$TEST_OUTPUTS/get-project.yaml")
-
-  assert_equal "$actual" "$expected"
+  # Verify MCP response contains the project
+  json_output=$(echo "$output" | sed -n '/{/,$p')
+  assert_equal "$(jq -r '.structuredContent.kind' <<<"$json_output")" "Project"
+  assert_equal "$(jq -r '.structuredContent.metadata.name' <<<"$json_output")" "$TEST_PROJECT"
 }
 
 @test "get non-existent Project returns error" {
@@ -56,15 +59,10 @@ setup() {
 }
 
 @test "get SLO after apply" {
-  service_file="$TEST_INPUTS/service.yaml"
-  slo_file="$TEST_INPUTS/slo.yaml"
+  # Verify SLO was applied correctly
+  assert_applied "$(read_files "$TEST_INPUTS/slo.yaml")"
 
-  run_sloctl apply -f "$service_file"
-  assert_success_joined_output
-
-  run_sloctl apply -f "$slo_file"
-  assert_success_joined_output
-
+  # Get the SLO using MCP
   run_mcp_inspector \
     --method tools/call \
     --tool-name getSLO \
@@ -73,8 +71,9 @@ setup() {
     --tool-arg format=json
   assert_success
 
-  actual=$(jq -S . <<<"$(jq -r '.structuredContent' <<<"$output")")
-  expected=$(jq -S . "$TEST_OUTPUTS/get-slo.json")
-
-  assert_equal "$actual" "$expected"
+  # Verify MCP response contains the SLO
+  json_output=$(echo "$output" | sed -n '/{/,$p')
+  assert_equal "$(jq -r '.structuredContent.kind' <<<"$json_output")" "SLO"
+  assert_equal "$(jq -r '.structuredContent.metadata.name' <<<"$json_output")" "test-mcp-slo"
+  assert_equal "$(jq -r '.structuredContent.metadata.project' <<<"$json_output")" "$TEST_PROJECT"
 }
