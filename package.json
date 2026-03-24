@@ -4,7 +4,7 @@
   "type": "module",
   "devDependencies": {
     "cspell": "9.7.0",
-    "markdownlint-cli": "0.47.0"
+    "markdownlint-cli": "0.48.0"
   },
   "scripts": {
     "check-trailing-whitespaces": "node ./scripts/check-trailing-whitespaces.js",
