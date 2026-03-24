@@ -208,21 +208,22 @@ func (g *GetCmd) newGetAlertCommand(cmd *cobra.Command) *cobra.Command {
 		}
 		params.ObjectiveValues = objectiveValuesFlag
 
-		response, err := g.client.Objects().V1().GetV1alphaAlerts(cmd.Context(), params)
+		//nolint: staticcheck
+		alerts, truncatedMax, err := g.client.Objects().V1().GetAlerts(cmd.Context(), params)
 		if err != nil {
 			return err
 		}
-		if len(response.Alerts) == 0 {
+		if len(alerts) == 0 {
 			fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)
 			return nil
 		}
-		if err = g.printer.Print(response.Alerts); err != nil {
+		if err = g.printer.Print(alerts); err != nil {
 			return err
 		}
-		if response.TruncatedMax > 0 {
+		if truncatedMax > 0 {
 			fmt.Fprintf(os.Stderr, "Warning: %d new alerts have been returned from the API according to the "+
 				"provided searching criteria. Specify more restrictive filters (by SLO, objective, service, "+
-				"alert policy, time range, or alert status) to get more limited results.\n", response.TruncatedMax)
+				"alert policy, time range, or alert status) to get more limited results.\n", truncatedMax)
 		}
 		return nil
 	}
