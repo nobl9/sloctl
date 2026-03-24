@@ -14,7 +14,7 @@ require (
 	github.com/itchyny/gojq v0.12.18
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/nobl9/go-yaml v1.0.1
-	github.com/nobl9/nobl9-go v0.124.0
+	github.com/nobl9/nobl9-go v0.126.0-rc4
 	github.com/nobl9/nobl9-openslo v0.1.3
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.19.0
@@ -24,8 +24,6 @@ require (
 	github.com/tidwall/sjson v1.2.5
 	golang.org/x/sync v0.20.0
 )
-
-replace github.com/nobl9/nobl9-go => github.com/nobl9/nobl9-go v0.126.0-rc3.0.20260324085227-d9b1b9266282
 
 require (
 	github.com/atotto/clipboard v0.1.4 // indirect
