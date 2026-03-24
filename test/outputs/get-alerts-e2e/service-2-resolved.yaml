@@ -1,0 +1,16 @@
+- apiVersion: n9/v1alpha
+  kind: Alert
+  metadata:
+    name: alert-resolved-slo2-low
+    project: sloctl-alert-tests
+  spec:
+    alertPolicy:
+      name: alert-policy-low-burn
+    slo:
+      name: alert-test-slo-2
+    service:
+      name: alert-test-service-2
+    objective:
+      name: objective-1
+    severity: Low
+    status: Resolved

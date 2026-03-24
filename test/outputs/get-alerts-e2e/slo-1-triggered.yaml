@@ -1,0 +1,16 @@
+- apiVersion: n9/v1alpha
+  kind: Alert
+  metadata:
+    name: alert-triggered-slo1-high
+    project: sloctl-alert-tests
+  spec:
+    alertPolicy:
+      name: alert-policy-high-burn
+    slo:
+      name: alert-test-slo-1
+    service:
+      name: alert-test-service-1
+    objective:
+      name: objective-1
+    severity: High
+    status: Triggered
