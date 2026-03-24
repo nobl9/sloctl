@@ -3,7 +3,7 @@ module github.com/nobl9/sloctl
 go 1.25.8
 
 require (
-	charm.land/bubbletea/v2 v2.0.0
+	charm.land/bubbletea/v2 v2.0.2
 	github.com/BurntSushi/toml v1.6.0
 	github.com/OpenSLO/go-sdk v0.9.1
 	github.com/charmbracelet/huh v0.8.0
