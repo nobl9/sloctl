@@ -67,68 +67,6 @@
     project: alert-test-project
   spec:
     alertPolicy:
-      displayName: Alert Test Policy Medium
-      name: alert-test-policy-medium
-      project: alert-test-project
-    conditions:
-    - measurement: burnedBudget
-      op: gte
-      value: 0.8
-    coolDown: 5m0s
-    objective:
-      displayName: default
-      name: default
-      value: 0.9
-    service:
-      displayName: Alert Test Service
-      name: alert-test-service
-      project: alert-test-project
-    severity: Medium
-    slo:
-      displayName: Alert Test SLO
-      name: alert-test-slo
-      project: alert-test-project
-    status: Triggered
-    triggeredClockTime: "2024-01-15T10:10:00Z"
-    triggeredMetricTime: "2024-01-15T10:10:00Z"
-- apiVersion: n9/v1alpha
-  kind: Alert
-  metadata:
-    name: placeholder
-    project: alert-test-project
-  spec:
-    alertPolicy:
-      displayName: Alert Test Policy Low
-      name: alert-test-policy-low
-      project: alert-test-project
-    conditions:
-    - measurement: burnedBudget
-      op: gte
-      value: 0.7
-    coolDown: 5m0s
-    objective:
-      displayName: default
-      name: default
-      value: 0.9
-    service:
-      displayName: Alert Test Service
-      name: alert-test-service
-      project: alert-test-project
-    severity: Low
-    slo:
-      displayName: Alert Test SLO
-      name: alert-test-slo
-      project: alert-test-project
-    status: Triggered
-    triggeredClockTime: "2024-01-15T10:15:00Z"
-    triggeredMetricTime: "2024-01-15T10:15:00Z"
-- apiVersion: n9/v1alpha
-  kind: Alert
-  metadata:
-    name: placeholder
-    project: alert-test-project
-  spec:
-    alertPolicy:
       displayName: Alert Test Policy High
       name: alert-test-policy-high
       project: alert-test-project
@@ -153,3 +91,36 @@
     status: Triggered
     triggeredClockTime: "2024-01-15T06:00:00Z"
     triggeredMetricTime: "2024-01-15T06:00:00Z"
+- apiVersion: n9/v1alpha
+  kind: Alert
+  metadata:
+    name: placeholder
+    project: alert-test-project
+  spec:
+    alertPolicy:
+      displayName: Alert Test Policy High
+      name: alert-test-policy-high
+      project: alert-test-project
+    conditions:
+    - measurement: burnedBudget
+      op: gte
+      value: 0.9
+    coolDown: 5m0s
+    objective:
+      displayName: default
+      name: default
+      value: 0.9
+    resolvedClockTime: "2024-01-15T10:30:00Z"
+    resolvedMetricTime: "2024-01-15T10:30:00Z"
+    service:
+      displayName: Alert Test Service
+      name: alert-test-service
+      project: alert-test-project
+    severity: High
+    slo:
+      displayName: Alert Test SLO
+      name: alert-test-slo
+      project: alert-test-project
+    status: Resolved
+    triggeredClockTime: "2024-01-15T08:00:00Z"
+    triggeredMetricTime: "2024-01-15T08:00:00Z"

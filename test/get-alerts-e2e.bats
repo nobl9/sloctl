@@ -8,7 +8,8 @@
 
 # setup_file is run only once for the whole file.
 setup_file() {
-  export TEST_PROJECT="sloctl-alert-tests"
+  export TEST_PROJECT="alert-test-project"
+  export TEST_PROJECT_2="alert-test-project-2"
   export TEST_OUTPUTS="$BATS_TEST_DIRNAME/outputs/get-alerts-e2e"
 }
 
@@ -41,59 +42,55 @@ setup() {
   assert_output "No resources found in 'non-existent-project-xyz-123' project."
 }
 
-@test "get alerts filtered by --slo flag for slo-1" {
-  want=$(read_files "${TEST_OUTPUTS}/slo-1-alerts.yaml")
+@test "get alerts filtered by --alert-policy alert-test-policy-high" {
+  want=$(read_files "${TEST_OUTPUTS}/policy-high-alerts.yaml")
 
-  run_sloctl get alert -p "$TEST_PROJECT" --slo alert-test-slo-1
+  run_sloctl get alert -p "$TEST_PROJECT" --alert-policy alert-test-policy-high
   verify_alert_output "$output" "$want"
 }
 
-@test "get alerts filtered by --slo flag for slo-2" {
-  want=$(read_files "${TEST_OUTPUTS}/slo-2-alerts.yaml")
+@test "get alerts filtered by --alert-policy alert-test-policy-medium" {
+  want=$(read_files "${TEST_OUTPUTS}/policy-medium-alerts.yaml")
 
-  run_sloctl get alert -p "$TEST_PROJECT" --slo alert-test-slo-2
+  run_sloctl get alert -p "$TEST_PROJECT" --alert-policy alert-test-policy-medium
   verify_alert_output "$output" "$want"
 }
 
-@test "get alerts filtered by --slo with multiple values" {
+@test "get alerts filtered by --alert-policy alert-test-policy-low" {
+  want=$(read_files "${TEST_OUTPUTS}/policy-low-alerts.yaml")
+
+  run_sloctl get alert -p "$TEST_PROJECT" --alert-policy alert-test-policy-low
+  verify_alert_output "$output" "$want"
+}
+
+@test "get alerts filtered by --alert-policy with multiple values" {
   want=$(read_files "${TEST_OUTPUTS}/all-alerts.yaml")
 
-  run_sloctl get alert -p "$TEST_PROJECT" --slo alert-test-slo-1 --slo alert-test-slo-2
+  run_sloctl get alert -p "$TEST_PROJECT" \
+    --alert-policy alert-test-policy-high \
+    --alert-policy alert-test-policy-medium \
+    --alert-policy alert-test-policy-low
   verify_alert_output "$output" "$want"
 }
 
-@test "get alerts filtered by --service flag for service-1" {
-  want=$(read_files "${TEST_OUTPUTS}/service-1-alerts.yaml")
-
-  run_sloctl get alert -p "$TEST_PROJECT" --service alert-test-service-1
-  verify_alert_output "$output" "$want"
-}
-
-@test "get alerts filtered by --service with multiple values" {
+@test "get alerts filtered by --slo flag" {
   want=$(read_files "${TEST_OUTPUTS}/all-alerts.yaml")
 
-  run_sloctl get alert -p "$TEST_PROJECT" --service alert-test-service-1 --service alert-test-service-2
+  run_sloctl get alert -p "$TEST_PROJECT" --slo alert-test-slo
   verify_alert_output "$output" "$want"
 }
 
-@test "get alerts filtered by --alert-policy high-burn" {
-  want=$(read_files "${TEST_OUTPUTS}/high-burn-alerts.yaml")
+@test "get alerts filtered by --service flag" {
+  want=$(read_files "${TEST_OUTPUTS}/all-alerts.yaml")
 
-  run_sloctl get alert -p "$TEST_PROJECT" --alert-policy alert-policy-high-burn
-  verify_alert_output "$output" "$want"
-}
-
-@test "get alerts filtered by --alert-policy low-burn" {
-  want=$(read_files "${TEST_OUTPUTS}/low-burn-alerts.yaml")
-
-  run_sloctl get alert -p "$TEST_PROJECT" --alert-policy alert-policy-low-burn
+  run_sloctl get alert -p "$TEST_PROJECT" --service alert-test-service
   verify_alert_output "$output" "$want"
 }
 
 @test "get alerts filtered by --objective flag" {
   want=$(read_files "${TEST_OUTPUTS}/all-alerts.yaml")
 
-  run_sloctl get alert -p "$TEST_PROJECT" --objective objective-1
+  run_sloctl get alert -p "$TEST_PROJECT" --objective default
   verify_alert_output "$output" "$want"
 }
 
@@ -111,41 +108,48 @@ setup() {
   verify_alert_output "$output" "$want"
 }
 
-@test "get alerts with combined --slo and --alert-policy filter" {
-  want=$(read_files "${TEST_OUTPUTS}/slo-1-high-burn.yaml")
+@test "get alerts with combined --alert-policy and --triggered filter" {
+  want=$(read_files "${TEST_OUTPUTS}/policy-high-triggered.yaml")
 
-  run_sloctl get alert -p "$TEST_PROJECT" --slo alert-test-slo-1 --alert-policy alert-policy-high-burn
+  run_sloctl get alert -p "$TEST_PROJECT" --alert-policy alert-test-policy-high --triggered --resolved=false
   verify_alert_output "$output" "$want"
 }
 
-@test "get alerts with combined --slo and --triggered filter" {
-  want=$(read_files "${TEST_OUTPUTS}/slo-1-triggered.yaml")
+@test "get all alerts in project-2" {
+  want=$(read_files "${TEST_OUTPUTS}/project-2-all-alerts.yaml")
 
-  run_sloctl get alert -p "$TEST_PROJECT" --slo alert-test-slo-1 --triggered --resolved=false
+  run_sloctl get alert -p "$TEST_PROJECT_2"
   verify_alert_output "$output" "$want"
 }
 
-@test "get alerts combined --service and --resolved filter" {
-  want=$(read_files "${TEST_OUTPUTS}/service-2-resolved.yaml")
+@test "get only triggered alerts in project-2" {
+  want=$(read_files "${TEST_OUTPUTS}/project-2-triggered.yaml")
 
-  run_sloctl get alert -p "$TEST_PROJECT" --service alert-test-service-2 --resolved --triggered=false
+  run_sloctl get alert -p "$TEST_PROJECT_2" --triggered --resolved=false
+  verify_alert_output "$output" "$want"
+}
+
+@test "get only resolved alerts in project-2" {
+  want=$(read_files "${TEST_OUTPUTS}/project-2-resolved.yaml")
+
+  run_sloctl get alert -p "$TEST_PROJECT_2" --resolved --triggered=false
   verify_alert_output "$output" "$want"
 }
 
 @test "get alerts with --from time range" {
-  run_sloctl get alert -p "$TEST_PROJECT" --from 2025-06-01T00:00:00Z
+  run_sloctl get alert -p "$TEST_PROJECT" --from 2024-01-15T00:00:00Z
   assert_success_joined_output
   refute_output --partial "No resources found"
 }
 
 @test "get alerts with --to time range" {
-  run_sloctl get alert -p "$TEST_PROJECT" --to 2025-05-01T00:00:00Z
+  run_sloctl get alert -p "$TEST_PROJECT" --to 2024-01-16T00:00:00Z
   assert_success_joined_output
   refute_output --partial "No resources found"
 }
 
 @test "get alerts with --from and --to combined" {
-  run_sloctl get alert -p "$TEST_PROJECT" --from 2025-05-01T00:00:00Z --to 2025-06-15T00:00:00Z
+  run_sloctl get alert -p "$TEST_PROJECT" --from 2024-01-15T00:00:00Z --to 2024-01-16T00:00:00Z
   assert_success_joined_output
   refute_output --partial "No resources found"
 }
@@ -190,7 +194,7 @@ setup() {
   assert_success_joined_output
   assert_equal \
     "$(yq --sort-keys -y -r '.' <<<"$output")" \
-    "$(yq --sort-keys -y -r '.' <<<'["High","High","Low","Low"]')"
+    "$(yq --sort-keys -y -r '.' <<<'["High","High","High","High","Low","Low","Medium","Medium"]')"
 }
 
 @test "get alert with -q jq alias" {
@@ -198,7 +202,7 @@ setup() {
   assert_success_joined_output
   assert_equal \
     "$(yq --sort-keys -y -r '.' <<<"$output")" \
-    "$(yq --sort-keys -y -r '.' <<<'["High","High","Low","Low"]')"
+    "$(yq --sort-keys -y -r '.' <<<'["High","High","High","High","Low","Low","Medium","Medium"]')"
 }
 
 @test "get alert with --all-projects flag" {
@@ -208,7 +212,7 @@ setup() {
 
   assert_equal "$(yq -r '[.[].kind] | unique | .[]' <<<"$output")" "Alert"
   count=$(yq -r 'length' <<<"$output")
-  assert [ "$count" -ge 4 ]
+  assert [ "$count" -ge 10 ]
 }
 
 # verify_alert_output compares the actual alert output against expected YAML.
