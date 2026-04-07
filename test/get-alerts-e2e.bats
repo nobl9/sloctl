@@ -2,9 +2,8 @@
 # bats file_tags=e2e
 
 # Alerts are pre-populated in the database by the api-tests-setup commandrunner.
-# All alert fields are static and deterministic; only metadata.name (a UUID
-# derived from the orgID) and organization are env-dependent and stripped
-# during comparison.
+# All alert fields including metadata.name are static and deterministic;
+# only the organization field is env-dependent and stripped during comparison.
 
 # setup_file is run only once for the whole file.
 setup_file() {
@@ -137,21 +136,24 @@ setup() {
 }
 
 @test "get alerts with --from time range" {
-  run_sloctl get alert -p "$TEST_PROJECT" --from 2024-01-15T00:00:00Z
-  assert_success_joined_output
-  refute_output --partial "No resources found"
+  want=$(read_files "${TEST_OUTPUTS}/from-alerts.yaml")
+
+  run_sloctl get alert -p "$TEST_PROJECT" --from 2026-01-15T11:00:00Z
+  verify_alert_output "$output" "$want"
 }
 
 @test "get alerts with --to time range" {
-  run_sloctl get alert -p "$TEST_PROJECT" --to 2024-01-16T00:00:00Z
-  assert_success_joined_output
-  refute_output --partial "No resources found"
+  want=$(read_files "${TEST_OUTPUTS}/to-alerts.yaml")
+
+  run_sloctl get alert -p "$TEST_PROJECT" --to 2026-01-15T08:30:00Z
+  verify_alert_output "$output" "$want"
 }
 
 @test "get alerts with --from and --to combined" {
-  run_sloctl get alert -p "$TEST_PROJECT" --from 2024-01-15T00:00:00Z --to 2024-01-16T00:00:00Z
-  assert_success_joined_output
-  refute_output --partial "No resources found"
+  want=$(read_files "${TEST_OUTPUTS}/from-to-alerts.yaml")
+
+  run_sloctl get alert -p "$TEST_PROJECT" --from 2026-01-15T09:00:00Z --to 2026-01-15T10:02:00Z
+  verify_alert_output "$output" "$want"
 }
 
 @test "get alerts with narrow --from and --to returns no results" {
@@ -216,16 +218,16 @@ setup() {
 }
 
 # verify_alert_output compares the actual alert output against expected YAML.
-# Only env-dependent fields (metadata.name which is a UUID derived from orgID,
-# and organization) are stripped. All other fields including timestamps,
-# conditions, and coolDown are static from the commandrunner and compared.
+# Only the organization field is env-dependent and stripped during comparison.
+# All other fields including metadata.name, timestamps, conditions,
+# and coolDown are static from the commandrunner and compared as-is.
 verify_alert_output() {
   local \
     have="$1" \
     want="$2"
   assert_success_joined_output
   refute_output --partial "Available Commands:"
-  filter='[.[] | del(.metadata.name, .organization)] | sort_by(.spec.slo.name, .spec.status, .spec.severity)'
+  filter='[.[] | del(.organization)] | sort_by(.spec.slo.name, .spec.status, .spec.severity)'
   assert_equal \
     "$(yq --sort-keys -y -r "$filter" <<<"$have")" \
     "$(yq --sort-keys -y -r "$filter" <<<"$want")"

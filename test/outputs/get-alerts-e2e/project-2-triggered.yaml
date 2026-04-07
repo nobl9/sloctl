@@ -1,7 +1,7 @@
 - apiVersion: n9/v1alpha
   kind: Alert
   metadata:
-    name: placeholder
+    name: b5e3a7c1-0009-4000-8000-000000000009
     project: alert-test-project-2
   spec:
     alertPolicy:
@@ -11,6 +11,10 @@
     conditions:
     - measurement: burnedBudget
       op: gte
+      status:
+        firstMetMetricTime: "2026-01-15T10:20:00Z"
+        lastMetMetricTime: "2026-01-15T10:20:00Z"
+        lastsForMetMetricTime: "2026-01-15T10:20:00Z"
       value: 0.85
     coolDown: 5m0s
     objective:
@@ -27,5 +31,5 @@
       name: alert-test-slo-2
       project: alert-test-project-2
     status: Triggered
-    triggeredClockTime: "2024-01-15T10:20:00Z"
-    triggeredMetricTime: "2024-01-15T10:20:00Z"
+    triggeredClockTime: "2026-01-15T10:20:00Z"
+    triggeredMetricTime: "2026-01-15T10:20:00Z"

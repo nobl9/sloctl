@@ -1,7 +1,7 @@
 - apiVersion: n9/v1alpha
   kind: Alert
   metadata:
-    name: placeholder
+    name: b5e3a7c1-0004-4000-8000-000000000004
     project: alert-test-project
   spec:
     alertPolicy:
@@ -11,6 +11,10 @@
     conditions:
     - measurement: burnedBudget
       op: gte
+      status:
+        firstMetMetricTime: "2026-01-15T10:15:00Z"
+        lastMetMetricTime: "2026-01-15T10:15:00Z"
+        lastsForMetMetricTime: "2026-01-15T10:15:00Z"
       value: 0.7
     coolDown: 5m0s
     objective:
@@ -27,12 +31,12 @@
       name: alert-test-slo
       project: alert-test-project
     status: Triggered
-    triggeredClockTime: "2024-01-15T10:15:00Z"
-    triggeredMetricTime: "2024-01-15T10:15:00Z"
+    triggeredClockTime: "2026-01-15T10:15:00Z"
+    triggeredMetricTime: "2026-01-15T10:15:00Z"
 - apiVersion: n9/v1alpha
   kind: Alert
   metadata:
-    name: placeholder
+    name: b5e3a7c1-0007-4000-8000-000000000007
     project: alert-test-project
   spec:
     alertPolicy:
@@ -42,14 +46,20 @@
     conditions:
     - measurement: burnedBudget
       op: gte
+      status:
+        firstMetMetricTime: "2026-01-15T07:00:00Z"
+        lastMetMetricTime: "2026-01-15T07:00:00Z"
+        lastsForMetMetricTime: "2026-01-15T07:00:00Z"
       value: 0.7
     coolDown: 5m0s
+    coolDownStartedAtMetricTime: "2026-01-15T07:00:00Z"
     objective:
       displayName: default
       name: default
       value: 0.9
-    resolvedClockTime: "2024-01-15T10:30:00Z"
-    resolvedMetricTime: "2024-01-15T10:30:00Z"
+    resolutionReason: AlertResolved
+    resolvedClockTime: "2026-01-15T10:30:00Z"
+    resolvedMetricTime: "2026-01-15T10:30:00Z"
     service:
       displayName: Alert Test Service
       name: alert-test-service
@@ -60,5 +70,5 @@
       name: alert-test-slo
       project: alert-test-project
     status: Resolved
-    triggeredClockTime: "2024-01-15T07:00:00Z"
-    triggeredMetricTime: "2024-01-15T07:00:00Z"
+    triggeredClockTime: "2026-01-15T07:00:00Z"
+    triggeredMetricTime: "2026-01-15T07:00:00Z"
