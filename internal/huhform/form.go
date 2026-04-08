@@ -5,19 +5,17 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
+	huh "charm.land/huh/v2"
+	lipgloss "charm.land/lipgloss/v2"
 )
 
 // accessibleModeEnv can be set to turn on [huh] accessible mode.
 // It can be useful in old terminal emulators (e.g. remote shells).
 const accessibleModeEnv = "SLOCTL_ACCESSIBLE_MODE"
 
-var defaultTheme = themeNobl9()
-
 func New(groups ...*huh.Group) *huh.Form {
 	return huh.NewForm(groups...).
-		WithTheme(defaultTheme).
+		WithTheme(huh.ThemeFunc(themeNobl9)).
 		WithAccessible(getAccessibleEnvValue())
 }
 
@@ -34,8 +32,8 @@ func getAccessibleEnvValue() bool {
 }
 
 // themeNobl9 returns a new theme based on the Nobl9 color scheme.
-func themeNobl9() *huh.Theme {
-	t := huh.ThemeBase()
+func themeNobl9(isDark bool) *huh.Styles {
+	t := huh.ThemeBase(isDark)
 
 	var (
 		black  = lipgloss.Color("#383939")
