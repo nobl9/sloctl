@@ -16,11 +16,9 @@ LDFLAGS := -s -w \
 	-X $(VERSION_PKG).BuildGitRevision=$(REVISION)
 
 # renovate datasource=github-releases depName=golangci/golangci-lint
-GOLANGCI_LINT_VERSION := v2.10.1
+GOLANGCI_LINT_VERSION := v2.11.4
 # renovate datasource=go depName=golang.org/x/vuln/cmd/govulncheck
 GOVULNCHECK_VERSION := v1.1.4
-# renovate datasource=go depName=golang.org/x/tools/cmd/goimports
-GOIMPORTS_VERSION := v0.42.0
 
 # Check if the program is present in $PATH and install otherwise.
 # ${1} - oneOf{binary,yarn}
@@ -190,9 +188,9 @@ format/cspell:
 	$(call _ensure_installed,yarn,yaml)
 	yarn --silent format-cspell-config
 
-.PHONY: install/tools install/yarn install/golangci-lint install/govulncheck install/goimports
+.PHONY: install/tools install/yarn install/golangci-lint install/govulncheck
 ## Install all dev dependencies.
-install/tools: install/yarn install/golangci-lint install/govulncheck install/goimports
+install/tools: install/yarn install/golangci-lint install/govulncheck
 
 ## Install JS dependencies with yarn.
 install/yarn:
@@ -209,11 +207,6 @@ install/golangci-lint:
 install/govulncheck:
 	echo "Installing govulncheck..."
 	$(call _install_go_binary,golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION))
-
-## Install goimports (https://pkg.go.dev/golang.org/x/tools/cmd/goimports).
-install/goimports:
-	echo "Installing goimports..."
-	$(call _install_go_binary,golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION))
 
 .PHONY: help
 ## Print this help message.
