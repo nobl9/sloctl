@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # bats file_tags=e2e
 
-# Alerts are pre-populated in the database by the api-tests-setup commandrunner.
-# All alert fields including metadata.name are static and deterministic;
+# Alerts are pre-populated in the database with static, deterministic data.
+# All alert fields including metadata.name are fixed;
 # only the organization field is env-dependent and stripped during comparison.
 
 # setup_file is run only once for the whole file.
@@ -39,6 +39,12 @@ setup() {
   run_sloctl get alert -p "non-existent-project-xyz-123"
   assert_success_joined_output
   assert_output "No resources found in 'non-existent-project-xyz-123' project."
+}
+
+@test "get alerts no results for non-existent alert-policy" {
+  run_sloctl get alert -p "$TEST_PROJECT" --alert-policy "non-existent-policy-xyz-123"
+  assert_success_joined_output
+  assert_output "No resources found in '$TEST_PROJECT' project."
 }
 
 @test "get alerts filtered by --alert-policy alert-test-policy-high" {
@@ -86,10 +92,17 @@ setup() {
   verify_alert_output "$output" "$want"
 }
 
-@test "get alerts filtered by --objective flag" {
-  want=$(read_files "${TEST_OUTPUTS}/all-alerts.yaml")
+@test "get alerts filtered by --objective default" {
+  want=$(read_files "${TEST_OUTPUTS}/objective-default-alerts.yaml")
 
   run_sloctl get alert -p "$TEST_PROJECT" --objective default
+  verify_alert_output "$output" "$want"
+}
+
+@test "get alerts filtered by --objective critical" {
+  want=$(read_files "${TEST_OUTPUTS}/objective-critical-alerts.yaml")
+
+  run_sloctl get alert -p "$TEST_PROJECT" --objective critical
   verify_alert_output "$output" "$want"
 }
 
@@ -111,6 +124,20 @@ setup() {
   want=$(read_files "${TEST_OUTPUTS}/policy-high-triggered.yaml")
 
   run_sloctl get alert -p "$TEST_PROJECT" --alert-policy alert-test-policy-high --triggered --resolved=false
+  verify_alert_output "$output" "$want"
+}
+
+@test "get alerts with combined --slo and --alert-policy filter" {
+  want=$(read_files "${TEST_OUTPUTS}/policy-high-alerts.yaml")
+
+  run_sloctl get alert -p "$TEST_PROJECT" --slo alert-test-slo --alert-policy alert-test-policy-high
+  verify_alert_output "$output" "$want"
+}
+
+@test "get alerts with combined --service and --resolved filter" {
+  want=$(read_files "${TEST_OUTPUTS}/resolved-alerts.yaml")
+
+  run_sloctl get alert -p "$TEST_PROJECT" --service alert-test-service --resolved --triggered=false
   verify_alert_output "$output" "$want"
 }
 
@@ -214,13 +241,13 @@ setup() {
 
   assert_equal "$(yq -r '[.[].kind] | unique | .[]' <<<"$output")" "Alert"
   count=$(yq -r 'length' <<<"$output")
-  assert [ "$count" -ge 10 ]
+  assert [ "$count" = 10 ]
 }
 
 # verify_alert_output compares the actual alert output against expected YAML.
 # Only the organization field is env-dependent and stripped during comparison.
 # All other fields including metadata.name, timestamps, conditions,
-# and coolDown are static from the commandrunner and compared as-is.
+# and coolDown are static and compared as-is.
 verify_alert_output() {
   local \
     have="$1" \

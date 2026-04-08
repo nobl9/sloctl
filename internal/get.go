@@ -71,7 +71,7 @@ To get more details in output use one of the available flags.`,
 		Aliases  []string
 		Extender func(cmd *cobra.Command) *cobra.Command
 	}{
-		{Kind: manifest.KindAgent, Aliases: []string{"Agents"}, Extender: get.newGetAgentCommand},
+		{Kind: manifest.KindAgent, Extender: get.newGetAgentCommand},
 		{Kind: manifest.KindAlertMethod},
 		{Kind: manifest.KindAlertPolicy},
 		{Kind: manifest.KindAlert, Extender: get.newGetAlertCommand},
