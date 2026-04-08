@@ -1,6 +1,6 @@
 module github.com/nobl9/sloctl
 
-go 1.26
+go 1.26.2
 
 require (
 	charm.land/huh/v2 v2.0.3
