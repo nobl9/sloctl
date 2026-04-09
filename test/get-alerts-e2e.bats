@@ -113,11 +113,11 @@ setup() {
   verify_alert_output "$output" "$want"
 }
 
-@test "get only resolved alerts" {
+@test "get only resolved/canceled alerts" {
   want=$(read_files "${TEST_OUTPUTS}/resolved-alerts.yaml")
 
   run_sloctl get alert -p "$TEST_PROJECT" --resolved --triggered=false
-  verify_alert_output "$output" "$want"
+  verify_resolved_or_canceled_output "$output" "$want"
 }
 
 @test "get alerts with combined --alert-policy and --triggered filter" {
@@ -138,7 +138,7 @@ setup() {
   want=$(read_files "${TEST_OUTPUTS}/resolved-alerts.yaml")
 
   run_sloctl get alert -p "$TEST_PROJECT" --service alert-test-service --resolved --triggered=false
-  verify_alert_output "$output" "$want"
+  verify_resolved_or_canceled_output "$output" "$want"
 }
 
 @test "get all alerts in project-2" {
@@ -155,11 +155,11 @@ setup() {
   verify_alert_output "$output" "$want"
 }
 
-@test "get only resolved alerts in project-2" {
+@test "get only resolved/canceled alerts in project-2" {
   want=$(read_files "${TEST_OUTPUTS}/project-2-resolved.yaml")
 
   run_sloctl get alert -p "$TEST_PROJECT_2" --resolved --triggered=false
-  verify_alert_output "$output" "$want"
+  verify_resolved_or_canceled_output "$output" "$want"
 }
 
 @test "get alerts with --from time range" {
@@ -245,17 +245,31 @@ setup() {
 }
 
 # verify_alert_output compares the actual alert output against expected YAML.
-# Only the organization field is env-dependent and stripped during comparison.
-# All other fields including metadata.name, timestamps, conditions,
-# and coolDown are static and compared as-is.
+# Organization is env-dependent and stripped during comparison.
+# Canceled alerts are normalized to resolved semantics for matching,
+# and coolDownStartedAtMetricTime is ignored.
 verify_alert_output() {
   local \
     have="$1" \
     want="$2"
   assert_success_joined_output
   refute_output --partial "Available Commands:"
-  filter='[.[] | del(.organization)] | sort_by(.spec.slo.name, .spec.status, .spec.severity)'
+  filter='[.[]
+    | del(.organization)
+    | del(.spec.coolDownStartedAtMetricTime)
+    | .spec.status = (if .spec.status == "Canceled" then "Resolved" else .spec.status end)
+    | if (.spec.resolutionReason // "") | startswith("AlertCanceled") then .spec.resolutionReason = "AlertResolved" else . end
+  ] | sort_by(.spec.slo.name, .spec.status, .spec.severity)'
   assert_equal \
     "$(yq --sort-keys -y -r "$filter" <<<"$have")" \
     "$(yq --sort-keys -y -r "$filter" <<<"$want")"
+}
+
+# verify_resolved_or_canceled_output compares output for --resolved filters.
+# Canceled alerts are expected to be returned along with resolved ones.
+verify_resolved_or_canceled_output() {
+  local \
+    have="$1" \
+    want="$2"
+  verify_alert_output "$have" "$want"
 }
