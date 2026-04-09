@@ -4,10 +4,10 @@ go 1.26.2
 
 require (
 	charm.land/huh/v2 v2.0.3
-	charm.land/lipgloss/v2 v2.0.1
+	charm.land/lipgloss/v2 v2.0.2
 	github.com/BurntSushi/toml v1.6.0
 	github.com/OpenSLO/go-sdk v0.9.1
-	github.com/go-playground/validator/v10 v10.30.1
+	github.com/go-playground/validator/v10 v10.30.2
 	github.com/goccy/go-yaml v1.19.2
 	github.com/itchyny/gojq v0.12.19
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
