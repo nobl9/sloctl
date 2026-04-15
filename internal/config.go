@@ -9,7 +9,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/charmbracelet/huh"
+	huh "charm.land/huh/v2"
 	"github.com/nobl9/nobl9-go/sdk"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
