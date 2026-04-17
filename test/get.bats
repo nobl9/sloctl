@@ -26,22 +26,22 @@ setup() {
 }
 
 @test "alert methods" {
-  aliases="alertmethod alertmethods"
+  aliases="alertmethod alertmethods AlertMethods"
   test_get "AlertMethod" "$aliases" "${TEST_INPUTS}/alertmethods.yaml" "$output"
 }
 
 @test "alert policies" {
-  aliases="alertpolicy alertpolicies"
+  aliases="alertpolicy alertpolicies AlertPolicies"
   test_get "AlertPolicy" "$aliases" "${TEST_INPUTS}/alertpolicies.yaml" "$output"
 }
 
 @test "alert silences" {
-  aliases="alertsilence alertsilences"
+  aliases="alertsilence alertsilences AlertSilences"
   test_get "AlertSilence" "$aliases" "${TEST_INPUTS}/alertsilences.yaml" "$output"
 }
 
 @test "annotations" {
-  aliases="annotation annotations"
+  aliases="annotation annotations Annotations"
   test_get "Annotation" "$aliases" "${TEST_OUTPUTS}/annotations-death-star.yaml" "$output"
 }
 
@@ -129,37 +129,37 @@ setup() {
 }
 
 @test "data exports" {
-  aliases="dataexport dataexports"
+  aliases="dataexport dataexports DataExports"
   test_get "DataExport" "$aliases" "" "$output"
 }
 
 @test "directs" {
-  aliases="direct directs"
+  aliases="direct directs Directs"
   test_get "Direct" "$aliases" "${TEST_INPUTS}/directs.yaml" "$output"
 }
 
 @test "user groups" {
-  aliases="usergroup usergroups"
+  aliases="usergroup usergroups UserGroups"
   test_get "UserGroup" "$aliases" "" "$output"
 }
 
 @test "projects" {
-  aliases="projects project"
+  aliases="projects project Projects"
   test_get "Project" "$aliases" "${TEST_INPUTS}/projects.yaml" "$output"
 }
 
 @test "role bindings" {
-  aliases="rolebinding rolebindings"
+  aliases="rolebinding rolebindings RoleBindings"
   test_get "RoleBinding" "$aliases" "${TEST_INPUTS}/rolebindings.yaml" "$output"
 }
 
 @test "services" {
-  aliases="services svc svcs service"
+  aliases="services svc svcs service Services"
   test_get "Service" "$aliases" "${TEST_OUTPUTS}/services-death-star.yaml" "$output"
 }
 
 @test "slos" {
-  aliases="slo slos"
+  aliases="slo slos SLOs"
   test_get "SLO" "$aliases" "${TEST_OUTPUTS}/slos-death-star.yaml" "$output"
 }
 
@@ -191,17 +191,17 @@ setup() {
 }
 
 @test "budget adjustments" {
-  aliases="budgetadjustment budgetadjustments"
+  aliases="budgetadjustment budgetadjustments BudgetAdjustments"
   test_get "BudgetAdjustment" "$aliases" "${TEST_INPUTS}/budgetadjustments.yaml" "$output"
 }
 
 @test "reports" {
-  aliases="report reports"
+  aliases="report reports Reports"
   test_get "Report" "$aliases" "${TEST_INPUTS}/reports.yaml" "$output"
 }
 
 @test "agent" {
-  aliases="agent agents"
+  aliases="agent agents Agents"
   test_get "Agent" "$aliases" "${TEST_INPUTS}/agent.yaml" "$output"
 }
 

@@ -71,7 +71,7 @@ To get more details in output use one of the available flags.`,
 		Aliases  []string
 		Extender func(cmd *cobra.Command) *cobra.Command
 	}{
-		{Kind: manifest.KindAgent, Aliases: []string{"agent", "Agents", "Agent"}, Extender: get.newGetAgentCommand},
+		{Kind: manifest.KindAgent, Extender: get.newGetAgentCommand},
 		{Kind: manifest.KindAlertMethod},
 		{Kind: manifest.KindAlertPolicy},
 		{Kind: manifest.KindAlert, Extender: get.newGetAlertCommand},
@@ -90,7 +90,7 @@ To get more details in output use one of the available flags.`,
 		plural := pluralForKind(subCmd.Kind)
 		short := fmt.Sprintf("Displays all of the %s.", plural)
 		use := strings.ToLower(plural)
-		subCmd.Aliases = append(subCmd.Aliases, subCmd.Kind.ToLower(), subCmd.Kind.String())
+		subCmd.Aliases = append(subCmd.Aliases, subCmd.Kind.ToLower(), subCmd.Kind.String(), plural)
 
 		sc := get.newGetObjectsCommand(subCmd.Kind, short, use, subCmd.Aliases)
 		if subCmd.Extender != nil {
