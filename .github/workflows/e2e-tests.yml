@@ -40,16 +40,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
         with:
           repository: nobl9/sloctl
           ref: ${{ inputs.ref }}
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v6.4.0
         with:
           go-version-file: go.mod
           cache: false
       - name: Run tests
-        uses: nick-fields/retry@v4
+        uses: nick-fields/retry@v4.0.0
         with:
           timeout_minutes: 15
           max_attempts: 3

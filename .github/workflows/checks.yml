@@ -14,17 +14,17 @@ jobs:
       GO111MODULE: on
     steps:
       - name: Check out code
-        uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+        uses: actions/checkout@v6.0.2
+      - uses: actions/setup-go@v6.4.0
         with:
           go-version-file: go.mod
           check-latest: true
       - name: Set up prerequisites - node and yarn
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v6.3.0
       - name: Set up yarn cache
         id: yarn-cache
         run: echo "::set-output name=dir::$(yarn cache dir)"
-      - uses: actions/cache@v5
+      - uses: actions/cache@v5.0.5
         with:
           path: ${{ steps.yarn-cache.outputs.dir }}
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
