@@ -52,6 +52,7 @@ More detailed help is available for each command.`,
 	rootCmd.AddCommand(root.NewApplyCmd())
 	rootCmd.AddCommand(root.NewDeleteCmd())
 	rootCmd.AddCommand(root.NewGetCmd())
+	rootCmd.AddCommand(root.NewEditCmd())
 	rootCmd.AddCommand(NewVersionCmd())
 	rootCmd.AddCommand(root.NewConfigCmd())
 	rootCmd.AddCommand(root.NewReplayCmd())

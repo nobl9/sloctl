@@ -73,7 +73,7 @@ func (r *RootCmd) NewDeleteCmd() *cobra.Command {
 		{kind: manifest.KindDirect},
 		{kind: manifest.KindProject},
 		{kind: manifest.KindRoleBinding},
-		{kind: manifest.KindService, aliases: []string{"svc", "svcs"}},
+		{kind: manifest.KindService, aliases: aliasesForKind(manifest.KindService)},
 		{kind: manifest.KindSLO},
 		{kind: manifest.KindBudgetAdjustment},
 		{kind: manifest.KindReport},
