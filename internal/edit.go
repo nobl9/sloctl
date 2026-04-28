@@ -383,7 +383,7 @@ func validateRequestedObjectsFound(names []string, objects []manifest.Object) er
 
 func runEditor(filePath string) error {
 	goOS := runtime.GOOS
-	editor := resolveEditor(goOS)
+	editor := resolveEditor(goOS, exec.LookPath)
 	var editorCmd *exec.Cmd
 	switch goOS {
 	case "windows":
@@ -400,22 +400,33 @@ func runEditor(filePath string) error {
 	return nil
 }
 
-func resolveEditor(goOS string) string {
+type editorLookup func(string) (string, error)
+
+func resolveEditor(goOS string, lookPath editorLookup) string {
 	for _, envName := range []string{"SLOCTL_EDITOR", "KUBE_EDITOR", "EDITOR"} {
 		if editor := strings.TrimSpace(os.Getenv(envName)); editor != "" {
 			return editor
 		}
 	}
-	return defaultEditorForOS(goOS)
+	return defaultEditorForOS(goOS, lookPath)
 }
 
-func defaultEditorForOS(goOS string) string {
+func defaultEditorForOS(goOS string, lookPath editorLookup) string {
 	switch goOS {
 	case "darwin":
 		return "open -W -n -t"
 	case "windows":
 		return "notepad"
 	default:
-		return "vi"
+		return defaultEditorForUnix(lookPath)
 	}
+}
+
+func defaultEditorForUnix(lookPath editorLookup) string {
+	for _, editor := range []string{"vim", "vi"} {
+		if _, err := lookPath(editor); err == nil {
+			return editor
+		}
+	}
+	return "nano"
 }

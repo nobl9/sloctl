@@ -125,29 +125,49 @@ func TestAddEditErrorToContents_ReplacesPreviousEditError(t *testing.T) {
 func TestDefaultEditorForOS(t *testing.T) {
 	tests := map[string]struct {
 		goos           string
+		lookup         editorLookup
 		expectedEditor string
 	}{
 		"darwin": {
 			goos:           "darwin",
+			lookup:         fakeEditorLookup(),
 			expectedEditor: "open -W -n -t",
 		},
 		"windows": {
 			goos:           "windows",
+			lookup:         fakeEditorLookup(),
 			expectedEditor: "notepad",
 		},
-		"linux": {
+		"linux with vim": {
 			goos:           "linux",
+			lookup:         fakeEditorLookup("vim", "vi"),
+			expectedEditor: "vim",
+		},
+		"linux with vi when vim is missing": {
+			goos:           "linux",
+			lookup:         fakeEditorLookup("vi"),
 			expectedEditor: "vi",
 		},
-		"unknown": {
+		"linux falls back to nano when vim and vi are missing": {
+			goos:           "linux",
+			lookup:         fakeEditorLookup("nano"),
+			expectedEditor: "nano",
+		},
+		"linux uses nano even when no editor is found": {
+			goos:           "linux",
+			lookup:         fakeEditorLookup(),
+			expectedEditor: "nano",
+		},
+		"unknown with vim": {
 			goos:           "unknown",
-			expectedEditor: "vi",
+			lookup:         fakeEditorLookup("vim"),
+			expectedEditor: "vim",
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			assert.Equal(t, test.expectedEditor, defaultEditorForOS(test.goos))
+			assert.Equal(t, test.expectedEditor, defaultEditorForOS(test.goos, test.lookup))
 		})
 	}
 }
@@ -157,16 +177,19 @@ func TestResolveEditor(t *testing.T) {
 	t.Setenv("KUBE_EDITOR", "")
 	t.Setenv("EDITOR", "")
 
-	assert.Equal(t, defaultEditorForOS(runtime.GOOS), resolveEditor(runtime.GOOS))
+	lookup := fakeEditorLookup("vim")
+
+	assert.Equal(t, defaultEditorForOS(runtime.GOOS, lookup), resolveEditor(runtime.GOOS, lookup))
+	assert.Equal(t, "open -W -n -t", resolveEditor("darwin", lookup))
 
 	t.Setenv("EDITOR", "vim")
-	assert.Equal(t, "vim", resolveEditor(runtime.GOOS))
+	assert.Equal(t, "vim", resolveEditor(runtime.GOOS, lookup))
 
 	t.Setenv("KUBE_EDITOR", "nano")
-	assert.Equal(t, "nano", resolveEditor(runtime.GOOS))
+	assert.Equal(t, "nano", resolveEditor(runtime.GOOS, lookup))
 
 	t.Setenv("SLOCTL_EDITOR", "code --wait")
-	assert.Equal(t, "code --wait", resolveEditor(runtime.GOOS))
+	assert.Equal(t, "code --wait", resolveEditor(runtime.GOOS, lookup))
 }
 
 func TestEditCmd_Run_NoResourcesFoundInProject(t *testing.T) {
@@ -204,6 +227,19 @@ func TestEditCmd_Run_ReturnsMissingNamesWhenOnlySomeObjectsExist(t *testing.T) {
 	})
 
 	assert.Empty(t, output)
+}
+
+func fakeEditorLookup(availableEditors ...string) editorLookup {
+	available := make(map[string]struct{}, len(availableEditors))
+	for _, editor := range availableEditors {
+		available[editor] = struct{}{}
+	}
+	return func(editor string) (string, error) {
+		if _, ok := available[editor]; ok {
+			return "/usr/bin/" + editor, nil
+		}
+		return "", os.ErrNotExist
+	}
 }
 
 func newEditTestClient(t *testing.T, project string, objects []manifest.Object) *sdk.Client {
