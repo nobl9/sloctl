@@ -108,6 +108,9 @@ func (e *EditCmd) run(cmd *cobra.Command, kind manifest.Kind, names []string) er
 		fmt.Println("No resources found.")
 		return nil
 	}
+	if err = validateRequestedObjectsFound(names, objects); err != nil {
+		return err
+	}
 
 	return e.editAndApply(cmd, objects)
 }
@@ -352,6 +355,30 @@ func getObjectProject(object manifest.Object) string {
 		return ""
 	}
 	return projectScopedObject.GetProject()
+}
+
+func validateRequestedObjectsFound(names []string, objects []manifest.Object) error {
+	foundNames := make(map[string]struct{}, len(objects))
+	for i := range objects {
+		foundNames[objects[i].GetName()] = struct{}{}
+	}
+
+	seenMissingNames := make(map[string]struct{}, len(names))
+	missingNames := make([]string, 0)
+	for _, name := range names {
+		if _, ok := foundNames[name]; ok {
+			continue
+		}
+		if _, ok := seenMissingNames[name]; ok {
+			continue
+		}
+		seenMissingNames[name] = struct{}{}
+		missingNames = append(missingNames, name)
+	}
+	if len(missingNames) == 0 {
+		return nil
+	}
+	return fmt.Errorf("resource(s) not found: %s", strings.Join(missingNames, ", "))
 }
 
 func runEditor(filePath string) error {

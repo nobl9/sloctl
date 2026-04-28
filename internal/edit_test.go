@@ -40,34 +40,6 @@ func TestNewEditCmd_Subcommands(t *testing.T) {
 	assert.Equal(t, `unknown command "slo/my-slo" for "edit"`, err.Error())
 }
 
-func TestGetMissingObjectNames(t *testing.T) {
-	objects := []manifest.Object{
-		v1alpha.GenericObject{
-			"apiVersion": manifest.VersionV1alpha,
-			"kind":       manifest.KindSLO,
-			"metadata": map[string]any{
-				"project": "project-1",
-				"name":    "my-slo",
-			},
-		},
-		v1alpha.GenericObject{
-			"apiVersion": manifest.VersionV1alpha,
-			"kind":       manifest.KindSLO,
-			"metadata": map[string]any{
-				"project": "project-1",
-				"name":    "my-slo-2",
-			},
-		},
-	}
-
-	missingNames := getMissingObjectNames(
-		[]string{"my-slo", "my-slo-3", "my-slo-3", "my-slo-4"},
-		objects,
-	)
-
-	assert.Equal(t, []string{"my-slo-3", "my-slo-4"}, missingNames)
-}
-
 func TestValidateEditedObjectsMatchSelection(t *testing.T) {
 	original := []manifest.Object{
 		v1alpha.GenericObject{
@@ -227,8 +199,8 @@ func TestEditCmd_Run_ReturnsMissingNamesWhenOnlySomeObjectsExist(t *testing.T) {
 	cmd.SetContext(context.Background())
 
 	output := captureStdout(t, func() {
-		err := edit.run(cmd, manifest.KindSLO, []string{"foo", "bar"})
-		require.EqualError(t, err, "resource(s) not found: bar")
+		err := edit.run(cmd, manifest.KindSLO, []string{"foo", "bar", "bar", "baz"})
+		require.EqualError(t, err, "resource(s) not found: bar, baz")
 	})
 
 	assert.Empty(t, output)
