@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"text/template"
 
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/sdk"
@@ -29,8 +30,27 @@ type EditCmd struct {
 	projectFlagWasSet bool
 }
 
+const (
+	editorEnvSloctl = "SLOCTL_EDITOR"
+	editorEnvSystem = "EDITOR"
+	shellEnv        = "SHELL"
+
+	defaultEditorMacOS        = "open -W -n -t"
+	defaultEditorWindows      = "notepad"
+	defaultEditorUnixVim      = "vim"
+	defaultEditorUnixVi       = "vi"
+	defaultEditorUnixFallback = "nano"
+	defaultShellUnix          = "/bin/bash"
+	defaultShellWindows       = "cmd"
+	shellArgUnix              = "-c"
+	shellArgWindows           = "/C"
+)
+
 //go:embed edit_example.sh
 var editExample string
+
+//go:embed edit_description.tpl
+var editDescriptionTemplate string
 
 // NewEditCmd returns cobra command edit.
 func (r *RootCmd) NewEditCmd() *cobra.Command {
@@ -39,7 +59,7 @@ func (r *RootCmd) NewEditCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "edit",
 		Short:   "Edit one or more than one resource",
-		Long:    "Edit one or more resources by opening them in your editor and applying the modified definitions.",
+		Long:    getEditDescription(),
 		Example: editExample,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			edit.client = r.GetClient()
@@ -65,6 +85,30 @@ func (r *RootCmd) NewEditCmd() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func getEditDescription() string {
+	tpl, err := template.New("editDescription").Parse(editDescriptionTemplate)
+	if err != nil {
+		panic(err)
+	}
+
+	var b strings.Builder
+	if err = tpl.Execute(&b, map[string]string{
+		"EditorEnvSloctl":           editorEnvSloctl,
+		"EditorEnvSystem":           editorEnvSystem,
+		"ShellEnv":                  shellEnv,
+		"DefaultEditorMacOS":        defaultEditorMacOS,
+		"DefaultEditorWindows":      defaultEditorWindows,
+		"DefaultEditorUnixVim":      defaultEditorUnixVim,
+		"DefaultEditorUnixVi":       defaultEditorUnixVi,
+		"DefaultEditorUnixFallback": defaultEditorUnixFallback,
+		"DefaultShellUnix":          defaultShellUnix,
+		"DefaultShellWindows":       defaultShellWindows,
+	}); err != nil {
+		panic(err)
+	}
+	return b.String()
 }
 
 func (e *EditCmd) newEditObjectsCommand(
@@ -384,13 +428,8 @@ func validateRequestedObjectsFound(names []string, objects []manifest.Object) er
 func runEditor(filePath string) error {
 	goOS := runtime.GOOS
 	editor := resolveEditor(goOS, exec.LookPath)
-	var editorCmd *exec.Cmd
-	switch goOS {
-	case "windows":
-		editorCmd = exec.Command("cmd", "/C", fmt.Sprintf("%s %q", editor, filePath))
-	default:
-		editorCmd = exec.Command("sh", "-c", fmt.Sprintf("%s %q", editor, filePath))
-	}
+	shell := resolveShell(goOS)
+	editorCmd := exec.Command(shell, shellCommandArg(goOS, shell), fmt.Sprintf("%s %q", editor, filePath))
 	editorCmd.Stdin = os.Stdin
 	editorCmd.Stdout = os.Stdout
 	editorCmd.Stderr = os.Stderr
@@ -403,7 +442,7 @@ func runEditor(filePath string) error {
 type editorLookup func(string) (string, error)
 
 func resolveEditor(goOS string, lookPath editorLookup) string {
-	for _, envName := range []string{"SLOCTL_EDITOR", "KUBE_EDITOR", "EDITOR"} {
+	for _, envName := range []string{editorEnvSloctl, editorEnvSystem} {
 		if editor := strings.TrimSpace(os.Getenv(envName)); editor != "" {
 			return editor
 		}
@@ -414,19 +453,46 @@ func resolveEditor(goOS string, lookPath editorLookup) string {
 func defaultEditorForOS(goOS string, lookPath editorLookup) string {
 	switch goOS {
 	case "darwin":
-		return "open -W -n -t"
+		return defaultEditorMacOS
 	case "windows":
-		return "notepad"
+		return defaultEditorWindows
 	default:
 		return defaultEditorForUnix(lookPath)
 	}
 }
 
 func defaultEditorForUnix(lookPath editorLookup) string {
-	for _, editor := range []string{"vim", "vi"} {
+	for _, editor := range []string{defaultEditorUnixVim, defaultEditorUnixVi} {
 		if _, err := lookPath(editor); err == nil {
 			return editor
 		}
 	}
-	return "nano"
+	return defaultEditorUnixFallback
+}
+
+func resolveShell(goOS string) string {
+	if shell := strings.TrimSpace(os.Getenv(shellEnv)); shell != "" {
+		return shell
+	}
+	return defaultShellForOS(goOS)
+}
+
+func defaultShellForOS(goOS string) string {
+	if goOS == "windows" {
+		return defaultShellWindows
+	}
+	return defaultShellUnix
+}
+
+func shellCommandArg(goOS, shell string) string {
+	if goOS == "windows" && isWindowsCommandPrompt(shell) {
+		return shellArgWindows
+	}
+	return shellArgUnix
+}
+
+func isWindowsCommandPrompt(shell string) bool {
+	base := strings.ToLower(filepath.Base(shell))
+	base = strings.TrimSuffix(base, ".exe")
+	return base == defaultShellWindows
 }

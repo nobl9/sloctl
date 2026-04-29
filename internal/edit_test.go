@@ -131,37 +131,37 @@ func TestDefaultEditorForOS(t *testing.T) {
 		"darwin": {
 			goos:           "darwin",
 			lookup:         fakeEditorLookup(),
-			expectedEditor: "open -W -n -t",
+			expectedEditor: defaultEditorMacOS,
 		},
 		"windows": {
 			goos:           "windows",
 			lookup:         fakeEditorLookup(),
-			expectedEditor: "notepad",
+			expectedEditor: defaultEditorWindows,
 		},
 		"linux with vim": {
 			goos:           "linux",
-			lookup:         fakeEditorLookup("vim", "vi"),
-			expectedEditor: "vim",
+			lookup:         fakeEditorLookup(defaultEditorUnixVim, defaultEditorUnixVi),
+			expectedEditor: defaultEditorUnixVim,
 		},
 		"linux with vi when vim is missing": {
 			goos:           "linux",
-			lookup:         fakeEditorLookup("vi"),
-			expectedEditor: "vi",
+			lookup:         fakeEditorLookup(defaultEditorUnixVi),
+			expectedEditor: defaultEditorUnixVi,
 		},
 		"linux falls back to nano when vim and vi are missing": {
 			goos:           "linux",
-			lookup:         fakeEditorLookup("nano"),
-			expectedEditor: "nano",
+			lookup:         fakeEditorLookup(defaultEditorUnixFallback),
+			expectedEditor: defaultEditorUnixFallback,
 		},
 		"linux uses nano even when no editor is found": {
 			goos:           "linux",
 			lookup:         fakeEditorLookup(),
-			expectedEditor: "nano",
+			expectedEditor: defaultEditorUnixFallback,
 		},
 		"unknown with vim": {
 			goos:           "unknown",
-			lookup:         fakeEditorLookup("vim"),
-			expectedEditor: "vim",
+			lookup:         fakeEditorLookup(defaultEditorUnixVim),
+			expectedEditor: defaultEditorUnixVim,
 		},
 	}
 
@@ -173,23 +173,65 @@ func TestDefaultEditorForOS(t *testing.T) {
 }
 
 func TestResolveEditor(t *testing.T) {
-	t.Setenv("SLOCTL_EDITOR", "")
-	t.Setenv("KUBE_EDITOR", "")
-	t.Setenv("EDITOR", "")
+	t.Setenv(editorEnvSloctl, "")
+	t.Setenv(editorEnvSystem, "")
 
-	lookup := fakeEditorLookup("vim")
+	lookup := fakeEditorLookup(defaultEditorUnixVim)
 
 	assert.Equal(t, defaultEditorForOS(runtime.GOOS, lookup), resolveEditor(runtime.GOOS, lookup))
-	assert.Equal(t, "open -W -n -t", resolveEditor("darwin", lookup))
+	assert.Equal(t, defaultEditorMacOS, resolveEditor("darwin", lookup))
 
-	t.Setenv("EDITOR", "vim")
-	assert.Equal(t, "vim", resolveEditor(runtime.GOOS, lookup))
+	t.Setenv(editorEnvSystem, defaultEditorUnixVim)
+	assert.Equal(t, defaultEditorUnixVim, resolveEditor(runtime.GOOS, lookup))
 
-	t.Setenv("KUBE_EDITOR", "nano")
-	assert.Equal(t, "nano", resolveEditor(runtime.GOOS, lookup))
-
-	t.Setenv("SLOCTL_EDITOR", "code --wait")
+	t.Setenv(editorEnvSloctl, "code --wait")
 	assert.Equal(t, "code --wait", resolveEditor(runtime.GOOS, lookup))
+}
+
+func TestResolveShell(t *testing.T) {
+	t.Setenv(shellEnv, "")
+
+	assert.Equal(t, defaultShellUnix, resolveShell("linux"))
+	assert.Equal(t, defaultShellUnix, resolveShell("darwin"))
+	assert.Equal(t, defaultShellWindows, resolveShell("windows"))
+
+	t.Setenv(shellEnv, "/bin/zsh")
+	assert.Equal(t, "/bin/zsh", resolveShell("linux"))
+}
+
+func TestShellCommandArg(t *testing.T) {
+	tests := map[string]struct {
+		goos     string
+		shell    string
+		expected string
+	}{
+		"unix shell": {
+			goos:     "linux",
+			shell:    defaultShellUnix,
+			expected: shellArgUnix,
+		},
+		"windows cmd": {
+			goos:     "windows",
+			shell:    defaultShellWindows,
+			expected: shellArgWindows,
+		},
+		"windows cmd exe": {
+			goos:     "windows",
+			shell:    defaultShellWindows + ".exe",
+			expected: shellArgWindows,
+		},
+		"windows non-cmd shell": {
+			goos:     "windows",
+			shell:    "powershell",
+			expected: shellArgUnix,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, test.expected, shellCommandArg(test.goos, test.shell))
+		})
+	}
 }
 
 func TestEditCmd_Run_NoResourcesFoundInProject(t *testing.T) {
