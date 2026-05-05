@@ -35,7 +35,6 @@ const (
 	editorEnvSystem = "EDITOR"
 	shellEnv        = "SHELL"
 
-	defaultEditorMacOS        = "open -W -n -t"
 	defaultEditorWindows      = "notepad"
 	defaultEditorUnixVim      = "vim"
 	defaultEditorUnixVi       = "vi"
@@ -98,7 +97,6 @@ func getEditDescription() string {
 		"EditorEnvSloctl":           editorEnvSloctl,
 		"EditorEnvSystem":           editorEnvSystem,
 		"ShellEnv":                  shellEnv,
-		"DefaultEditorMacOS":        defaultEditorMacOS,
 		"DefaultEditorWindows":      defaultEditorWindows,
 		"DefaultEditorUnixVim":      defaultEditorUnixVim,
 		"DefaultEditorUnixVi":       defaultEditorUnixVi,
@@ -452,8 +450,6 @@ func resolveEditor(goOS string, lookPath editorLookup) string {
 
 func defaultEditorForOS(goOS string, lookPath editorLookup) string {
 	switch goOS {
-	case "darwin":
-		return defaultEditorMacOS
 	case "windows":
 		return defaultEditorWindows
 	default:

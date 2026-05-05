@@ -128,10 +128,15 @@ func TestDefaultEditorForOS(t *testing.T) {
 		lookup         editorLookup
 		expectedEditor string
 	}{
-		"darwin": {
+		"darwin with vim": {
+			goos:           "darwin",
+			lookup:         fakeEditorLookup(defaultEditorUnixVim),
+			expectedEditor: defaultEditorUnixVim,
+		},
+		"darwin falls back to nano when vim and vi are missing": {
 			goos:           "darwin",
 			lookup:         fakeEditorLookup(),
-			expectedEditor: defaultEditorMacOS,
+			expectedEditor: defaultEditorUnixFallback,
 		},
 		"windows": {
 			goos:           "windows",
@@ -179,7 +184,7 @@ func TestResolveEditor(t *testing.T) {
 	lookup := fakeEditorLookup(defaultEditorUnixVim)
 
 	assert.Equal(t, defaultEditorForOS(runtime.GOOS, lookup), resolveEditor(runtime.GOOS, lookup))
-	assert.Equal(t, defaultEditorMacOS, resolveEditor("darwin", lookup))
+	assert.Equal(t, defaultEditorUnixVim, resolveEditor("darwin", lookup))
 
 	t.Setenv(editorEnvSystem, defaultEditorUnixVim)
 	assert.Equal(t, defaultEditorUnixVim, resolveEditor(runtime.GOOS, lookup))
