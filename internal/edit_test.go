@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/nobl9/nobl9-go/manifest"
@@ -120,6 +121,59 @@ func TestAddEditErrorToContents_ReplacesPreviousEditError(t *testing.T) {
 		"# The edited file had a syntax error: new error\n#\n\napiVersion: n9/v1alpha\nkind: SLO\n",
 		string(updated),
 	)
+}
+
+func TestEditedFileIsEmpty(t *testing.T) {
+	tests := map[string]struct {
+		contents []byte
+		expected bool
+	}{
+		"empty": {
+			expected: true,
+		},
+		"whitespace": {
+			contents: []byte(" \n\t\n"),
+			expected: true,
+		},
+		"comments": {
+			contents: []byte("# comment\n  # indented comment\n\n"),
+			expected: true,
+		},
+		"object": {
+			contents: []byte("apiVersion: n9/v1alpha\nkind: SLO\n"),
+			expected: false,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, test.expected, editedFileIsEmpty(test.contents))
+		})
+	}
+}
+
+func TestWriteObjectsToTemporaryFile_AddsNotice(t *testing.T) {
+	path, contents, err := writeObjectsToTemporaryFile([]manifest.Object{
+		v1alpha.GenericObject{
+			"apiVersion": manifest.VersionV1alpha,
+			"kind":       manifest.KindSLO,
+			"metadata": map[string]any{
+				"project": "default",
+				"name":    "my-slo",
+			},
+		},
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, os.Remove(path))
+	})
+
+	fileContents, err := os.ReadFile(path)
+	require.NoError(t, err)
+
+	assert.Equal(t, contents, fileContents)
+	assert.True(t, strings.HasPrefix(string(contents), editFileNotice))
+	assert.Contains(t, string(contents), "kind: SLO")
 }
 
 func TestDefaultEditorForOS(t *testing.T) {

@@ -118,7 +118,6 @@ func (e *EditCmd) newEditObjectsCommand(
 		Use:     use,
 		Aliases: aliases,
 		Short:   short,
-		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return e.run(cmd, kind, args)
 		},
@@ -191,6 +190,10 @@ func (e *EditCmd) editAndApply(cmd *cobra.Command, objects []manifest.Object) er
 			keepEditedFile = true
 			return fmt.Errorf("failed to read edited definitions: %w", readErr)
 		}
+		if editedFileIsEmpty(editedContents) {
+			fmt.Println("Edit canceled, no changes made.")
+			return nil
+		}
 		if bytes.Equal(lastEditedContents, editedContents) {
 			if hadInvalidChanges {
 				keepEditedFile = true
@@ -257,7 +260,13 @@ func refreshEditedFileWithError(tempFilePath string, editErr error) ([]byte, err
 }
 
 const (
-	editErrorHeader             = "# The edited file had a syntax error: "
+	editErrorHeader = "# The edited file had a syntax error: "
+	editFileNotice  = "# Please edit the object below. Lines beginning with a '#' will be ignored,\n" +
+		"# and an empty file will abort the edit.\n" +
+		"# Removing objects from the output DOES NOT delete them.\n" +
+		"# If an error occurs while saving,\n" +
+		"# this file will be reopened with the relevant failures.\n" +
+		"#\n"
 	cancelNoValidChangesMessage = "error: Edit cancel" + "led, no valid changes were saved."
 )
 
@@ -337,8 +346,20 @@ func trimPreviousEditError(contents []byte) []byte {
 	return []byte(strings.Join(lines[index:], "\n"))
 }
 
+func editedFileIsEmpty(contents []byte) bool {
+	for _, line := range strings.Split(string(contents), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
 func writeObjectsToTemporaryFile(objects []manifest.Object) (path string, contents []byte, err error) {
 	var encoded bytes.Buffer
+	encoded.WriteString(editFileNotice)
 	if err = sdk.EncodeObjects(objects, &encoded, manifest.ObjectFormatYAML); err != nil {
 		return "", nil, fmt.Errorf("failed to encode objects for editing: %w", err)
 	}

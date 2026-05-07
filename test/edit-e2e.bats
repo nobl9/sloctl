@@ -164,6 +164,18 @@ fi
 EOF
 }
 
+create_services_selection_asserting_editor() {
+  create_editor_script "services-selection" << 'EOF'
+actual_names="$(yq -r '[if type == "array" then .[] else . end | select(.kind == "Service") | .metadata.name] | sort | join(" ")' "$1")"
+expected_names="edit-target edit-target-secondary"
+
+if [[ "$actual_names" != "$expected_names" ]]; then
+  printf "expected edited services [%s], got [%s]\n" "$expected_names" "$actual_names" >&2
+  exit 24
+fi
+EOF
+}
+
 # create_editor_script writes an executable wrapper that can be passed as
 # SLOCTL_EDITOR. The edit command appends the edited file path to the editor
 # command, so tests pass the wrapper body through stdin and use the returned path
@@ -191,6 +203,15 @@ EOF
 
 @test "sloctl edit services exits when editor leaves file unchanged" {
   SLOCTL_EDITOR=true run_sloctl edit services edit-target -p "$TEST_PROJECT"
+
+  assert_success_joined_output
+  assert_output "Edit canceled, no changes made."
+}
+
+@test "sloctl edit services without names exits when editor leaves file unchanged" {
+  editor_script="$(create_services_selection_asserting_editor)"
+
+  SLOCTL_EDITOR="$editor_script" run_sloctl edit services -p "$TEST_PROJECT"
 
   assert_success_joined_output
   assert_output "Edit canceled, no changes made."
