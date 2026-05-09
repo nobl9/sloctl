@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"text/template"
@@ -167,6 +168,11 @@ func (e *EditCmd) editAndApply(cmd *cobra.Command, objects []manifest.Object) er
 	if err != nil {
 		return err
 	}
+	originalEditedContents := lastEditedContents
+	originalEditedObjects, err := e.readEditedObjectsFromFile(cmd, tempFilePath)
+	if err != nil {
+		return err
+	}
 	hadInvalidChanges := false
 
 	keepEditedFile := false
@@ -194,25 +200,20 @@ func (e *EditCmd) editAndApply(cmd *cobra.Command, objects []manifest.Object) er
 			fmt.Println("Edit canceled, no changes made.")
 			return nil
 		}
-		if bytes.Equal(lastEditedContents, editedContents) {
-			if hadInvalidChanges {
-				keepEditedFile = true
-				cmd.SilenceErrors = true
-				cmd.PrintErrf("A copy of your changes has been stored to %q\n%s\n", tempFilePath, cancelNoValidChangesMessage)
-				return errors.New("edit canceled, no valid changes were saved")
-			}
-			fmt.Println("Edit canceled, no changes made.")
-			return nil
+		handled, unchangedErr := handleUnchangedOrRevertedEditedFile(
+			cmd,
+			hadInvalidChanges,
+			tempFilePath,
+			&keepEditedFile,
+			originalEditedContents,
+			lastEditedContents,
+			editedContents,
+		)
+		if handled {
+			return unchangedErr
 		}
 
-		editedObjects, parseErr := readObjectsDefinitions(
-			cmd.Context(),
-			e.client.Config,
-			cmd,
-			[]string{tempFilePath},
-			filesPrompt{},
-			e.projectFlagWasSet,
-		)
+		editedObjects, parseErr := e.readEditedObjectsFromFile(cmd, tempFilePath)
 		if parseErr != nil {
 			hadInvalidChanges = true
 			lastEditedContents, err = refreshEditedFileWithError(tempFilePath, parseErr)
@@ -223,27 +224,100 @@ func (e *EditCmd) editAndApply(cmd *cobra.Command, objects []manifest.Object) er
 			continue
 		}
 
-		validationErr := validateEditedObjectsMatchSelection(objects, editedObjects)
-		if validationErr != nil {
+		handled, applyErr := e.handleValidatedEditedObjects(cmd, objects, originalEditedObjects, editedObjects)
+		if handled {
+			return applyErr
+		}
+		if applyErr != nil {
 			hadInvalidChanges = true
-			lastEditedContents, err = refreshEditedFileWithError(tempFilePath, validationErr)
+			lastEditedContents, err = refreshEditedFileWithError(tempFilePath, applyErr)
 			if err != nil {
 				keepEditedFile = true
 				return err
 			}
 			continue
 		}
-
-		if err = e.client.Objects().V2().Apply(cmd.Context(), objectsV2.ApplyRequest{
-			Objects: editedObjects,
-			DryRun:  e.dryRun,
-		}); err != nil {
-			keepEditedFile = true
-			return fmt.Errorf("%w\nA copy of your changes has been stored to %q", err, tempFilePath)
-		}
 		printCommandResult("The resources were successfully applied.", e.dryRun)
 		return nil
 	}
+}
+
+func (e *EditCmd) handleValidatedEditedObjects(
+	cmd *cobra.Command,
+	originalObjects []manifest.Object,
+	originalEditedObjects []manifest.Object,
+	editedObjects []manifest.Object,
+) (bool, error) {
+	if err := validateEditedObjectsMatchSelection(originalObjects, editedObjects); err != nil {
+		return false, err
+	}
+	if unchanged, err := editedObjectsMatchOriginal(originalEditedObjects, editedObjects); err != nil {
+		return true, err
+	} else if unchanged {
+		fmt.Println("Edit canceled, no changes made.")
+		return true, nil
+	}
+	if err := e.client.Objects().V2().Apply(cmd.Context(), objectsV2.ApplyRequest{
+		Objects: editedObjects,
+		DryRun:  e.dryRun,
+	}); err != nil {
+		return false, err
+	}
+	printCommandResult("The resources were successfully applied.", e.dryRun)
+	return true, nil
+}
+
+func (e *EditCmd) readEditedObjectsFromFile(
+	cmd *cobra.Command,
+	tempFilePath string,
+) ([]manifest.Object, error) {
+	editedObjects, err := readObjectsDefinitions(
+		cmd.Context(),
+		e.client.Config,
+		cmd,
+		[]string{tempFilePath},
+		filesPrompt{},
+		e.projectFlagWasSet,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return editedObjects, nil
+}
+
+func handleUnchangedOrRevertedEditedFile(
+	cmd *cobra.Command,
+	hadInvalidChanges bool,
+	tempFilePath string,
+	keepEditedFile *bool,
+	originalContents []byte,
+	lastEditedContents []byte,
+	editedContents []byte,
+) (bool, error) {
+	if bytes.Equal(lastEditedContents, editedContents) {
+		return true, handleUnchangedEditedFile(cmd, hadInvalidChanges, tempFilePath, keepEditedFile)
+	}
+	if editedContentsMatchOriginal(originalContents, editedContents) {
+		fmt.Println("Edit canceled, no changes made.")
+		return true, nil
+	}
+	return false, nil
+}
+
+func handleUnchangedEditedFile(
+	cmd *cobra.Command,
+	hadInvalidChanges bool,
+	tempFilePath string,
+	keepEditedFile *bool,
+) error {
+	if hadInvalidChanges {
+		*keepEditedFile = true
+		cmd.SilenceErrors = true
+		cmd.PrintErrf("A copy of your changes has been stored to %q\n%s\n", tempFilePath, cancelNoValidChangesMessage)
+		return errors.New("edit canceled, no valid changes were saved")
+	}
+	fmt.Println("Edit canceled, no changes made.")
+	return nil
 }
 
 func refreshEditedFileWithError(tempFilePath string, editErr error) ([]byte, error) {
@@ -260,15 +334,18 @@ func refreshEditedFileWithError(tempFilePath string, editErr error) ([]byte, err
 }
 
 const (
-	editErrorHeader = "# The edited file had a syntax error: "
-	editFileNotice  = "# Please edit the object below. Lines beginning with a '#' will be ignored,\n" +
-		"# and an empty file will abort the edit.\n" +
-		"# Removing objects from the output DOES NOT delete them.\n" +
-		"# If an error occurs while saving,\n" +
-		"# this file will be reopened with the relevant failures.\n" +
-		"#\n"
+	editErrorHeader = "# The edited file had an error: "
+	editFileNotice  = `# Please edit the object below. Lines beginning with a '#' will be ignored,
+# and an empty file will abort the edit.
+# Removing objects from the output DOES NOT delete them.
+# If an error occurs while saving,
+# this file will be reopened with the relevant failures.
+#
+`
 	cancelNoValidChangesMessage = "error: Edit cancel" + "led, no valid changes were saved."
 )
+
+var manifestSourceLinePattern = regexp.MustCompile(`(?m)^Manifest source:.*(?:\n|$)`)
 
 func writeEditErrorToFile(path string, editErr error) error {
 	contents, err := os.ReadFile(path)
@@ -308,10 +385,11 @@ func writeEditErrorToFile(path string, editErr error) error {
 }
 
 func addEditErrorToContents(contents []byte, editErr error) []byte {
-	cleanContents := trimPreviousEditError(contents)
-	errLines := strings.Split(editErr.Error(), "\n")
+	cleanContents := trimEditFileHeader(contents)
+	errLines := strings.Split(formatEditErrorMessage(editErr), "\n")
 
 	var b strings.Builder
+	b.WriteString(editFileNotice)
 	b.WriteString(editErrorHeader)
 	b.WriteString(errLines[0])
 	b.WriteString("\n")
@@ -324,6 +402,83 @@ func addEditErrorToContents(contents []byte, editErr error) []byte {
 	b.Write(cleanContents)
 
 	return []byte(b.String())
+}
+
+func formatEditErrorMessage(editErr error) string {
+	if message, ok := validationAPIErrorMessage(editErr); ok {
+		return message
+	}
+	return editErr.Error()
+}
+
+func validationAPIErrorMessage(editErr error) (string, bool) {
+	var httpErr *sdk.HTTPError
+	if errors.As(editErr, &httpErr) && httpErr != nil {
+		return validationMessageFromAPIErrors(httpErr.APIErrors)
+	}
+	return "", false
+}
+
+func validationMessageFromAPIErrors(apiErrors sdk.APIErrors) (string, bool) {
+	messages := make([]string, 0, len(apiErrors.Errors))
+	for _, apiErr := range apiErrors.Errors {
+		title, ok := validationAPIErrorTitle(apiErr)
+		if !ok {
+			continue
+		}
+		messages = append(messages, title)
+	}
+	if len(messages) == 0 {
+		return "", false
+	}
+	return strings.Join(messages, "\n"), true
+}
+
+func validationAPIErrorTitle(apiErr sdk.APIError) (string, bool) {
+	title := strings.TrimSpace(apiErr.Title)
+	index := strings.Index(title, "Validation for ")
+	if index < 0 {
+		return "", false
+	}
+	title = manifestSourceLinePattern.ReplaceAllString(title[index:], "")
+	title = strings.TrimSpace(title)
+	return title, title != ""
+}
+
+func trimEditFileHeader(contents []byte) []byte {
+	cleanContents := string(contents)
+	for {
+		previousContents := cleanContents
+		cleanContents = strings.TrimPrefix(cleanContents, editFileNotice)
+		cleanContents = string(trimPreviousEditError([]byte(cleanContents)))
+		if cleanContents == previousContents {
+			return []byte(cleanContents)
+		}
+	}
+}
+
+func editedContentsMatchOriginal(originalContents, editedContents []byte) bool {
+	return bytes.Equal(trimEditFileHeader(originalContents), trimEditFileHeader(editedContents))
+}
+
+func editedObjectsMatchOriginal(originalObjects, editedObjects []manifest.Object) (bool, error) {
+	originalContents, err := encodeObjectsForComparison(originalObjects)
+	if err != nil {
+		return false, err
+	}
+	editedContents, err := encodeObjectsForComparison(editedObjects)
+	if err != nil {
+		return false, err
+	}
+	return bytes.Equal(originalContents, editedContents), nil
+}
+
+func encodeObjectsForComparison(objects []manifest.Object) ([]byte, error) {
+	var encoded bytes.Buffer
+	if err := sdk.EncodeObjects(objects, &encoded, manifest.ObjectFormatJSON); err != nil {
+		return nil, fmt.Errorf("failed to encode objects for comparison: %w", err)
+	}
+	return encoded.Bytes(), nil
 }
 
 func trimPreviousEditError(contents []byte) []byte {

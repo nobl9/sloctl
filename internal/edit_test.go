@@ -98,7 +98,8 @@ func TestAddEditErrorToContents(t *testing.T) {
 
 	updated := addEditErrorToContents(contents, err)
 
-	expected := "# The edited file had a syntax error: " +
+	expected := editFileNotice +
+		"# The edited file had an error: " +
 		"unable to decode \"edited-file\": json: cannot unmarshal bool into Go struct field\n" +
 		"#\n\n" +
 		"apiVersion: n9/v1alpha\nkind: SLO\n"
@@ -111,16 +112,52 @@ func TestAddEditErrorToContents(t *testing.T) {
 
 func TestAddEditErrorToContents_ReplacesPreviousEditError(t *testing.T) {
 	contents := []byte(
-		"# The edited file had a syntax error: previous error\n#\n\napiVersion: n9/v1alpha\nkind: SLO\n",
+		editFileNotice +
+			"# The edited file had an error: previous error\n#\n\napiVersion: n9/v1alpha\nkind: SLO\n",
 	)
 	err := fmt.Errorf("new error")
 
 	updated := addEditErrorToContents(contents, err)
 
 	assert.Equal(t,
-		"# The edited file had a syntax error: new error\n#\n\napiVersion: n9/v1alpha\nkind: SLO\n",
+		editFileNotice+"# The edited file had an error: new error\n#\n\napiVersion: n9/v1alpha\nkind: SLO\n",
 		string(updated),
 	)
+}
+
+func TestAddEditErrorToContents_UsesValidationAPIErrorTitles(t *testing.T) {
+	contents := []byte("apiVersion: n9/v1alpha\nkind: Project\n")
+	err := &sdk.HTTPError{
+		APIErrors: sdk.APIErrors{
+			Errors: []sdk.APIError{
+				{
+					Title: "Bad Request: Validation for Project 'sdk-e2e-default' has failed for the following fields:\n" +
+						"  - 'metadata.labels.['origi n']' with key 'origi n':\n" +
+						"    - string must match regular expression: '^\\p{Ll}([_\\-0-9\\p{Ll}]*[0-9\\p{Ll}])?$'\n" +
+						"Manifest source: /tmp/sloctl-edit.yaml",
+					Source: &sdk.APIErrorSource{PropertyName: "Manifest source", PropertyValue: "/tmp/sloctl-edit.yaml"},
+				},
+			},
+		},
+		StatusCode: http.StatusBadRequest,
+		Method:     http.MethodPut,
+		URL:        "https://example.com/api/apply?dry_run=false",
+		TraceID:    "3515761729813547941",
+	}
+
+	updated := addEditErrorToContents(contents, err)
+
+	expected := editFileNotice +
+		"# The edited file had an error: Validation for Project 'sdk-e2e-default' has failed for the following fields:\n" +
+		"#   - 'metadata.labels.['origi n']' with key 'origi n':\n" +
+		"#     - string must match regular expression: '^\\p{Ll}([_\\-0-9\\p{Ll}]*[0-9\\p{Ll}])?$'\n" +
+		"#\n\n" +
+		"apiVersion: n9/v1alpha\nkind: Project\n"
+
+	assert.Equal(t, expected, string(updated))
+	assert.NotContains(t, string(updated), "Manifest source")
+	assert.NotContains(t, string(updated), "traceId")
+	assert.NotContains(t, string(updated), "endpoint")
 }
 
 func TestEditedFileIsEmpty(t *testing.T) {
