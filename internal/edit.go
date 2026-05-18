@@ -59,7 +59,7 @@ func (r *RootCmd) NewEditCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "edit",
-		Short:   "Edit one or more than one resource",
+		Short:   "Edit resources",
 		Long:    getEditDescription(),
 		Example: editExample,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -75,6 +75,9 @@ func (r *RootCmd) NewEditCmd() *cobra.Command {
 		}
 		plural := pluralForKind(kind)
 		short := fmt.Sprintf("Edits one or more than one of the %s.", plural)
+		if kind == manifest.KindAgent {
+			short = "Edits a single Agent."
+		}
 		use := strings.ToLower(plural)
 		aliases := append(aliasesForKind(kind), kind.ToLower(), kind.String(), plural)
 
@@ -129,6 +132,10 @@ func (e *EditCmd) newEditObjectsCommand(
 }
 
 func (e *EditCmd) run(cmd *cobra.Command, kind manifest.Kind, names []string) error {
+	if err := validateEditableSelection(kind, names, nil); err != nil {
+		return err
+	}
+
 	e.projectFlagWasSet = false
 	if objectKindSupportsProjectFlag(kind) {
 		e.projectFlagWasSet = cmd.Flags().Changed("project")
@@ -159,6 +166,9 @@ func (e *EditCmd) run(cmd *cobra.Command, kind manifest.Kind, names []string) er
 		return nil
 	}
 	if err = validateRequestedObjectsFound(names, objects); err != nil {
+		return err
+	}
+	if err = validateEditableSelection(kind, names, objects); err != nil {
 		return err
 	}
 
@@ -605,6 +615,16 @@ func validateRequestedObjectsFound(names []string, objects []manifest.Object) er
 		return nil
 	}
 	return fmt.Errorf("resource(s) not found: %s", strings.Join(missingNames, ", "))
+}
+
+func validateEditableSelection(kind manifest.Kind, names []string, objects []manifest.Object) error {
+	if kind != manifest.KindAgent {
+		return nil
+	}
+	if len(names) <= 1 && len(objects) <= 1 {
+		return nil
+	}
+	return errors.New("edit agents command accepts only a single Agent")
 }
 
 func runEditor(filePath string) error {

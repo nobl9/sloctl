@@ -86,6 +86,13 @@ setup() {
   test_edit_persists_display_name "agents" "edit-agent" "$TEST_PROJECT"
 }
 
+@test "sloctl edit agents rejects multiple names" {
+  SLOCTL_EDITOR=true run_sloctl edit agents edit-agent edit-agent-secondary -p "$TEST_PROJECT"
+
+  assert_failure
+  assert_stderr "Error: edit agents command accepts only a single Agent"
+}
+
 @test "sloctl edit alertpolicies persists editor changes" {
   test_edit_persists_description "alertpolicies" "edit-alert-policy" "$TEST_PROJECT"
 }
