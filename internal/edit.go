@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"maps"
 	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,7 +18,6 @@ import (
 
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/sdk"
-	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
 	objectsV2 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v2"
 	"github.com/spf13/cobra"
 )
@@ -27,8 +25,7 @@ import (
 type EditCmd struct {
 	client            *sdk.Client
 	dryRun            bool
-	project           string
-	allProjects       bool
+	selection         objectSelectionFlags
 	projectFlagWasSet bool
 }
 
@@ -82,11 +79,8 @@ func (r *RootCmd) NewEditCmd() *cobra.Command {
 		aliases := append(aliasesForKind(kind), kind.ToLower(), kind.String(), plural)
 
 		sc := edit.newEditObjectsCommand(kind, short, use, aliases)
-		if objectKindSupportsProjectFlag(kind) {
-			registerProjectFlag(sc, &edit.project)
-			sc.Flags().BoolVarP(&edit.allProjects, "all-projects", "A", false,
-				`Edit the requested object(s) across all projects.`)
-		}
+		registerObjectSelectionFlags(sc, kind, &edit.selection,
+			`Edit the requested object(s) across all projects.`)
 		cmd.AddCommand(sc)
 	}
 
@@ -137,20 +131,20 @@ func (e *EditCmd) run(cmd *cobra.Command, kind manifest.Kind, names []string) er
 	}
 
 	e.projectFlagWasSet = false
-	if objectKindSupportsProjectFlag(kind) {
+	if objectKindSupportsSelectionProjectFlag(kind) {
 		e.projectFlagWasSet = cmd.Flags().Changed("project")
 	}
 
-	if e.allProjects {
+	if e.selection.allProjects {
 		if !objectKindSupportsProjectFlag(kind) {
 			return fmt.Errorf("--all-projects is not supported for %s resources", strings.ToLower(kind.String()))
 		}
 		e.client.Config.Project = "*"
-	} else if e.project != "" {
-		if !objectKindSupportsProjectFlag(kind) {
+	} else if e.selection.project != "" {
+		if !objectKindSupportsSelectionProjectFlag(kind) {
 			return fmt.Errorf("--project is not supported for %s resources", strings.ToLower(kind.String()))
 		}
-		e.client.Config.Project = e.project
+		e.client.Config.Project = e.selection.project
 	}
 
 	objects, err := e.getObjects(cmd.Context(), kind, names)
@@ -158,7 +152,7 @@ func (e *EditCmd) run(cmd *cobra.Command, kind manifest.Kind, names []string) er
 		return err
 	}
 	if len(objects) == 0 {
-		if objectKindSupportsProjectFlag(kind) {
+		if objectKindSupportsSelectionProjectFlag(kind) {
 			fmt.Printf("No resources found in '%s' project.\n", e.client.Config.Project)
 			return nil
 		}
@@ -176,7 +170,7 @@ func (e *EditCmd) run(cmd *cobra.Command, kind manifest.Kind, names []string) er
 }
 
 func (e *EditCmd) getObjects(ctx context.Context, kind manifest.Kind, names []string) ([]manifest.Object, error) {
-	query := url.Values{objectsV1.QueryKeyName: names}
+	query := buildObjectSelectionQuery(kind, names, e.selection)
 	header := http.Header{sdk.HeaderProject: []string{e.client.Config.Project}}
 	return e.client.Objects().V1().Get(ctx, kind, header, query)
 }
@@ -577,7 +571,7 @@ func objectIdentities(objects []manifest.Object) map[objectIdentity]int {
 	for i := range objects {
 		key := objectIdentity{
 			kind:    objects[i].GetKind(),
-			project: getObjectProject(objects[i]),
+			project: getObjectIdentityProject(objects[i]),
 			name:    objects[i].GetName(),
 		}
 		identities[key]++
@@ -585,12 +579,24 @@ func objectIdentities(objects []manifest.Object) map[objectIdentity]int {
 	return identities
 }
 
-func getObjectProject(object manifest.Object) string {
+func getObjectIdentityProject(object manifest.Object) string {
+	if objectKindHasNoProjectIdentity(object.GetKind()) {
+		return ""
+	}
 	projectScopedObject, ok := object.(manifest.ProjectScopedObject)
 	if !ok {
 		return ""
 	}
 	return projectScopedObject.GetProject()
+}
+
+func objectKindHasNoProjectIdentity(kind manifest.Kind) bool {
+	switch kind {
+	case manifest.KindBudgetAdjustment, manifest.KindReport:
+		return true
+	default:
+		return false
+	}
 }
 
 func validateRequestedObjectsFound(names []string, objects []manifest.Object) error {

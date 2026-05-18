@@ -128,11 +128,19 @@ setup() {
   assert_output "Edit canceled, no changes made."
 }
 
+@test "sloctl edit budgetadjustments persists editor changes" {
+  test_edit_persists_description "budgetadjustments" "edit-budget-adjustment" ""
+}
+
 @test "sloctl edit reports exits when editor leaves file unchanged" {
   SLOCTL_EDITOR=true run_sloctl edit reports edit-report
 
   assert_success_joined_output
   assert_output "Edit canceled, no changes made."
+}
+
+@test "sloctl edit reports persists editor changes" {
+  test_edit_persists_display_name "reports" "edit-report" ""
 }
 
 @test "sloctl edit dataexports subcommand reports no resources" {
@@ -147,6 +155,27 @@ setup() {
 
   assert_success_joined_output
   assert_output "No resources found in '*' project."
+}
+
+@test "sloctl edit services supports label filter" {
+  SLOCTL_EDITOR=true run_sloctl edit services -l edit-filter=primary -p "$TEST_PROJECT"
+
+  assert_success_joined_output
+  assert_output "Edit canceled, no changes made."
+}
+
+@test "sloctl edit slos supports service filter" {
+  SLOCTL_EDITOR=true run_sloctl edit slos -s edit-target -p "$TEST_PROJECT"
+
+  assert_success_joined_output
+  assert_output "Edit canceled, no changes made."
+}
+
+@test "sloctl edit budgetadjustments supports slo and project filters" {
+  SLOCTL_EDITOR=true run_sloctl edit budgetadjustments --slo edit-slo -p "$TEST_PROJECT"
+
+  assert_success_joined_output
+  assert_output "Edit canceled, no changes made."
 }
 
 @test "sloctl edit services reports editor failure and preserves file" {

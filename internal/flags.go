@@ -86,6 +86,10 @@ func registerLabelsFlag(cmd *cobra.Command, storeIn *[]string) {
 		`Filter resource by label. Example: key=value,key2=value2,key2=value3.`)
 }
 
+func registerSLOServiceFlag(cmd *cobra.Command, storeIn *[]string) {
+	cmd.Flags().StringArrayVarP(storeIn, "service", "s", nil, "Filter SLOs by service name.")
+}
+
 // requireFlagsIfFlagIsSet validates that the provided deps are only set if the "parent" flag is set.
 // This one way dependency is not supported natively by cobra and requires custom verification.
 func requireFlagsIfFlagIsSet(cmd *cobra.Command, flag string, deps ...string) error {

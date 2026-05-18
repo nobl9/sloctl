@@ -8,6 +8,9 @@
   kind: Service
   metadata:
     displayName: Edit Target
+    labels:
+      edit-filter:
+        - primary
     name: edit-target
     project: <PROJECT>
   spec:

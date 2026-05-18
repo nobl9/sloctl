@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"sort"
 	"strings"
@@ -32,13 +31,9 @@ var getAlertExample string
 var getAnnotationExample string
 
 type GetCmd struct {
-	client      *sdk.Client
-	printer     *printer.Printer
-	labels      []string
-	project     string
-	services    []string
-	allProjects bool
-	slo         string
+	client    *sdk.Client
+	printer   *printer.Printer
+	selection objectSelectionFlags
 }
 
 // NewGetCmd returns cobra command get with all flags for it.
@@ -54,10 +49,10 @@ func (r *RootCmd) NewGetCmd() *cobra.Command {
 To get more details in output use one of the available flags.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			get.client = r.GetClient()
-			if get.allProjects {
+			if get.selection.allProjects {
 				get.client.Config.Project = "*"
-			} else if get.project != "" {
-				get.client.Config.Project = get.project
+			} else if get.selection.project != "" {
+				get.client.Config.Project = get.selection.project
 			}
 		},
 	}
@@ -82,9 +77,9 @@ To get more details in output use one of the available flags.`,
 		{Kind: manifest.KindProject},
 		{Kind: manifest.KindRoleBinding},
 		{Kind: manifest.KindService, Aliases: aliasesForKind(manifest.KindService)},
-		{Kind: manifest.KindSLO, Extender: get.newGetSLOCommand},
+		{Kind: manifest.KindSLO},
 		{Kind: manifest.KindUserGroup},
-		{Kind: manifest.KindBudgetAdjustment, Extender: get.newGetBudgetAdjustmentCommand},
+		{Kind: manifest.KindBudgetAdjustment},
 		{Kind: manifest.KindReport},
 	} {
 		plural := pluralForKind(subCmd.Kind)
@@ -96,14 +91,8 @@ To get more details in output use one of the available flags.`,
 		if subCmd.Extender != nil {
 			subCmd.Extender(sc)
 		}
-		if objectKindSupportsProjectFlag(subCmd.Kind) {
-			registerProjectFlag(sc, &get.project)
-			sc.Flags().BoolVarP(&get.allProjects, "all-projects", "A", false,
-				`List the requested object(s) across all projects.`)
-		}
-		if objectKindSupportsLabelsFlag(subCmd.Kind) {
-			registerLabelsFlag(sc, &get.labels)
-		}
+		registerObjectSelectionFlags(sc, subCmd.Kind, &get.selection,
+			`List the requested object(s) across all projects.`)
 		cmd.AddCommand(sc)
 	}
 
@@ -286,19 +275,6 @@ func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 	return cmd
 }
 
-func (g *GetCmd) newGetSLOCommand(cmd *cobra.Command) *cobra.Command {
-	cmd.Flags().StringArrayVarP(&g.services, "service", "s", nil, "Filter SLOs by service name.")
-	return cmd
-}
-
-func (g *GetCmd) newGetBudgetAdjustmentCommand(cmd *cobra.Command) *cobra.Command {
-	cmd.Flags().StringVarP(&g.slo, "slo", "", "",
-		`Filter resource by SLO name. Example: my-sample-slo-name.`)
-	registerProjectFlag(cmd, &g.project)
-	cmd.MarkFlagsRequiredTogether("slo", "project")
-	return cmd
-}
-
 func (g *GetCmd) newGetAnnotationCommand(cmd *cobra.Command) *cobra.Command {
 	cmd.Example = getAnnotationExample
 	cmd.Long = fmt.Sprintf("Get annotations based on search criteria. "+
@@ -437,17 +413,7 @@ func (g *GetCmd) enrichAgentWithSecrets(
 }
 
 func (g *GetCmd) getObjects(ctx context.Context, kind manifest.Kind, args []string) ([]manifest.Object, error) {
-	query := url.Values{objectsV1.QueryKeyName: args}
-	if len(g.labels) > 0 {
-		query.Set(objectsV1.QueryKeyLabels, parseFilterLabel(g.labels))
-	}
-	if len(g.services) > 0 && kind == manifest.KindSLO {
-		query[objectsV1.QueryKeyServiceName] = g.services
-	}
-	if len(g.slo) > 0 && len(g.project) > 0 && kind == manifest.KindBudgetAdjustment {
-		query.Set(objectsV1.QueryKeySLOProjectName, g.project)
-		query.Set(objectsV1.QueryKeySLOName, g.slo)
-	}
+	query := buildObjectSelectionQuery(kind, args, g.selection)
 	header := http.Header{sdk.HeaderProject: []string{g.client.Config.Project}}
 	objects, err := g.client.Objects().V1().Get(ctx, kind, header, query)
 	if err != nil {
