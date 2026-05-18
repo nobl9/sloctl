@@ -24,6 +24,39 @@ setup() {
   load_lib "bats-assert"
 }
 
+@test "sloctl edit filter flags match get filter flags for editable objects" {
+  local subcommands=(
+    agents
+    alertmethods
+    alertpolicies
+    alertsilences
+    annotations
+    budgetadjustments
+    dataexports
+    directs
+    projects
+    reports
+    rolebindings
+    services
+    slos
+  )
+  local subcommand get_help edit_help get_flags edit_flags
+
+  for subcommand in "${subcommands[@]}"; do
+    run_sloctl get "$subcommand" --help
+    assert_success_joined_output
+    get_help="$output"
+    get_flags="$(extract_filter_flags "$get_help")"
+
+    run_sloctl edit "$subcommand" --help
+    assert_success_joined_output
+    edit_help="$output"
+    edit_flags="$(extract_filter_flags "$edit_help")"
+
+    assert_equal "$edit_flags" "$get_flags"
+  done
+}
+
 @test "sloctl edit services exits when editor leaves file unchanged" {
   SLOCTL_EDITOR=true run_sloctl edit services edit-target -p "$TEST_PROJECT"
 
@@ -119,6 +152,30 @@ setup() {
 
 @test "sloctl edit annotations persists editor changes" {
   test_edit_persists_description "annotations" "edit-annotation" "$TEST_PROJECT"
+}
+
+@test "sloctl edit annotations supports get annotation filters" {
+  editor_script="$(copy_editor_script "annotation-filtered-description.sh")"
+
+  SLOCTL_EDITOR="$editor_script" run_sloctl edit annotations \
+    -p "$TEST_PROJECT" \
+    --slo edit-slo \
+    --category Comment \
+    --from 2023-01-01T00:00:00Z \
+    --to 2023-01-31T23:59:59Z
+
+  assert_success_joined_output
+  assert_output "The resources were successfully applied."
+
+  run_sloctl get annotations edit-annotation -p "$TEST_PROJECT" -o json
+  assert_success_joined_output
+  actual="$(yq -r '.[0].spec.description' <<< "$output")"
+  assert_equal "$actual" "Edited by sloctl edit annotation filters e2e"
+
+  run_sloctl get annotations edit-annotation-secondary -p "$TEST_PROJECT" -o json
+  assert_success_joined_output
+  actual="$(yq -r '.[0].spec.description' <<< "$output")"
+  assert_equal "$actual" "Dummy secondary Annotation for 'sloctl edit' e2e tests"
 }
 
 @test "sloctl edit budgetadjustments exits when editor leaves file unchanged" {
@@ -267,6 +324,32 @@ assert_file_contains() {
   if [[ "$contents" != *"$expected"* ]]; then
     fail "Expected $file to contain: $expected"
   fi
+}
+
+extract_filter_flags() {
+  local help_output="$1"
+  local flags_section
+  flags_section="$(sed -n '/^Flags:/,/^Global Flags:/p' <<< "$help_output")"
+
+  local filter_flags=(
+    --all-projects
+    --category
+    --from
+    --label
+    --project
+    --service
+    --slo
+    --system
+    --to
+    --user
+  )
+  local flag
+
+  for flag in "${filter_flags[@]}"; do
+    if [[ "$flags_section" == *"$flag"* ]]; then
+      printf '%s\n' "$flag"
+    fi
+  done
 }
 
 # copy_editor_script copies a fixture editor into the per-test temp directory so

@@ -15,11 +15,9 @@ import (
 	v1alphaAnnotation "github.com/nobl9/nobl9-go/manifest/v1alpha/annotation"
 	"github.com/nobl9/nobl9-go/sdk"
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
-	objectsV2 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v2"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/nobl9/sloctl/internal/collections"
 	"github.com/nobl9/sloctl/internal/flags"
 	"github.com/nobl9/sloctl/internal/printer"
 )
@@ -284,74 +282,11 @@ func (g *GetCmd) newGetAnnotationCommand(cmd *cobra.Command) *cobra.Command {
 		"Keep in mind that the different types of flags are linked by the logical AND operator.\n\n",
 		strings.Join(stringsTypeToStrings(v1alphaAnnotation.GetUserCategories()), ", "))
 
-	params := objectsV2.GetAnnotationsRequest{}
-	var (
-		categoriesFlag   []string
-		userCategories   bool
-		systemCategories bool
-	)
-	cmd.Flags().StringVar(
-		&params.SLOName,
-		"slo",
-		"",
-		"Get annotations for a given SLO (name) only.",
-	)
-	flags.RegisterTimeVar(
-		cmd,
-		&params.From,
-		"from",
-		"Get annotations which have 'spec.startTime' after or equal to the given time.",
-	)
-	flags.RegisterTimeVar(
-		cmd,
-		&params.To,
-		"to",
-		"Get annotations which have 'spec.endTime' before or equal to the given time.",
-	)
-	cmd.Flags().BoolVar(
-		&userCategories,
-		"user",
-		false,
-		"Get annotations which were created by user actions.",
-	)
-	cmd.Flags().BoolVar(
-		&systemCategories,
-		"system",
-		false,
-		"Get annotations which were automatically created by Nobl9 platform.",
-	)
-	cmd.Flags().StringArrayVar(
-		&categoriesFlag,
-		"category",
-		nil,
-		fmt.Sprintf(
-			"Filter annotations by their category (one of: %s).",
-			strings.Join(stringsTypeToStrings(v1alphaAnnotation.CategoryValues()), ", "),
-		),
-	)
-
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if len(args) > 0 {
-			params.Names = args
+		params, err := buildGetAnnotationsRequest(args, g.selection)
+		if err != nil {
+			return err
 		}
-		for _, cat := range categoriesFlag {
-			parsed, err := v1alphaAnnotation.ParseCategory(cat)
-			if err != nil {
-				return fmt.Errorf("invalid 'category' flag value: %w", err)
-			}
-			params.Categories = append(params.Categories, parsed)
-		}
-		if systemCategories {
-			params.Categories = append(params.Categories, v1alphaAnnotation.GetSystemCategories()...)
-		}
-		if userCategories {
-			params.Categories = append(params.Categories, v1alphaAnnotation.GetUserCategories()...)
-		}
-		if len(params.Categories) == 0 {
-			params.Categories = v1alphaAnnotation.GetUserCategories()
-		}
-		params.Categories = collections.RemoveDuplicates(params.Categories)
-
 		annotations, err := g.client.Objects().V2().GetV1alphaAnnotations(cmd.Context(), params)
 		if err != nil {
 			return err

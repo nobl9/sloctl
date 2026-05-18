@@ -170,9 +170,28 @@ func (e *EditCmd) run(cmd *cobra.Command, kind manifest.Kind, names []string) er
 }
 
 func (e *EditCmd) getObjects(ctx context.Context, kind manifest.Kind, names []string) ([]manifest.Object, error) {
+	if kind == manifest.KindAnnotation {
+		return e.getAnnotations(ctx, names)
+	}
 	query := buildObjectSelectionQuery(kind, names, e.selection)
 	header := http.Header{sdk.HeaderProject: []string{e.client.Config.Project}}
 	return e.client.Objects().V1().Get(ctx, kind, header, query)
+}
+
+func (e *EditCmd) getAnnotations(ctx context.Context, names []string) ([]manifest.Object, error) {
+	params, err := buildGetAnnotationsRequest(names, e.selection)
+	if err != nil {
+		return nil, err
+	}
+	annotations, err := e.client.Objects().V2().GetV1alphaAnnotations(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+	objects := make([]manifest.Object, 0, len(annotations))
+	for _, annotation := range annotations {
+		objects = append(objects, annotation)
+	}
+	return objects, nil
 }
 
 func (e *EditCmd) editAndApply(cmd *cobra.Command, objects []manifest.Object) error {
