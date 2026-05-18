@@ -132,7 +132,7 @@ func TestAddEditErrorToContents_UsesValidationAPIErrorTitles(t *testing.T) {
 			Errors: []sdk.APIError{
 				{
 					Title: "Bad Request: Validation for Project 'sdk-e2e-default' has failed for the following fields:\n" +
-						"  - 'metadata.labels.['origi n']' with key 'origi n':\n" +
+						"  - 'metadata.labels.['origin of']' with key 'origin of':\n" +
 						"    - string must match regular expression: '^\\p{Ll}([_\\-0-9\\p{Ll}]*[0-9\\p{Ll}])?$'\n" +
 						"Manifest source: /tmp/sloctl-edit.yaml",
 					Source: &sdk.APIErrorSource{PropertyName: "Manifest source", PropertyValue: "/tmp/sloctl-edit.yaml"},
@@ -149,7 +149,7 @@ func TestAddEditErrorToContents_UsesValidationAPIErrorTitles(t *testing.T) {
 
 	expected := editFileNotice +
 		"# The edited file had an error: Validation for Project 'sdk-e2e-default' has failed for the following fields:\n" +
-		"#   - 'metadata.labels.['origi n']' with key 'origi n':\n" +
+		"#   - 'metadata.labels.['origin of']' with key 'origin of':\n" +
 		"#     - string must match regular expression: '^\\p{Ll}([_\\-0-9\\p{Ll}]*[0-9\\p{Ll}])?$'\n" +
 		"#\n\n" +
 		"apiVersion: n9/v1alpha\nkind: Project\n"
