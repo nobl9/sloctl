@@ -135,6 +135,13 @@ setup() {
   assert_output "No resources found in '$TEST_PROJECT' project."
 }
 
+@test "sloctl edit services supports all-projects shorthand" {
+  SLOCTL_EDITOR=true run_sloctl edit services "missing-service-$TEST_PROJECT" -A
+
+  assert_success_joined_output
+  assert_output "No resources found in '*' project."
+}
+
 @test "sloctl edit services reports editor failure and preserves file" {
   editor_script="$(copy_editor_script "failing.sh")"
 

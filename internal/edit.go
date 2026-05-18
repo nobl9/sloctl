@@ -28,6 +28,7 @@ type EditCmd struct {
 	client            *sdk.Client
 	dryRun            bool
 	project           string
+	allProjects       bool
 	projectFlagWasSet bool
 }
 
@@ -80,6 +81,8 @@ func (r *RootCmd) NewEditCmd() *cobra.Command {
 		sc := edit.newEditObjectsCommand(kind, short, use, aliases)
 		if objectKindSupportsProjectFlag(kind) {
 			registerProjectFlag(sc, &edit.project)
+			sc.Flags().BoolVarP(&edit.allProjects, "all-projects", "A", false,
+				`Edit the requested object(s) across all projects.`)
 		}
 		cmd.AddCommand(sc)
 	}
@@ -131,7 +134,12 @@ func (e *EditCmd) run(cmd *cobra.Command, kind manifest.Kind, names []string) er
 		e.projectFlagWasSet = cmd.Flags().Changed("project")
 	}
 
-	if e.project != "" {
+	if e.allProjects {
+		if !objectKindSupportsProjectFlag(kind) {
+			return fmt.Errorf("--all-projects is not supported for %s resources", strings.ToLower(kind.String()))
+		}
+		e.client.Config.Project = "*"
+	} else if e.project != "" {
 		if !objectKindSupportsProjectFlag(kind) {
 			return fmt.Errorf("--project is not supported for %s resources", strings.ToLower(kind.String()))
 		}
