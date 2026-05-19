@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/nobl9/nobl9-go/manifest"
+	"github.com/nobl9/nobl9-go/manifest/v1alpha"
 	"github.com/nobl9/nobl9-go/sdk"
 )
 
@@ -56,11 +57,10 @@ func readObjectsDefinitions(
 	}
 	// Make sure the --project flag matches all the parsed definitions projects.
 	for i := range defs {
-		obj, isProjectScoped := defs[i].(manifest.ProjectScopedObject)
-		// Since v1alpha.ObjectGeneric fulfills manifest.ProjectScopedObject
-		if !isProjectScoped || obj.GetProject() == "" {
+		if !defs[i].GetKind().ProjectScoped() {
 			continue
 		}
+		obj, _ := defs[i].(v1alpha.GenericObject)
 		if obj.GetProject() != config.Project {
 			return nil, errors.Errorf(
 				"The %[1]s project from the provided object %[2]s.%[1]s does not match "+

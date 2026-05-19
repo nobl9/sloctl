@@ -578,12 +578,12 @@ func validateEditedObjectsMatchSelection(original, edited []manifest.Object) err
 			return kind == o.GetKind() && name == o.GetName() && project == o.(v1alpha.GenericObject).GetProject()
 		}) {
 			displayName := kind.String() + " " + name
-			if project != "" {
-				displayName += "in " + project + " project"
+			if kind.ProjectScoped() {
+				displayName += " in " + project + " project"
 			}
 			return fmt.Errorf(
-				"edited resources must match the selected resources (%s); changing kind, name, or project is not supported",
-				displayName,
+				"edited resources must match the selected resources; changing kind, name, or project is not supported;\n"+
+					"mismatched resource is %s", displayName,
 			)
 		}
 	}
