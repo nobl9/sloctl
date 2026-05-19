@@ -6,17 +6,18 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"maps"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"text/template"
 
 	"github.com/nobl9/nobl9-go/manifest"
+	"github.com/nobl9/nobl9-go/manifest/v1alpha"
 	"github.com/nobl9/nobl9-go/sdk"
 	objectsV2 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v2"
 	"github.com/spf13/cobra"
@@ -533,7 +534,7 @@ func trimPreviousEditError(contents []byte) []byte {
 }
 
 func editedFileIsEmpty(contents []byte) bool {
-	for _, line := range strings.Split(string(contents), "\n") {
+	for line := range strings.SplitSeq(string(contents), "\n") {
 		trimmed := strings.TrimSpace(line)
 		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
 			continue
@@ -568,54 +569,25 @@ func writeObjectsToTemporaryFile(objects []manifest.Object) (path string, conten
 	return tempFile.Name(), encoded.Bytes(), nil
 }
 
-type objectIdentity struct {
-	kind    manifest.Kind
-	project string
-	name    string
-}
-
 func validateEditedObjectsMatchSelection(original, edited []manifest.Object) error {
-	originalIdentities := objectIdentities(original)
-	editedIdentities := objectIdentities(edited)
-	if maps.Equal(originalIdentities, editedIdentities) {
-		return nil
-	}
-	return fmt.Errorf(
-		"edited resources must match the selected resources; changing kind, name, or project is not supported",
-	)
-}
-
-func objectIdentities(objects []manifest.Object) map[objectIdentity]int {
-	identities := make(map[objectIdentity]int, len(objects))
-	for i := range objects {
-		key := objectIdentity{
-			kind:    objects[i].GetKind(),
-			project: getObjectIdentityProject(objects[i]),
-			name:    objects[i].GetName(),
+	for i := range edited {
+		kind := edited[i].GetKind()
+		name := edited[i].GetName()
+		project := edited[i].(v1alpha.GenericObject).GetProject()
+		if !slices.ContainsFunc(original, func(o manifest.Object) bool {
+			return kind == o.GetKind() && name == o.GetName() && project == o.(v1alpha.GenericObject).GetProject()
+		}) {
+			displayName := kind.String() + " " + name
+			if project != "" {
+				displayName += "in " + project + " project"
+			}
+			return fmt.Errorf(
+				"edited resources must match the selected resources (%s); changing kind, name, or project is not supported",
+				displayName,
+			)
 		}
-		identities[key]++
 	}
-	return identities
-}
-
-func getObjectIdentityProject(object manifest.Object) string {
-	if objectKindHasNoProjectIdentity(object.GetKind()) {
-		return ""
-	}
-	projectScopedObject, ok := object.(manifest.ProjectScopedObject)
-	if !ok {
-		return ""
-	}
-	return projectScopedObject.GetProject()
-}
-
-func objectKindHasNoProjectIdentity(kind manifest.Kind) bool {
-	switch kind {
-	case manifest.KindBudgetAdjustment, manifest.KindReport:
-		return true
-	default:
-		return false
-	}
+	return nil
 }
 
 func validateRequestedObjectsFound(names []string, objects []manifest.Object) error {

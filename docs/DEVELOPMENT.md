@@ -27,6 +27,27 @@ Continuous integration pipelines utilize the same Makefile commands which
 you run locally. This ensures consistent behavior of the executed checks
 and makes local debugging easier.
 
+## Object model caveat
+
+Sloctl configures the v1alpha parser to use [v1alpha.GenericObject].
+This is intentional: sloctl is designed to be object-version agnostic.
+Anything returned by the API should be proxied to the user, even if the local
+sloctl binary was built before the API gained a new field or object shape.
+
+You MUST NOT rely on v1alpha object types when handling API objects.
+Older sloctl versions would not know about recent schema changes, and concrete
+types could drop unknown fields or break when the API evolves.
+
+Since [v1alpha.GenericObject] is just a generic `map[string]any`,
+it renders type assertions like the below useless:
+
+```go
+_, ok := object.(manifest.ProjectScopedObject) // `ok` will always be false
+```
+
+Prefer explicit kind-based checks, generic metadata accessors, or existing
+helpers that already account for this caveat.
+
 ## Testing
 
 In addition to standard unit tests, sloctl is tested with
@@ -159,3 +180,7 @@ Refer to [RELEASE.md](./RELEASE.md) for more information on release process.
 Renovate is configured to automatically merge minor and patch updates.
 For major versions, which sadly includes GitHub Actions, manual approval
 is required.
+
+---
+
+[v1alpha.GenericObject]: https://pkg.go.dev/github.com/nobl9/nobl9-go@v0.127.0/manifest/v1alpha#GenericObject
