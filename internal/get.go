@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -282,21 +283,6 @@ func (g *GetCmd) newGetAnnotationCommand(cmd *cobra.Command) *cobra.Command {
 		"Keep in mind that the different types of flags are linked by the logical AND operator.\n\n",
 		strings.Join(stringsTypeToStrings(v1alphaAnnotation.GetUserCategories()), ", "))
 
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		params, err := buildGetAnnotationsRequest(args, g.selection)
-		if err != nil {
-			return err
-		}
-		annotations, err := g.client.Objects().V2().GetV1alphaAnnotations(cmd.Context(), params)
-		if err != nil {
-			return err
-		}
-		if len(annotations) == 0 {
-			fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)
-			return nil
-		}
-		return g.printer.Print(annotations)
-	}
 	return cmd
 }
 
@@ -348,11 +334,51 @@ func (g *GetCmd) enrichAgentWithSecrets(
 }
 
 func (g *GetCmd) getObjects(ctx context.Context, kind manifest.Kind, args []string) ([]manifest.Object, error) {
+	if kind == manifest.KindAnnotation {
+		return g.getAnnotations(ctx, args)
+	}
 	query := buildObjectSelectionQuery(kind, args, g.selection)
 	header := http.Header{sdk.HeaderProject: []string{g.client.Config.Project}}
 	objects, err := g.client.Objects().V1().Get(ctx, kind, header, query)
 	if err != nil {
 		return nil, err
+	}
+	return objects, nil
+}
+
+func (g *GetCmd) getAnnotations(ctx context.Context, names []string) ([]manifest.Object, error) {
+	params, err := buildGetAnnotationsRequest(names, g.selection)
+	if err != nil {
+		return nil, err
+	}
+	header := http.Header{}
+	if params.Project != "" {
+		header.Set(sdk.HeaderProject, params.Project)
+	}
+	req, err := g.client.CreateRequest(
+		ctx,
+		http.MethodGet,
+		"/annotations",
+		header,
+		buildGetAnnotationsQuery(params),
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := g.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var annotations []v1alpha.GenericObject
+	if err = json.NewDecoder(resp.Body).Decode(&annotations); err != nil {
+		return nil, err
+	}
+	objects := make([]manifest.Object, 0, len(annotations))
+	for _, annotation := range annotations {
+		objects = append(objects, annotation)
 	}
 	return objects, nil
 }

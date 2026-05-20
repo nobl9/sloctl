@@ -146,3 +146,20 @@ func buildGetAnnotationsRequest(
 	params.Categories = collections.RemoveDuplicates(params.Categories)
 	return params, nil
 }
+
+func buildGetAnnotationsQuery(params objectsV2.GetAnnotationsRequest) url.Values {
+	query := url.Values{objectsV2.QueryKeyName: params.Names}
+	if !params.From.IsZero() {
+		query.Add(objectsV2.QueryKeyFrom, params.From.Format(time.RFC3339))
+	}
+	if !params.To.IsZero() {
+		query.Add(objectsV2.QueryKeyTo, params.To.Format(time.RFC3339))
+	}
+	if params.SLOName != "" {
+		query.Set(objectsV2.QueryKeySLOName, params.SLOName)
+	}
+	for _, category := range params.Categories {
+		query.Add(objectsV2.QueryKeyCategory, category.String())
+	}
+	return query
+}
