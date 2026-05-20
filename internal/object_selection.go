@@ -122,6 +122,7 @@ func buildGetAnnotationsRequest(
 	selection objectSelectionFlags,
 ) (objectsV2.GetAnnotationsRequest, error) {
 	params := objectsV2.GetAnnotationsRequest{
+		Project: selection.project,
 		Names:   names,
 		SLOName: selection.slo,
 		From:    selection.annotationFrom,

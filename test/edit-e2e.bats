@@ -178,6 +178,25 @@ setup() {
   assert_equal "$actual" "Dummy secondary Annotation for 'sloctl edit' e2e tests"
 }
 
+@test "sloctl edit annotations supports review note time range filters" {
+  editor_script="$(copy_editor_script "annotation-review-note-description.sh")"
+
+  SLOCTL_EDITOR="$editor_script" run_sloctl edit annotations \
+    -p "$TEST_PROJECT" \
+    --slo edit-slo \
+    --category ReviewNote \
+    --from 2023-02-01T00:00:00Z \
+    --to 2023-02-28T23:59:59Z
+
+  assert_success_joined_output
+  assert_output "The resources were successfully applied."
+
+  run_sloctl get annotations edit-annotation-secondary -p "$TEST_PROJECT" -o json
+  assert_success_joined_output
+  actual="$(yq -r '.[0].spec.description' <<< "$output")"
+  assert_equal "$actual" "Edited by sloctl edit review note filters e2e"
+}
+
 @test "sloctl edit budgetadjustments exits when editor leaves file unchanged" {
   SLOCTL_EDITOR=true run_sloctl edit budgetadjustments edit-budget-adjustment
 

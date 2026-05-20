@@ -373,14 +373,63 @@ func (g *GetCmd) getAnnotations(ctx context.Context, names []string) ([]manifest
 	defer func() { _ = resp.Body.Close() }()
 
 	var annotations []v1alpha.GenericObject
-	if err = json.NewDecoder(resp.Body).Decode(&annotations); err != nil {
+	decoder := json.NewDecoder(resp.Body)
+	decoder.UseNumber()
+	if err = decoder.Decode(&annotations); err != nil {
 		return nil, err
 	}
 	objects := make([]manifest.Object, 0, len(annotations))
 	for _, annotation := range annotations {
-		objects = append(objects, annotation)
+		objects = append(objects, annotationResponseToGenericObject(annotation))
 	}
 	return objects, nil
+}
+
+func annotationResponseToGenericObject(annotation v1alpha.GenericObject) v1alpha.GenericObject {
+	if _, ok := annotation["apiVersion"]; ok {
+		if _, ok = annotation["kind"]; ok {
+			return annotation
+		}
+	}
+
+	metadata := map[string]any{
+		"name": annotation["name"],
+	}
+	if project, ok := annotation["project"]; ok {
+		metadata["project"] = project
+	}
+	if labels, ok := annotation["labels"]; ok {
+		metadata["labels"] = labels
+	}
+
+	spec := map[string]any{
+		"slo":         annotation["slo"],
+		"description": annotation["description"],
+		"startTime":   annotation["startTime"],
+	}
+	if objectiveName, ok := annotation["objectiveName"]; ok {
+		spec["objectiveName"] = objectiveName
+	}
+	if endTime, ok := annotation["endTime"]; ok && endTime != nil {
+		spec["endTime"] = endTime
+	}
+	if category, ok := annotation["category"]; ok {
+		spec["category"] = category
+	}
+	if author, ok := annotation["author"]; ok {
+		spec["createdBy"] = author
+	}
+
+	object := v1alpha.GenericObject{
+		"apiVersion": manifest.VersionV1alpha.String(),
+		"kind":       manifest.KindAnnotation.String(),
+		"metadata":   metadata,
+		"spec":       spec,
+	}
+	if status, ok := annotation["status"]; ok {
+		object["status"] = status
+	}
+	return object
 }
 
 func (g *GetCmd) printObjects(kind manifest.Kind, objects []manifest.Object) error {
