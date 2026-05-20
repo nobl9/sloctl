@@ -113,3 +113,12 @@ func pluralForKind(kind manifest.Kind) string {
 		return kind.String() + "s"
 	}
 }
+
+func aliasesForKind(kind manifest.Kind) []string {
+	switch kind {
+	case manifest.KindService:
+		return []string{"svc", "svcs"}
+	default:
+		return nil
+	}
+}
