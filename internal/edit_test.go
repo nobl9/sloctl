@@ -45,7 +45,7 @@ func TestValidateEditedObjectsMatchSelection(t *testing.T) {
 	original := []manifest.Object{
 		v1alpha.GenericObject{
 			"apiVersion": manifest.VersionV1alpha,
-			"kind":       manifest.KindSLO,
+			"kind":       manifest.KindSLO.String(),
 			"metadata": map[string]any{
 				"project": "project-1",
 				"name":    "my-slo",
@@ -57,7 +57,7 @@ func TestValidateEditedObjectsMatchSelection(t *testing.T) {
 		edited := []manifest.Object{
 			v1alpha.GenericObject{
 				"apiVersion": manifest.VersionV1alpha,
-				"kind":       manifest.KindSLO,
+				"kind":       manifest.KindSLO.String(),
 				"metadata": map[string]any{
 					"project": "project-1",
 					"name":    "my-slo",
@@ -75,7 +75,7 @@ func TestValidateEditedObjectsMatchSelection(t *testing.T) {
 		edited := []manifest.Object{
 			v1alpha.GenericObject{
 				"apiVersion": manifest.VersionV1alpha,
-				"kind":       manifest.KindSLO,
+				"kind":       manifest.KindSLO.String(),
 				"metadata": map[string]any{
 					"project": "project-1",
 					"name":    "my-slo-renamed",
@@ -86,7 +86,8 @@ func TestValidateEditedObjectsMatchSelection(t *testing.T) {
 		err := validateEditedObjectsMatchSelection(original, edited)
 		require.Error(t, err)
 		assert.Equal(t,
-			"edited resources must match the selected resources; changing kind, name, or project is not supported",
+			"edited resources must match the selected resources; changing kind, name, or project is not supported;\n"+
+				"mismatched resource is SLO my-slo-renamed in project-1 project",
 			err.Error(),
 		)
 	})
