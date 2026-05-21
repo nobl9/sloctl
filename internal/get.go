@@ -3,9 +3,9 @@ package internal
 import (
 	"context"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"sort"
 	"strings"
@@ -16,11 +16,9 @@ import (
 	v1alphaAnnotation "github.com/nobl9/nobl9-go/manifest/v1alpha/annotation"
 	"github.com/nobl9/nobl9-go/sdk"
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
-	objectsV2 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v2"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/nobl9/sloctl/internal/collections"
 	"github.com/nobl9/sloctl/internal/flags"
 	"github.com/nobl9/sloctl/internal/printer"
 )
@@ -32,13 +30,9 @@ var getAlertExample string
 var getAnnotationExample string
 
 type GetCmd struct {
-	client      *sdk.Client
-	printer     *printer.Printer
-	labels      []string
-	project     string
-	services    []string
-	allProjects bool
-	slo         string
+	client    *sdk.Client
+	printer   *printer.Printer
+	selection objectSelectionFlags
 }
 
 // NewGetCmd returns cobra command get with all flags for it.
@@ -54,10 +48,10 @@ func (r *RootCmd) NewGetCmd() *cobra.Command {
 To get more details in output use one of the available flags.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			get.client = r.GetClient()
-			if get.allProjects {
+			if get.selection.allProjects {
 				get.client.Config.Project = "*"
-			} else if get.project != "" {
-				get.client.Config.Project = get.project
+			} else if get.selection.project != "" {
+				get.client.Config.Project = get.selection.project
 			}
 		},
 	}
@@ -81,10 +75,10 @@ To get more details in output use one of the available flags.`,
 		{Kind: manifest.KindDirect},
 		{Kind: manifest.KindProject},
 		{Kind: manifest.KindRoleBinding},
-		{Kind: manifest.KindService, Aliases: []string{"svc", "svcs"}},
-		{Kind: manifest.KindSLO, Extender: get.newGetSLOCommand},
+		{Kind: manifest.KindService, Aliases: aliasesForKind(manifest.KindService)},
+		{Kind: manifest.KindSLO},
 		{Kind: manifest.KindUserGroup},
-		{Kind: manifest.KindBudgetAdjustment, Extender: get.newGetBudgetAdjustmentCommand},
+		{Kind: manifest.KindBudgetAdjustment},
 		{Kind: manifest.KindReport},
 	} {
 		plural := pluralForKind(subCmd.Kind)
@@ -96,14 +90,8 @@ To get more details in output use one of the available flags.`,
 		if subCmd.Extender != nil {
 			subCmd.Extender(sc)
 		}
-		if objectKindSupportsProjectFlag(subCmd.Kind) {
-			registerProjectFlag(sc, &get.project)
-			sc.Flags().BoolVarP(&get.allProjects, "all-projects", "A", false,
-				`List the requested object(s) across all projects.`)
-		}
-		if objectKindSupportsLabelsFlag(subCmd.Kind) {
-			registerLabelsFlag(sc, &get.labels)
-		}
+		registerObjectSelectionFlags(sc, subCmd.Kind, &get.selection,
+			`List the requested object(s) across all projects.`)
 		cmd.AddCommand(sc)
 	}
 
@@ -286,19 +274,6 @@ func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 	return cmd
 }
 
-func (g *GetCmd) newGetSLOCommand(cmd *cobra.Command) *cobra.Command {
-	cmd.Flags().StringArrayVarP(&g.services, "service", "s", nil, "Filter SLOs by service name.")
-	return cmd
-}
-
-func (g *GetCmd) newGetBudgetAdjustmentCommand(cmd *cobra.Command) *cobra.Command {
-	cmd.Flags().StringVarP(&g.slo, "slo", "", "",
-		`Filter resource by SLO name. Example: my-sample-slo-name.`)
-	registerProjectFlag(cmd, &g.project)
-	cmd.MarkFlagsRequiredTogether("slo", "project")
-	return cmd
-}
-
 func (g *GetCmd) newGetAnnotationCommand(cmd *cobra.Command) *cobra.Command {
 	cmd.Example = getAnnotationExample
 	cmd.Long = fmt.Sprintf("Get annotations based on search criteria. "+
@@ -308,84 +283,6 @@ func (g *GetCmd) newGetAnnotationCommand(cmd *cobra.Command) *cobra.Command {
 		"Keep in mind that the different types of flags are linked by the logical AND operator.\n\n",
 		strings.Join(stringsTypeToStrings(v1alphaAnnotation.GetUserCategories()), ", "))
 
-	params := objectsV2.GetAnnotationsRequest{}
-	var (
-		categoriesFlag   []string
-		userCategories   bool
-		systemCategories bool
-	)
-	cmd.Flags().StringVar(
-		&params.SLOName,
-		"slo",
-		"",
-		"Get annotations for a given SLO (name) only.",
-	)
-	flags.RegisterTimeVar(
-		cmd,
-		&params.From,
-		"from",
-		"Get annotations which have 'spec.startTime' after or equal to the given time.",
-	)
-	flags.RegisterTimeVar(
-		cmd,
-		&params.To,
-		"to",
-		"Get annotations which have 'spec.endTime' before or equal to the given time.",
-	)
-	cmd.Flags().BoolVar(
-		&userCategories,
-		"user",
-		false,
-		"Get annotations which were created by user actions.",
-	)
-	cmd.Flags().BoolVar(
-		&systemCategories,
-		"system",
-		false,
-		"Get annotations which were automatically created by Nobl9 platform.",
-	)
-	cmd.Flags().StringArrayVar(
-		&categoriesFlag,
-		"category",
-		nil,
-		fmt.Sprintf(
-			"Filter annotations by their category (one of: %s).",
-			strings.Join(stringsTypeToStrings(v1alphaAnnotation.CategoryValues()), ", "),
-		),
-	)
-
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if len(args) > 0 {
-			params.Names = args
-		}
-		for _, cat := range categoriesFlag {
-			parsed, err := v1alphaAnnotation.ParseCategory(cat)
-			if err != nil {
-				return fmt.Errorf("invalid 'category' flag value: %w", err)
-			}
-			params.Categories = append(params.Categories, parsed)
-		}
-		if systemCategories {
-			params.Categories = append(params.Categories, v1alphaAnnotation.GetSystemCategories()...)
-		}
-		if userCategories {
-			params.Categories = append(params.Categories, v1alphaAnnotation.GetUserCategories()...)
-		}
-		if len(params.Categories) == 0 {
-			params.Categories = v1alphaAnnotation.GetUserCategories()
-		}
-		params.Categories = collections.RemoveDuplicates(params.Categories)
-
-		annotations, err := g.client.Objects().V2().GetV1alphaAnnotations(cmd.Context(), params)
-		if err != nil {
-			return err
-		}
-		if len(annotations) == 0 {
-			fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)
-			return nil
-		}
-		return g.printer.Print(annotations)
-	}
 	return cmd
 }
 
@@ -437,23 +334,102 @@ func (g *GetCmd) enrichAgentWithSecrets(
 }
 
 func (g *GetCmd) getObjects(ctx context.Context, kind manifest.Kind, args []string) ([]manifest.Object, error) {
-	query := url.Values{objectsV1.QueryKeyName: args}
-	if len(g.labels) > 0 {
-		query.Set(objectsV1.QueryKeyLabels, parseFilterLabel(g.labels))
+	if kind == manifest.KindAnnotation {
+		return g.getAnnotations(ctx, args)
 	}
-	if len(g.services) > 0 && kind == manifest.KindSLO {
-		query[objectsV1.QueryKeyServiceName] = g.services
-	}
-	if len(g.slo) > 0 && len(g.project) > 0 && kind == manifest.KindBudgetAdjustment {
-		query.Set(objectsV1.QueryKeySLOProjectName, g.project)
-		query.Set(objectsV1.QueryKeySLOName, g.slo)
-	}
+	query := buildObjectSelectionQuery(kind, args, g.selection)
 	header := http.Header{sdk.HeaderProject: []string{g.client.Config.Project}}
 	objects, err := g.client.Objects().V1().Get(ctx, kind, header, query)
 	if err != nil {
 		return nil, err
 	}
 	return objects, nil
+}
+
+func (g *GetCmd) getAnnotations(ctx context.Context, names []string) ([]manifest.Object, error) {
+	params, err := buildGetAnnotationsRequest(names, g.selection)
+	if err != nil {
+		return nil, err
+	}
+	header := http.Header{}
+	if params.Project != "" {
+		header.Set(sdk.HeaderProject, params.Project)
+	}
+	req, err := g.client.CreateRequest(
+		ctx,
+		http.MethodGet,
+		"/annotations",
+		header,
+		buildGetAnnotationsQuery(params),
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := g.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var annotations []v1alpha.GenericObject
+	decoder := json.NewDecoder(resp.Body)
+	decoder.UseNumber()
+	if err = decoder.Decode(&annotations); err != nil {
+		return nil, err
+	}
+	objects := make([]manifest.Object, 0, len(annotations))
+	for _, annotation := range annotations {
+		objects = append(objects, annotationResponseToGenericObject(annotation))
+	}
+	return objects, nil
+}
+
+func annotationResponseToGenericObject(annotation v1alpha.GenericObject) v1alpha.GenericObject {
+	if _, ok := annotation["apiVersion"]; ok {
+		if _, ok = annotation["kind"]; ok {
+			return annotation
+		}
+	}
+
+	metadata := map[string]any{
+		"name": annotation["name"],
+	}
+	if project, ok := annotation["project"]; ok {
+		metadata["project"] = project
+	}
+	if labels, ok := annotation["labels"]; ok {
+		metadata["labels"] = labels
+	}
+
+	spec := map[string]any{
+		"slo":         annotation["slo"],
+		"description": annotation["description"],
+		"startTime":   annotation["startTime"],
+	}
+	if objectiveName, ok := annotation["objectiveName"]; ok {
+		spec["objectiveName"] = objectiveName
+	}
+	if endTime, ok := annotation["endTime"]; ok && endTime != nil {
+		spec["endTime"] = endTime
+	}
+	if category, ok := annotation["category"]; ok {
+		spec["category"] = category
+	}
+	if author, ok := annotation["author"]; ok {
+		spec["createdBy"] = author
+	}
+
+	object := v1alpha.GenericObject{
+		"apiVersion": manifest.VersionV1alpha.String(),
+		"kind":       manifest.KindAnnotation.String(),
+		"metadata":   metadata,
+		"spec":       spec,
+	}
+	if status, ok := annotation["status"]; ok {
+		object["status"] = status
+	}
+	return object
 }
 
 func (g *GetCmd) printObjects(kind manifest.Kind, objects []manifest.Object) error {
