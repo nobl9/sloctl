@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -49,9 +50,12 @@ type Config struct {
 	Now    func() time.Time
 	Getenv func(string) string
 	IsTTY  func() bool
+	Lookup func(string) (string, error)
 
 	TerminalWidth  func() int
 	RenderMarkdown func(string, int) (string, error)
+	Executable     func() (string, error)
+	EvalSymlinks   func(string) (string, error)
 }
 
 // Notify checks and displays an unobtrusive notification when configured to do so.
@@ -70,8 +74,11 @@ type notifier struct {
 	now            func() time.Time
 	getenv         func(string) string
 	isTTY          func() bool
+	lookup         func(string) (string, error)
 	terminalWidth  func() int
 	renderMarkdown func(string, int) (string, error)
+	executable     func() (string, error)
+	evalSymlinks   func(string) (string, error)
 }
 
 type state struct {
@@ -90,6 +97,14 @@ type feature struct {
 	ID    string
 	Title string
 }
+
+type installChannel string
+
+const (
+	installChannelScript   installChannel = "script"
+	installChannelHomebrew installChannel = "homebrew"
+	installChannelGo       installChannel = "go-install"
+)
 
 func newNotifier(config Config) notifier {
 	stderr := io.Writer(os.Stderr)
@@ -148,6 +163,18 @@ func newNotifier(config Config) notifier {
 	if renderMarkdown == nil {
 		renderMarkdown = renderMarkdownWithGlamour
 	}
+	lookup := config.Lookup
+	if lookup == nil {
+		lookup = exec.LookPath
+	}
+	executable := config.Executable
+	if executable == nil {
+		executable = os.Executable
+	}
+	evalSymlinks := config.EvalSymlinks
+	if evalSymlinks == nil {
+		evalSymlinks = filepath.EvalSymlinks
+	}
 	return notifier{
 		currentVersion: strings.TrimSpace(config.CurrentVersion),
 		stderr:         stderr,
@@ -157,8 +184,11 @@ func newNotifier(config Config) notifier {
 		now:            now,
 		getenv:         getenv,
 		isTTY:          isTTY,
+		lookup:         lookup,
 		terminalWidth:  terminalWidth,
 		renderMarkdown: renderMarkdown,
+		executable:     executable,
+		evalSymlinks:   evalSymlinks,
 	}
 }
 
@@ -273,15 +303,20 @@ func (n notifier) renderNotification(release githubRelease, featuresMarkdown str
 	width := notificationWidth(n.terminalWidth())
 	border := lipgloss.RoundedBorder()
 	contentWidth := width - boxPadding - border.GetLeftSize() - border.GetRightSize()
-	markdown := strings.Join([]string{
+	updateCommand := n.updateCommand()
+	parts := []string{
 		fmt.Sprintf("### New sloctl features in %s", release.TagName),
 		strings.TrimSpace(featuresMarkdown),
 		fmt.Sprintf("[View release](%s)", release.HTMLURL),
-	}, "\n\n")
+	}
+	if updateCommand != "" {
+		parts = append(parts, fmt.Sprintf("Update sloctl:\n\n```shell\n%s\n```", updateCommand))
+	}
+	markdown := strings.Join(parts, "\n\n")
 
 	rendered, err := n.renderMarkdown(markdown, contentWidth)
 	if err != nil {
-		rendered = plainNotification(release, featuresMarkdown)
+		rendered = plainNotification(release, featuresMarkdown, updateCommand)
 	}
 	rendered = strings.TrimSpace(rendered)
 
@@ -305,12 +340,101 @@ func renderMarkdownWithGlamour(markdown string, width int) (string, error) {
 	return renderer.Render(markdown)
 }
 
-func plainNotification(release githubRelease, featuresMarkdown string) string {
-	return strings.Join([]string{
+func plainNotification(release githubRelease, featuresMarkdown string, updateCommand string) string {
+	parts := []string{
 		fmt.Sprintf("New sloctl features in %s", release.TagName),
 		stripMarkdownHeading(featuresMarkdown),
 		release.HTMLURL,
-	}, "\n\n")
+	}
+	if updateCommand != "" {
+		parts = append(parts, "Update sloctl:\n"+updateCommand)
+	}
+	return strings.Join(parts, "\n\n")
+}
+
+func (n notifier) updateCommand() string {
+	switch n.installChannel() {
+	case installChannelHomebrew:
+		return "brew upgrade sloctl"
+	case installChannelGo:
+		return "go install github.com/nobl9/sloctl/cmd/sloctl@latest"
+	case installChannelScript:
+		return n.scriptUpdateCommand()
+	default:
+		return ""
+	}
+}
+
+func (n notifier) installChannel() installChannel {
+	executablePath, err := n.executable()
+	if err != nil {
+		return installChannelScript
+	}
+	resolvedPath, err := n.evalSymlinks(executablePath)
+	if err != nil {
+		resolvedPath = executablePath
+	}
+	if isHomebrewExecutable(resolvedPath) {
+		return installChannelHomebrew
+	}
+	if isGoInstallExecutable(resolvedPath, n.getenv) {
+		return installChannelGo
+	}
+	return installChannelScript
+}
+
+func (n notifier) scriptUpdateCommand() string {
+	const scriptURL = "https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash"
+	if _, err := n.lookup("curl"); err == nil {
+		return "curl -fsSL " + scriptURL + " | bash"
+	}
+	if _, err := n.lookup("wget"); err == nil {
+		return "wget -O - -q " + scriptURL + " | bash"
+	}
+	return ""
+}
+
+func isHomebrewExecutable(path string) bool {
+	return strings.Contains(filepath.ToSlash(path), "/Cellar/sloctl/")
+}
+
+func isGoInstallExecutable(path string, getenv func(string) string) bool {
+	path = filepath.Clean(path)
+	for _, binDir := range goBinDirs(getenv) {
+		if samePath(path, filepath.Join(binDir, "sloctl")) ||
+			samePath(path, filepath.Join(binDir, "sloctl.exe")) {
+			return true
+		}
+	}
+	return false
+}
+
+func goBinDirs(getenv func(string) string) []string {
+	if goBin := strings.TrimSpace(getenv("GOBIN")); goBin != "" {
+		return []string{goBin}
+	}
+	goPath := strings.TrimSpace(getenv("GOPATH"))
+	if goPath == "" {
+		homeDir := strings.TrimSpace(getenv("HOME"))
+		if homeDir == "" {
+			homeDir = strings.TrimSpace(getenv("USERPROFILE"))
+		}
+		if homeDir == "" {
+			return nil
+		}
+		goPath = filepath.Join(homeDir, "go")
+	}
+	var binDirs []string
+	for _, path := range filepath.SplitList(goPath) {
+		if path != "" {
+			binDirs = append(binDirs, filepath.Join(path, "bin"))
+		}
+	}
+	return binDirs
+}
+
+func samePath(a, b string) bool {
+	return filepath.Clean(a) == filepath.Clean(b)
 }
 
 func notificationWidth(terminalWidth int) int {

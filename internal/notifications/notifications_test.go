@@ -150,19 +150,21 @@ func TestNotifier_notifyDisplaysFeatureAndCaches(t *testing.T) {
 
 	assert.Equal(t, 1, requests)
 	assert.Equal(t, 82, renderWidth)
-	assert.Equal(t, `### New sloctl features in v1.2.0
-
-## 🚀 Features
-
-- feat: Add workflow insights (#123) @octocat
-
-[View release](https://github.com/nobl9/sloctl/releases/tag/v1.2.0)`, renderedMarkdown)
+	assert.Equal(t, strings.Join([]string{
+		"### New sloctl features in v1.2.0",
+		"## 🚀 Features\n\n- feat: Add workflow insights (#123) @octocat",
+		"[View release](https://github.com/nobl9/sloctl/releases/tag/v1.2.0)",
+		"Update sloctl:\n\n```shell\ncurl -fsSL https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash | bash\n```",
+	}, "\n\n"), renderedMarkdown)
 	plainOutput := stripANSI(out.String())
 	assert.Contains(t, plainOutput, "╭")
 	assert.Contains(t, plainOutput, "New sloctl features in v1.2.0")
 	assert.Contains(t, plainOutput, "## 🚀 Features")
 	assert.Contains(t, plainOutput, "- feat: Add workflow insights (#123) @octocat")
 	assert.Contains(t, plainOutput, "[View release](https://github.com/nobl9/sloctl/releases/tag/v1.2.0)")
+	assert.Contains(t, plainOutput, "Update sloctl")
+	assert.Contains(t, plainOutput, "curl -fsSL https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash |")
+	assert.Contains(t, plainOutput, "bash")
 
 	out.Reset()
 	newNotifier(config).notify(context.Background())
@@ -196,6 +198,101 @@ func TestNotifier_notifyFallsBackWhenMarkdownRenderingFails(t *testing.T) {
 	assert.Contains(t, plainOutput, "New sloctl features in v1.2.0")
 	assert.Contains(t, plainOutput, "- Add workflow insights (#123) @octocat")
 	assert.Contains(t, plainOutput, "https://github.com/nobl9/sloctl/releases/tag/v1.2.0")
+	assert.Contains(t, plainOutput, "Update sloctl:")
+	assert.Contains(t, plainOutput, "curl -fsSL https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash |")
+	assert.Contains(t, plainOutput, "bash")
+}
+
+func TestNotifier_updateCommand(t *testing.T) {
+	tests := map[string]struct {
+		executable     string
+		resolved       string
+		env            map[string]string
+		availableTools map[string]bool
+		expected       string
+	}{
+		"homebrew cellar": {
+			executable: "/opt/homebrew/bin/sloctl",
+			resolved:   "/opt/homebrew/Cellar/sloctl/1.2.0/bin/sloctl",
+			expected:   "brew upgrade sloctl",
+		},
+		"go bin from GOBIN": {
+			executable: "/home/me/bin/sloctl",
+			env: map[string]string{
+				"GOBIN": "/home/me/bin",
+			},
+			expected: "go install github.com/nobl9/sloctl/cmd/sloctl@latest",
+		},
+		"go bin from GOPATH": {
+			executable: "/home/me/go-work/bin/sloctl",
+			env: map[string]string{
+				"GOPATH": "/home/me/go-work",
+			},
+			expected: "go install github.com/nobl9/sloctl/cmd/sloctl@latest",
+		},
+		"go bin from default GOPATH": {
+			executable: "/home/me/go/bin/sloctl",
+			env: map[string]string{
+				"HOME": "/home/me",
+			},
+			expected: "go install github.com/nobl9/sloctl/cmd/sloctl@latest",
+		},
+		"script prefers curl": {
+			executable: "/usr/local/bin/sloctl",
+			availableTools: map[string]bool{
+				"curl": true,
+				"wget": true,
+			},
+			expected: "curl -fsSL https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash | bash",
+		},
+		"script falls back to wget": {
+			executable: "/usr/local/bin/sloctl",
+			availableTools: map[string]bool{
+				"wget": true,
+			},
+			expected: "wget -O - -q https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash | bash",
+		},
+		"script omits command without downloader": {
+			executable: "/usr/local/bin/sloctl",
+			expected:   "",
+		},
+		"executable failure uses script default": {
+			availableTools: map[string]bool{
+				"curl": true,
+			},
+			expected: "curl -fsSL https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash | bash",
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			config := Config{
+				Getenv: func(key string) string {
+					return tt.env[key]
+				},
+				Lookup: func(name string) (string, error) {
+					if tt.availableTools[name] {
+						return "/bin/" + name, nil
+					}
+					return "", errors.New("not found")
+				},
+				Executable: func() (string, error) {
+					if tt.executable == "" {
+						return "", errors.New("no executable")
+					}
+					return tt.executable, nil
+				},
+				EvalSymlinks: func(string) (string, error) {
+					if tt.resolved == "" {
+						return "", errors.New("not a symlink")
+					}
+					return tt.resolved, nil
+				},
+			}
+
+			assert.Equal(t, tt.expected, newNotifier(config).updateCommand())
+		})
+	}
 }
 
 func TestNotifier_notifySkipsBeforeFetch(t *testing.T) {
@@ -352,8 +449,11 @@ func testConfig(t *testing.T, out *bytes.Buffer, now time.Time) Config {
 		Now:            func() time.Time { return now },
 		Getenv:         func(string) string { return "" },
 		IsTTY:          func() bool { return true },
+		Lookup:         func(name string) (string, error) { return "/bin/" + name, nil },
 		TerminalWidth:  func() int { return defaultBoxWidth },
 		RenderMarkdown: func(markdown string, _ int) (string, error) { return markdown, nil },
+		Executable:     func() (string, error) { return "/usr/local/bin/sloctl", nil },
+		EvalSymlinks:   func(path string) (string, error) { return path, nil },
 	}
 }
 

@@ -100,6 +100,10 @@ refute_stderr() {
   assert_stderr --partial "Features"
   assert_stderr --partial "Add notification tests"
   assert_stderr --partial "https://github.com/nobl9/sloctl/releases/tag/v1.1.0"
+  assert_stderr --partial "Update"
+  assert_stderr --partial "sloctl:"
+  assert_stderr --partial "install.bash"
+  assert_stderr --partial "bash"
 
   run_sloctl_with_stderr_pty version
   assert_success_joined_output
