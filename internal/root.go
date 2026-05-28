@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/nobl9/sloctl/internal/budgetadjustments"
+	"github.com/nobl9/sloctl/internal/notifications"
 )
 
 const programName = "sloctl"
@@ -19,9 +20,22 @@ const programName = "sloctl"
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	if err := NewRootCmd().Execute(); err != nil {
+	if execute(NewRootCmd(), func() {
+		notifications.Notify(notifications.Config{
+			CurrentVersion: getBuildVersion(),
+			Stderr:         os.Stderr,
+		})
+	}) != 0 {
 		os.Exit(1)
 	}
+}
+
+func execute(cmd *cobra.Command, notify func()) int {
+	if err := cmd.Execute(); err != nil {
+		return 1
+	}
+	notify()
+	return 0
 }
 
 type globalFlags struct {
