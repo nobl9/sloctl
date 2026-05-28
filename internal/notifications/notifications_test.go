@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFirstFeature(t *testing.T) {
+func TestFirstReleaseNote(t *testing.T) {
 	tests := map[string]struct {
 		body     string
 		expected feature
@@ -62,25 +62,26 @@ func TestFirstFeature(t *testing.T) {
 			expected: feature{ID: "333", Title: "Add direct upload"},
 			ok:       true,
 		},
-		"missing features section": {
+		"bug fix": {
 			body: `## 🐞 Bug Fixes
 
 - Fix output formatting (#125) @octocat
 `,
+			expected: feature{ID: "125", Title: "Fix output formatting"},
+			ok:       true,
 		},
-		"empty features section": {
+		"empty section": {
 			body: `## 🚀 Features
 
 ## 🐞 Bug Fixes
 
-- Fix output formatting (#125) @octocat
 `,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			got, ok := firstFeature(tt.body)
+			got, ok := firstReleaseNote(tt.body)
 
 			assert.Equal(t, tt.ok, ok)
 			assert.Equal(t, tt.expected, got)
@@ -88,8 +89,14 @@ func TestFirstFeature(t *testing.T) {
 	}
 }
 
-func TestFeaturesSection(t *testing.T) {
-	body := `# What's Changed
+func TestReleaseNotesSection(t *testing.T) {
+	tests := map[string]struct {
+		body     string
+		expected string
+		ok       bool
+	}{
+		"features section": {
+			body: `# What's Changed
 
 ## 🚀 Features
 
@@ -103,19 +110,65 @@ func TestFeaturesSection(t *testing.T) {
 ## 🐞 Bug Fixes
 
 - Fix output formatting (#125) @octocat
-`
-
-	got, ok := featuresSection(body)
-
-	require.True(t, ok)
-	assert.Equal(t, `## 🚀 Features
+`,
+			expected: `## 🚀 Features
 
 - Add workflow insights (#123) @octocat
   > Extra release-note detail.
 
 ### Details
 
-- Preserves nested feature details.`, got)
+- Preserves nested feature details.`,
+			ok: true,
+		},
+		"bug fixes section": {
+			body: `# What's Changed
+
+## 🧰 Maintenance
+
+- chore: Update dependencies (#124) @renovate
+
+## 🐞 Bug Fixes
+
+- Fix output formatting (#125) @octocat
+`,
+			expected: `## 🐞 Bug Fixes
+
+- Fix output formatting (#125) @octocat`,
+			ok: true,
+		},
+		"only maintenance": {
+			body: `# What's Changed
+
+## 🧰 Maintenance
+
+- chore: Update dependencies (#124) @renovate
+`,
+		},
+		"empty features then bug fixes": {
+			body: `# What's Changed
+
+## 🚀 Features
+
+## 🐞 Bug Fixes
+
+- Fix output formatting (#125) @octocat
+`,
+			expected: `## 🐞 Bug Fixes
+
+- Fix output formatting (#125) @octocat`,
+			ok: true,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, ok := releaseNotesSection(tt.body)
+
+			assert.Equal(t, tt.ok, ok)
+			assert.Equal(t, tt.expected, got)
+		})
+	}
 }
 
 func TestNotifier_notifyDisplaysFeatureAndCaches(t *testing.T) {
@@ -149,22 +202,28 @@ func TestNotifier_notifyDisplaysFeatureAndCaches(t *testing.T) {
 	newNotifier(config).notify(context.Background())
 
 	assert.Equal(t, 1, requests)
-	assert.Equal(t, 82, renderWidth)
+	assert.Equal(t, 86, renderWidth)
 	assert.Equal(t, strings.Join([]string{
-		"### New sloctl features in v1.2.0",
+		"### New sloctl updates in v1.2.0!",
 		"## 🚀 Features\n\n- feat: Add workflow insights (#123) @octocat",
-		"[View release](https://github.com/nobl9/sloctl/releases/tag/v1.2.0)",
-		"Update sloctl:\n\n```shell\ncurl -fsSL https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash | bash\n```",
+		"📜 https://github.com/nobl9/sloctl/releases/tag/v1.2.0",
+		strings.Join([]string{
+			"Update sloctl with:",
+			"",
+			"```shell",
+			"curl -fsSL https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash | bash",
+			"```",
+		}, "\n"),
 	}, "\n\n"), renderedMarkdown)
 	plainOutput := stripANSI(out.String())
 	assert.Contains(t, plainOutput, "╭")
-	assert.Contains(t, plainOutput, "New sloctl features in v1.2.0")
+	assert.Contains(t, plainOutput, "New sloctl updates in v1.2.0!")
 	assert.Contains(t, plainOutput, "## 🚀 Features")
 	assert.Contains(t, plainOutput, "- feat: Add workflow insights (#123) @octocat")
-	assert.Contains(t, plainOutput, "[View release](https://github.com/nobl9/sloctl/releases/tag/v1.2.0)")
+	assert.Contains(t, plainOutput, "📜 https://github.com/nobl9/sloctl/releases/tag/v1.2.0")
+	assert.NotContains(t, plainOutput, "Release notes:")
 	assert.Contains(t, plainOutput, "Update sloctl")
-	assert.Contains(t, plainOutput, "curl -fsSL https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash |")
-	assert.Contains(t, plainOutput, "bash")
+	assert.Contains(t, plainOutput, "curl -fsSL https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash | bash")
 
 	out.Reset()
 	newNotifier(config).notify(context.Background())
@@ -195,12 +254,83 @@ func TestNotifier_notifyFallsBackWhenMarkdownRenderingFails(t *testing.T) {
 	newNotifier(config).notify(context.Background())
 
 	plainOutput := stripANSI(out.String())
-	assert.Contains(t, plainOutput, "New sloctl features in v1.2.0")
+	assert.Contains(t, plainOutput, "New sloctl updates in v1.2.0!")
 	assert.Contains(t, plainOutput, "- Add workflow insights (#123) @octocat")
-	assert.Contains(t, plainOutput, "https://github.com/nobl9/sloctl/releases/tag/v1.2.0")
-	assert.Contains(t, plainOutput, "Update sloctl:")
-	assert.Contains(t, plainOutput, "curl -fsSL https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash |")
-	assert.Contains(t, plainOutput, "bash")
+	assert.Contains(t, plainOutput, "📜 https://github.com/nobl9/sloctl/releases/tag/v1.2.0")
+	assert.NotContains(t, plainOutput, "Release notes:")
+	assert.Contains(t, plainOutput, "Update sloctl with:")
+	assert.Contains(t, plainOutput, "curl -fsSL https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash | bash")
+}
+
+func TestNotifier_notifyDisplaysVersionWhenReleaseHasNoFeatures(t *testing.T) {
+	client := testHTTPClient(func(*http.Request) (int, string) {
+		return http.StatusOK, releaseJSON(t, githubRelease{
+			TagName: "v1.2.0",
+			Body: `# What's Changed
+
+## 🧰 Maintenance
+
+- chore: Update release-drafter/release-drafter action to v7.3.0 (#465) @renovate
+`,
+			HTMLURL: "https://github.com/nobl9/sloctl/releases/tag/v1.2.0",
+		})
+	})
+
+	var out bytes.Buffer
+	config := testConfig(t, &out, time.Now())
+	config.HTTPClient = client
+	config.TerminalWidth = func() int { return 80 }
+	config.RenderMarkdown = func(string, int) (string, error) {
+		t.Fatal("version-only notification should not use markdown rendering")
+		return "", nil
+	}
+
+	newNotifier(config).notify(context.Background())
+
+	plainOutput := stripANSI(out.String())
+	assert.Contains(t, plainOutput, "New sloctl version v1.2.0 is available!")
+	assert.Contains(t, out.String(), "\x1b[38;2;255;255;255mNew sloctl version v1.2.0 is available!\x1b[m")
+	assert.Contains(t, out.String(), "\x1b[4;38;2;99;214;229;4mh")
+	assert.NotContains(t, plainOutput, "###")
+	assert.Contains(t, plainOutput, "📜 https://github.com/nobl9/sloctl/releases/tag/v1.2.0")
+	assert.NotContains(t, plainOutput, "Release notes:")
+	assert.NotContains(t, plainOutput, "View release")
+	assert.Contains(t, plainOutput, "Update sloctl")
+	assert.Contains(t, out.String(), "\x1b[3;")
+	assert.Contains(t, plainOutput, "curl -fsSL \\")
+	assert.Contains(t, plainOutput, "https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash \\")
+	assert.Contains(t, plainOutput, "| bash")
+	assert.NotContains(t, plainOutput, "Maintenance")
+
+	currentState := readState(t, config.CachePath)
+	assert.Equal(t, "v1.2.0", currentState.LastShownReleaseTag)
+	assert.Empty(t, currentState.LastShownFeatureID)
+}
+
+func TestNotifier_notifyKeepsInstallCommandOnOneLineWhenTerminalIsWide(t *testing.T) {
+	client := testHTTPClient(func(*http.Request) (int, string) {
+		return http.StatusOK, releaseJSON(t, githubRelease{
+			TagName: "v1.2.0",
+			Body: `# What's Changed
+
+## 🧰 Maintenance
+
+- chore: Update dependencies (#124) @renovate
+`,
+			HTMLURL: "https://github.com/nobl9/sloctl/releases/tag/v1.2.0",
+		})
+	})
+
+	var out bytes.Buffer
+	config := testConfig(t, &out, time.Now())
+	config.HTTPClient = client
+	config.TerminalWidth = func() int { return 120 }
+
+	newNotifier(config).notify(context.Background())
+
+	plainOutput := stripANSI(out.String())
+	assert.Contains(t, plainOutput, "curl -fsSL https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash | bash")
+	assert.NotContains(t, plainOutput, "curl -fsSL \\")
 }
 
 func TestNotifier_updateCommand(t *testing.T) {
@@ -435,7 +565,7 @@ func TestNotifier_notifyDoesNotSurfaceCacheWriteFailure(t *testing.T) {
 
 	newNotifier(config).notify(context.Background())
 
-	assert.Contains(t, stripANSI(out.String()), "New sloctl features in v1.2.0")
+	assert.Contains(t, stripANSI(out.String()), "New sloctl updates in v1.2.0!")
 	assert.Contains(t, stripANSI(out.String()), "Add workflow insights")
 }
 

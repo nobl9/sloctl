@@ -28,9 +28,15 @@ const (
 	checkInterval     = 24 * time.Hour
 	checkTimeout      = 750 * time.Millisecond
 	maxResponseSize   = 1 << 20
-	defaultBoxWidth   = 88
+	defaultBoxWidth   = 92
 	minBoxWidth       = 48
 	boxPadding        = 2
+
+	notificationTeal      = "#00819E"
+	notificationCyan      = "#63D6E5"
+	notificationGray      = "#BABBBB"
+	notificationLightGray = "#E8E9E9"
+	notificationWhite     = "#FFFFFF"
 )
 
 var (
@@ -212,24 +218,21 @@ func (n notifier) notify(ctx context.Context) {
 		n.saveState(currentState)
 		return
 	}
-	featuresMarkdown, ok := featuresSection(release.Body)
-	if !ok {
-		n.saveState(currentState)
-		return
+	releaseNotesMarkdown, _ := releaseNotesSection(release.Body)
+	var releaseNoteID string
+	if note, ok := firstReleaseNote(releaseNotesMarkdown); ok {
+		releaseNoteID = note.ID
+	} else {
+		releaseNotesMarkdown = ""
 	}
-	nextFeature, ok := firstFeature(featuresMarkdown)
-	if !ok {
-		n.saveState(currentState)
-		return
-	}
-	if alreadyShown(currentState, release.TagName, nextFeature.ID) {
+	if alreadyShown(currentState, release.TagName, releaseNoteID) {
 		n.saveState(currentState)
 		return
 	}
 
-	_, _ = fmt.Fprintln(n.stderr, n.renderNotification(release, featuresMarkdown))
+	_, _ = fmt.Fprintln(n.stderr, n.renderNotification(release, releaseNotesMarkdown))
 	currentState.LastShownReleaseTag = release.TagName
-	currentState.LastShownFeatureID = nextFeature.ID
+	currentState.LastShownFeatureID = releaseNoteID
 	n.saveState(currentState)
 }
 
@@ -299,30 +302,37 @@ func defaultCachePath() string {
 	return filepath.Join(cacheDir, "nobl9", "sloctl", "notifications.json")
 }
 
-func (n notifier) renderNotification(release githubRelease, featuresMarkdown string) string {
+func (n notifier) renderNotification(release githubRelease, releaseNotesMarkdown string) string {
 	width := notificationWidth(n.terminalWidth())
 	border := lipgloss.RoundedBorder()
 	contentWidth := width - boxPadding - border.GetLeftSize() - border.GetRightSize()
 	updateCommand := n.updateCommand()
+	formattedUpdateCommand := formatShellPipeline(updateCommand, contentWidth-boxPadding*2)
 	parts := []string{
-		fmt.Sprintf("### New sloctl features in %s", release.TagName),
-		strings.TrimSpace(featuresMarkdown),
-		fmt.Sprintf("[View release](%s)", release.HTMLURL),
+		notificationTitleMarkdown(releaseNotesMarkdown, release.TagName),
 	}
+	if releaseNotesMarkdown != "" {
+		parts = append(parts, strings.TrimSpace(releaseNotesMarkdown))
+	}
+	parts = append(parts, fmt.Sprintf("📜 %s", release.HTMLURL))
 	if updateCommand != "" {
-		parts = append(parts, fmt.Sprintf("Update sloctl:\n\n```shell\n%s\n```", updateCommand))
+		parts = append(parts, fmt.Sprintf("Update sloctl with:\n\n```shell\n%s\n```", formattedUpdateCommand))
 	}
 	markdown := strings.Join(parts, "\n\n")
 
-	rendered, err := n.renderMarkdown(markdown, contentWidth)
-	if err != nil {
-		rendered = plainNotification(release, featuresMarkdown, updateCommand)
+	rendered := styledPlainNotification(release, releaseNotesMarkdown, formattedUpdateCommand)
+	if releaseNotesMarkdown != "" {
+		var err error
+		rendered, err = n.renderMarkdown(markdown, contentWidth)
+		if err != nil {
+			rendered = styledPlainNotification(release, releaseNotesMarkdown, formattedUpdateCommand)
+		}
 	}
 	rendered = strings.TrimSpace(rendered)
 
 	return lipgloss.NewStyle().
 		BorderStyle(border).
-		BorderForeground(lipgloss.Color("#0EB46E")).
+		BorderForeground(lipgloss.Color(notificationTeal)).
 		Padding(0, 1).
 		Width(contentWidth).
 		Render(rendered)
@@ -340,16 +350,74 @@ func renderMarkdownWithGlamour(markdown string, width int) (string, error) {
 	return renderer.Render(markdown)
 }
 
-func plainNotification(release githubRelease, featuresMarkdown string, updateCommand string) string {
+func styledPlainNotification(release githubRelease, releaseNotesMarkdown, updateCommand string) string {
+	titleStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(notificationWhite))
+	linkStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(notificationCyan)).
+		Underline(true)
+	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(notificationGray))
+	commandStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(notificationLightGray)).
+		Italic(true)
+
 	parts := []string{
-		fmt.Sprintf("New sloctl features in %s", release.TagName),
-		stripMarkdownHeading(featuresMarkdown),
-		release.HTMLURL,
+		titleStyle.Render(notificationTitle(releaseNotesMarkdown, release.TagName)),
 	}
+	if releaseNotesMarkdown != "" {
+		parts = append(parts, stripMarkdownHeading(releaseNotesMarkdown))
+	}
+	parts = append(parts, labelStyle.Render("📜")+" "+linkStyle.Render(release.HTMLURL))
 	if updateCommand != "" {
-		parts = append(parts, "Update sloctl:\n"+updateCommand)
+		parts = append(
+			parts,
+			labelStyle.Render("Update sloctl with:")+"\n"+commandStyle.Render(updateCommand),
+		)
 	}
 	return strings.Join(parts, "\n\n")
+}
+
+func notificationTitleMarkdown(releaseNotesMarkdown, releaseTag string) string {
+	if releaseNotesMarkdown == "" {
+		return notificationTitle(releaseNotesMarkdown, releaseTag)
+	}
+	return "### " + notificationTitle(releaseNotesMarkdown, releaseTag)
+}
+
+func notificationTitle(releaseNotesMarkdown, releaseTag string) string {
+	if releaseNotesMarkdown == "" {
+		return fmt.Sprintf("New sloctl version %s is available!", releaseTag)
+	}
+	return fmt.Sprintf("New sloctl updates in %s!", releaseTag)
+}
+
+func formatShellPipeline(command string, maxLineWidth int) string {
+	if len(command) <= maxLineWidth {
+		return command
+	}
+	left, right, ok := strings.Cut(command, " | ")
+	if !ok {
+		return command
+	}
+	pipeline := left + " \\\n| " + right
+	if maxLineLen(pipeline) <= maxLineWidth {
+		return pipeline
+	}
+	if url, ok := strings.CutPrefix(left, "curl -fsSL "); ok {
+		curlPipeline := "curl -fsSL \\\n" + url + " | " + right
+		if maxLineLen(curlPipeline) <= maxLineWidth {
+			return curlPipeline
+		}
+		return "curl -fsSL \\\n  " + url + " \\\n  | " + right
+	}
+	return pipeline
+}
+
+func maxLineLen(text string) int {
+	maxLen := 0
+	for _, line := range strings.Split(text, "\n") {
+		maxLen = max(maxLen, len(line))
+	}
+	return maxLen
 }
 
 func (n notifier) updateCommand() string {
@@ -452,34 +520,35 @@ func widthFromColumnsEnv(getenv func(string) string) int {
 	return width
 }
 
-func featuresSection(body string) (string, bool) {
-	var lines []string
-	inFeaturesSection := false
+func releaseNotesSection(body string) (string, bool) {
+	var section []string
+	inReleaseNotesSection := false
 	for _, line := range strings.Split(body, "\n") {
 		trimmed := strings.TrimSpace(line)
 		if isLevel2Heading(trimmed) {
-			if inFeaturesSection {
-				break
+			if inReleaseNotesSection {
+				if _, ok := firstReleaseNote(strings.Join(section, "\n")); ok {
+					break
+				}
 			}
-			inFeaturesSection = strings.Contains(trimmed, "Features")
+			inReleaseNotesSection = isReleaseNotesHeading(trimmed)
+			section = nil
 		}
-		if inFeaturesSection {
-			lines = append(lines, line)
+		if inReleaseNotesSection {
+			section = append(section, line)
 		}
 	}
-	section := strings.TrimSpace(strings.Join(lines, "\n"))
-	return section, section != ""
+	markdown := strings.TrimSpace(strings.Join(section, "\n"))
+	if _, ok := firstReleaseNote(markdown); !ok {
+		return "", false
+	}
+	return markdown, true
 }
 
-func firstFeature(body string) (feature, bool) {
-	inFeaturesSection := false
+func firstReleaseNote(body string) (feature, bool) {
 	for _, line := range strings.Split(body, "\n") {
 		trimmed := strings.TrimSpace(line)
-		if isLevel2Heading(trimmed) {
-			inFeaturesSection = strings.Contains(trimmed, "Features")
-			continue
-		}
-		if !inFeaturesSection || !strings.HasPrefix(trimmed, "- ") {
+		if !strings.HasPrefix(trimmed, "- ") {
 			continue
 		}
 		return parseFeature(trimmed[2:]), true
@@ -502,10 +571,17 @@ func isLevel2Heading(line string) bool {
 	return strings.HasPrefix(line, "## ") || line == "##"
 }
 
+func isReleaseNotesHeading(line string) bool {
+	heading := strings.ToLower(line)
+	return strings.Contains(heading, "features") || strings.Contains(heading, "fixes")
+}
+
 func parseFeature(raw string) feature {
 	title := strings.TrimSpace(raw)
 	title = strings.TrimPrefix(title, "feat:")
 	title = strings.TrimPrefix(title, "Feat:")
+	title = strings.TrimPrefix(title, "fix:")
+	title = strings.TrimPrefix(title, "Fix:")
 	title = strings.TrimSpace(title)
 	id := title
 	if matches := releasePRPattern.FindStringSubmatch(raw); len(matches) == 2 {
