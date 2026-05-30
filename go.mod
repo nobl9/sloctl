@@ -7,7 +7,7 @@ require (
 	charm.land/lipgloss/v2 v2.0.3
 	github.com/BurntSushi/toml v1.6.0
 	github.com/OpenSLO/go-sdk v0.9.2
-	github.com/go-playground/validator/v10 v10.30.2
+	github.com/go-playground/validator/v10 v10.30.3
 	github.com/goccy/go-yaml v1.19.2
 	github.com/itchyny/gojq v0.12.19
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
@@ -66,9 +66,9 @@ require (
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
-	golang.org/x/crypto v0.51.0 // indirect
+	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/mod v0.36.0 // indirect
-	golang.org/x/sys v0.44.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/term v0.43.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 	golang.org/x/tools v0.45.0 // indirect
