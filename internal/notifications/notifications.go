@@ -15,9 +15,9 @@ import (
 	"strings"
 	"time"
 
-	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/glamour"
 	"github.com/mattn/go-isatty"
+	"github.com/nobl9/sloctl/internal/style"
 	"golang.org/x/term"
 )
 
@@ -31,12 +31,6 @@ const (
 	defaultBoxWidth   = 92
 	minBoxWidth       = 48
 	boxPadding        = 2
-
-	notificationTeal      = "#00819E"
-	notificationCyan      = "#63D6E5"
-	notificationGray      = "#BABBBB"
-	notificationLightGray = "#E8E9E9"
-	notificationWhite     = "#FFFFFF"
 )
 
 var (
@@ -304,7 +298,7 @@ func defaultCachePath() string {
 
 func (n notifier) renderNotification(release githubRelease, releaseNotesMarkdown string) string {
 	width := notificationWidth(n.terminalWidth())
-	border := lipgloss.RoundedBorder()
+	border := style.NotificationBorder()
 	contentWidth := width - boxPadding - border.GetLeftSize() - border.GetRightSize()
 	updateCommand := n.updateCommand()
 	formattedUpdateCommand := formatShellPipeline(updateCommand, contentWidth-boxPadding*2)
@@ -330,12 +324,7 @@ func (n notifier) renderNotification(release githubRelease, releaseNotesMarkdown
 	}
 	rendered = strings.TrimSpace(rendered)
 
-	return lipgloss.NewStyle().
-		BorderStyle(border).
-		BorderForeground(lipgloss.Color(notificationTeal)).
-		Padding(0, 1).
-		Width(contentWidth).
-		Render(rendered)
+	return style.NotificationBox(contentWidth).Render(rendered)
 }
 
 func renderMarkdownWithGlamour(markdown string, width int) (string, error) {
@@ -351,14 +340,10 @@ func renderMarkdownWithGlamour(markdown string, width int) (string, error) {
 }
 
 func styledPlainNotification(release githubRelease, releaseNotesMarkdown, updateCommand string) string {
-	titleStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(notificationWhite))
-	linkStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(notificationCyan)).
-		Underline(true)
-	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(notificationGray))
-	commandStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(notificationLightGray)).
-		Italic(true)
+	titleStyle := style.NotificationTitle()
+	linkStyle := style.NotificationLink()
+	labelStyle := style.NotificationLabel()
+	commandStyle := style.NotificationCommand()
 
 	parts := []string{
 		titleStyle.Render(notificationTitle(releaseNotesMarkdown, release.TagName)),

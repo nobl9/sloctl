@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
 import errno
+import fcntl
 import os
 import pty
+import struct
+import termios
 import selectors
 import subprocess
 import sys
@@ -14,6 +17,13 @@ def main():
         return 2
 
     master_fd, slave_fd = pty.openpty()
+    columns = os.environ.get("SLOCTL_TEST_TTY_COLUMNS")
+    if columns:
+        fcntl.ioctl(
+            slave_fd,
+            termios.TIOCSWINSZ,
+            struct.pack("HHHH", 24, int(columns), 0, 0),
+        )
     process = subprocess.Popen(
         sys.argv[1:],
         stdin=subprocess.DEVNULL,
