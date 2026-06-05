@@ -21,6 +21,8 @@ jobs:
   release:
     runs-on: ubuntu-latest
     needs: [test, qa-approval]
+    outputs:
+      dockerVersion: ${{ steps.meta.outputs.version }}
     steps:
       - name: Checkout Source
         uses: actions/checkout@v6.0.3
@@ -84,7 +86,7 @@ jobs:
     with:
       clientId: ${{ vars.SLOCTL_CLIENT_ID }}
       ref: ${{ github.ref_name }}
-      sloctlImage: ${{ matrix.image }}:${{ github.ref_name }}
+      sloctlImage: ${{ matrix.image }}:${{ needs.release.outputs.dockerVersion }}
       target: test/go/e2e-docker
     secrets:
       clientSecret: "${{ secrets.SLOCTL_CLIENT_SECRET }}"
