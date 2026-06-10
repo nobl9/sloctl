@@ -2,9 +2,9 @@ package internal
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/mitchellh/colorstring"
+	replayV1 "github.com/nobl9/nobl9-go/sdk/endpoints/replay/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -47,25 +47,14 @@ func (r *ReplayCmd) deleteArguments(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-type deleteReplayRequest struct {
-	Project string `json:"project,omitempty"`
-	Slo     string `json:"slo,omitempty"`
-	All     bool   `json:"all,omitempty"`
-}
-
 func (r *ReplayCmd) deleteAllReplays(cmd *cobra.Command) error {
 	cmd.Println(colorstring.Color("[yellow]Deleting all queued Replays[reset]"))
 
-	_, _, err := r.doRequest(
+	err := r.client.Replay().V1().Delete(
 		cmd.Context(),
-		http.MethodDelete,
-		endpointReplayDelete,
-		"",
-		nil,
-		deleteReplayRequest{
+		replayV1.DeleteRequest{
 			All: true,
-		},
-	)
+		})
 	if err != nil {
 		return err
 	}
@@ -86,17 +75,12 @@ func (r *ReplayCmd) deleteReplaysForSLO(cmd *cobra.Command, sloName string) erro
 		),
 	)
 
-	_, _, err := r.doRequest(
+	err := r.client.Replay().V1().Delete(
 		cmd.Context(),
-		http.MethodDelete,
-		endpointReplayDelete,
-		r.client.Config.Project,
-		nil,
-		deleteReplayRequest{
+		replayV1.DeleteRequest{
 			Project: r.client.Config.Project,
-			Slo:     sloName,
-		},
-	)
+			SLO:     sloName,
+		})
 	if err != nil {
 		return err
 	}
