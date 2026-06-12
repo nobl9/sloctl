@@ -16,6 +16,7 @@ import (
 	v1alphaAnnotation "github.com/nobl9/nobl9-go/manifest/v1alpha/annotation"
 	"github.com/nobl9/nobl9-go/sdk"
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
+	usersV2 "github.com/nobl9/nobl9-go/sdk/endpoints/users/v2"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
@@ -94,6 +95,7 @@ To get more details in output use one of the available flags.`,
 			`List the requested object(s) across all projects.`)
 		cmd.AddCommand(sc)
 	}
+	cmd.AddCommand(get.newGetUserCommand())
 
 	return cmd
 }
@@ -115,6 +117,31 @@ func (g *GetCmd) newGetObjectsCommand(
 			return g.printObjects(kind, objects)
 		},
 	}
+}
+
+func (g *GetCmd) newGetUserCommand() *cobra.Command {
+	limit := uint(100)
+	cmd := &cobra.Command{
+		Use:   "user",
+		Short: "Displays users by ID.",
+		Long: "Provide user IDs as arguments, when no user ID is provided, all users are returned.\n" +
+			fmt.Sprintf("By default a maximum of %d users are returned.", limit),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			users, err := g.client.Users().V2().GetUsers(
+				cmd.Context(),
+				usersV2.GetUsersRequest{
+					IDs:   args,
+					Limit: limit,
+				},
+			)
+			if err != nil {
+				return err
+			}
+			return g.printUsers(users)
+		},
+	}
+	cmd.Flags().UintVar(&limit, "limit", limit, "Maximum number of users to return.")
+	return cmd
 }
 
 // nolint: gocognit
@@ -443,6 +470,14 @@ func (g *GetCmd) printObjects(kind manifest.Kind, objects []manifest.Object) err
 		return nil
 	}
 	return g.printer.Print(objects)
+}
+
+func (g *GetCmd) printUsers(users []usersV2.User) error {
+	if len(users) == 0 {
+		fmt.Printf("No resources found.\n")
+		return nil
+	}
+	return g.printer.Print(users)
 }
 
 func parseFilterLabel(filterLabels []string) string {
