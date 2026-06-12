@@ -120,13 +120,19 @@ func (g *GetCmd) newGetObjectsCommand(
 }
 
 func (g *GetCmd) newGetUserCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "user USER_ID...",
+	limit := uint(100)
+	cmd := &cobra.Command{
+		Use:   "user",
 		Short: "Displays users by ID.",
+		Long: "Provide user IDs as arguments, when no user ID is provided, all users are returned.\n" +
+			fmt.Sprintf("By default a maximum of %d users are returned.", limit),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			users, err := g.client.Users().V2().GetUsers(
 				cmd.Context(),
-				usersV2.GetUsersRequest{IDs: args},
+				usersV2.GetUsersRequest{
+					IDs:   args,
+					Limit: limit,
+				},
 			)
 			if err != nil {
 				return err
@@ -134,6 +140,8 @@ func (g *GetCmd) newGetUserCommand() *cobra.Command {
 			return g.printUsers(users)
 		},
 	}
+	cmd.Flags().UintVar(&limit, "limit", limit, "Maximum number of users to return.")
+	return cmd
 }
 
 // nolint: gocognit

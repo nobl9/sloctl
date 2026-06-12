@@ -23,6 +23,8 @@ require (
 	golang.org/x/sync v0.21.0
 )
 
+replace github.com/nobl9/nobl9-go => github.com/nobl9/nobl9-go v0.132.1-0.20260612193328-0252c301f772
+
 require (
 	charm.land/bubbles/v2 v2.1.0 // indirect
 	charm.land/bubbletea/v2 v2.0.6 // indirect

@@ -243,6 +243,12 @@ setup() {
   assert [ "$(jq length <<< "$output")" -gt 1 ]
 }
 
+@test "users with limit" {
+  run_sloctl get user --limit 1 -o json
+  assert_success_joined_output
+  assert [ "$(jq length <<< "$output")" -eq 1 ]
+}
+
 @test "projects, multiple names" {
   run_sloctl get project death-star hoth-base
   verify_get_success "$output" "$(read_files "${TEST_INPUTS}/projects.yaml")"
