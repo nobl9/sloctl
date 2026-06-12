@@ -45,6 +45,17 @@ Before writing or modifying Bats tests, read:
 - [test/setup_suite.bash](./test/setup_suite.bash)
 - sample existing tests to follow the established style and practices
 
+When iterating over something and testing via e2e tests, use bats focus flags,
+which help isolate specific tests or files:
+
+```bash
+#!/usr/bin/env bash
+# bats file_tags=bats:focus   <-- This will only run this file
+
+# bats test_tags=bats:focus   <-- This will only run this test
+@test "sloctl does something" {}
+```
+
 ## Change Policy
 
 Follow existing package layout, command patterns, and test style before adding

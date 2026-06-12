@@ -222,6 +222,16 @@ setup() {
   done
 }
 
+@test "user by ID" {
+  run_sloctl config current-user
+  assert_success_joined_output
+  user_id="$output"
+
+  run_sloctl get user "$user_id" -o json
+  assert_success_joined_output
+  assert_equal "$(jq -r .[0].userId <<<"$output")" "$user_id"
+}
+
 @test "projects, multiple names" {
   run_sloctl get project death-star hoth-base
   verify_get_success "$output" "$(read_files "${TEST_INPUTS}/projects.yaml")"
