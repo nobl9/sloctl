@@ -123,7 +123,6 @@ func (g *GetCmd) newGetUserCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "user USER_ID...",
 		Short: "Displays users by ID.",
-		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			users, err := g.client.Users().V2().GetUsers(
 				cmd.Context(),

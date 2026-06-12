@@ -210,8 +210,8 @@ setup() {
     run_sloctl get agent -p "death-star" "$flag"
     assert_success_joined_output
     # Assert length of client_id and regex of client_secret, as the latter may vary.
-    client_id="$(yq -r .[].metadata.client_id <<<"$output")"
-    client_secret="$(yq -r .[].metadata.client_secret <<<"$output")"
+    client_id="$(yq -r .[].metadata.client_id <<< "$output")"
+    client_secret="$(yq -r .[].metadata.client_secret <<< "$output")"
 
     # Assert that client_id length is either 16 or 20
     assert [ "${#client_id}" -eq 16 ] || [ "${#client_id}" -eq 20 ]
@@ -229,7 +229,18 @@ setup() {
 
   run_sloctl get user "$user_id" -o json
   assert_success_joined_output
-  assert_equal "$(jq -r .[0].userId <<<"$output")" "$user_id"
+  assert_equal "$(jq -r .[0].userId <<< "$output")" "$user_id"
+}
+
+@test "users" {
+  run_sloctl config current-user
+  assert_success_joined_output
+  user_id="$output"
+
+  run_sloctl get user -o json
+  assert_success_joined_output
+  assert_output --partial "$user_id"
+  assert [ "$(jq length <<< "$output")" -gt 1 ]
 }
 
 @test "projects, multiple names" {
@@ -283,7 +294,7 @@ setup() {
   run_sloctl get alertpolicy -p death-star trigger-alert-immediately
   assert_success_joined_output
   assert_equal \
-    "$(yq --sort-keys -y -r . <<<"$output")" \
+    "$(yq --sort-keys -y -r . <<< "$output")" \
     "$(yq --sort-keys -y -r . "${TEST_OUTPUTS}/alertpolicy.yaml")"
 }
 
@@ -291,7 +302,7 @@ setup() {
   run_sloctl get direct -p death-star splunk-direct
   assert_success_joined_output
   assert_equal \
-    "$(yq --sort-keys -y -r . <<<"$output")" \
+    "$(yq --sort-keys -y -r . <<< "$output")" \
     "$(yq --sort-keys -y -r . "${TEST_OUTPUTS}/direct.yaml")"
 }
 
@@ -320,7 +331,7 @@ test_get() {
     input="$3" \
     output="$4"
   local aliases
-  IFS=" " read -ra aliases <<<"$2"
+  IFS=" " read -ra aliases <<< "$2"
   aliases+=("$kind")
 
   for alias in "${aliases[@]}"; do
@@ -347,7 +358,7 @@ test_get() {
     # need to filter out only the ones we created.
     if [[ "$kind" == "RoleBinding" ]]; then
       verify_get_success \
-        "$(yq '[.[] | select(.spec.roleRef == "project-viewer")]' <<<"$output")" \
+        "$(yq '[.[] | select(.spec.roleRef == "project-viewer")]' <<< "$output")" \
         "$(read_files "$input")"
     else
       verify_get_success "$output" "$(read_files "$input")"
@@ -388,6 +399,6 @@ verify_get_success() {
   # We can't retrieve the same object we applied so we need to compare the minimum.
   filter='[.[] | {"name": .metadata.name, "project": .metadata.project, "labels": .metadata.labels, "annotations": .metadata.annotations}] | sort_by(.name, .project)'
   assert_equal \
-    "$(yq --sort-keys -y -r "$filter" <<<"$have")" \
-    "$(yq --sort-keys -y -r "$filter" <<<"$want")"
+    "$(yq --sort-keys -y -r "$filter" <<< "$have")" \
+    "$(yq --sort-keys -y -r "$filter" <<< "$want")"
 }
