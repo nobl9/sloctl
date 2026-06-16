@@ -109,8 +109,13 @@ func (g *GetCmd) newGetObjectsCommand(
 		Use:     use,
 		Aliases: aliases,
 		Short:   short,
+		Long:    "Resource names can be provided as positional arguments or read from stdin.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			objects, err := g.getObjects(cmd.Context(), kind, args)
+			names, err := readStdinArgs(cmd, args)
+			if err != nil {
+				return err
+			}
+			objects, err := g.getObjects(cmd.Context(), kind, names)
 			if err != nil {
 				return err
 			}
@@ -125,12 +130,17 @@ func (g *GetCmd) newGetUserCommand() *cobra.Command {
 		Use:   "user",
 		Short: "Displays users by ID.",
 		Long: "Provide user IDs as arguments, when no user ID is provided, all users are returned.\n" +
+			"User IDs can also be read from stdin.\n" +
 			fmt.Sprintf("By default a maximum of %d users are returned.", limit),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ids, err := readStdinArgs(cmd, args)
+			if err != nil {
+				return err
+			}
 			users, err := g.client.Users().V2().GetUsers(
 				cmd.Context(),
 				usersV2.GetUsersRequest{
-					IDs:   args,
+					IDs:   ids,
 					Limit: limit,
 				},
 			)
@@ -218,8 +228,12 @@ func (g *GetCmd) newGetAlertCommand(cmd *cobra.Command) *cobra.Command {
 	cmd.Flags().Lookup("objective-value").Hidden = true
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if len(args) > 0 {
-			params.Names = args
+		names, err := readStdinArgs(cmd, args)
+		if err != nil {
+			return err
+		}
+		if len(names) > 0 {
+			params.Names = names
 		}
 		params.ObjectiveValues = objectiveValuesFlag
 
@@ -278,7 +292,11 @@ func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 		`Displays client_secret and client_id.`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		objects, err := g.getObjects(cmd.Context(), manifest.KindAgent, args)
+		names, err := readStdinArgs(cmd, args)
+		if err != nil {
+			return err
+		}
+		objects, err := g.getObjects(cmd.Context(), manifest.KindAgent, names)
 		if err != nil {
 			return err
 		}

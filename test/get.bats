@@ -254,6 +254,16 @@ setup() {
   verify_get_success "$output" "$(read_files "${TEST_INPUTS}/projects.yaml")"
 }
 
+@test "projects, names from stdin and positional args" {
+  run --separate-stderr bash -c "set -eo pipefail; printf '%s\n' death-star | sloctl get project hoth-base"
+  verify_get_success "$output" "$(read_files "${TEST_INPUTS}/projects.yaml")"
+}
+
+@test "projects, names from stdin only" {
+  run --separate-stderr bash -c "set -eo pipefail; printf '%s\n' death-star hoth-base | sloctl get project"
+  verify_get_success "$output" "$(read_files "${TEST_INPUTS}/projects.yaml")"
+}
+
 @test "projects, labels filtering, OR conditions" {
   want=$(read_files "${TEST_INPUTS}/projects.yaml")
   for label in \
