@@ -131,18 +131,19 @@ func (g *GetCmd) newGetUserCommand() *cobra.Command {
 		Short: "Displays users by ID.",
 		Long: "Provide user IDs as arguments, when no user ID is provided, all users are returned.\n" +
 			"User IDs can also be read from stdin.\n" +
-			fmt.Sprintf("By default a maximum of %d users are returned.", limit),
+			fmt.Sprintf("By default a maximum of %d users are returned when no IDs are provided.", limit),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ids, err := readStdinArgs(cmd, args)
 			if err != nil {
 				return err
 			}
+			request := usersV2.GetUsersRequest{IDs: ids}
+			if len(ids) == 0 || cmd.Flags().Changed("limit") {
+				request.Limit = limit
+			}
 			users, err := g.client.Users().V2().GetUsers(
 				cmd.Context(),
-				usersV2.GetUsersRequest{
-					IDs:   ids,
-					Limit: limit,
-				},
+				request,
 			)
 			if err != nil {
 				return err

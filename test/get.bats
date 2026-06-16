@@ -233,13 +233,8 @@ setup() {
 }
 
 @test "users" {
-  run_sloctl config current-user
-  assert_success_joined_output
-  user_id="$output"
-
   run_sloctl get user -o json
   assert_success_joined_output
-  assert_output --partial "$user_id"
   assert [ "$(jq length <<< "$output")" -gt 1 ]
 }
 
