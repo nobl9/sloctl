@@ -22,6 +22,7 @@ import (
 
 	"github.com/nobl9/sloctl/internal/flags"
 	"github.com/nobl9/sloctl/internal/printer"
+	"github.com/nobl9/sloctl/internal/stdin"
 )
 
 //go:embed get_alert_example.sh
@@ -111,7 +112,7 @@ func (g *GetCmd) newGetObjectsCommand(
 		Short:   short,
 		Long:    "Resource names can be provided as positional arguments or read from stdin.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			names, err := readStdinArgs(cmd, args)
+			names, err := stdin.ReadArgs(cmd, args)
 			if err != nil {
 				return err
 			}
@@ -133,7 +134,7 @@ func (g *GetCmd) newGetUserCommand() *cobra.Command {
 			"User IDs can also be read from stdin.\n" +
 			fmt.Sprintf("By default a maximum of %d users are returned when no IDs are provided.", limit),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ids, err := readStdinArgs(cmd, args)
+			ids, err := stdin.ReadArgs(cmd, args)
 			if err != nil {
 				return err
 			}
@@ -229,7 +230,7 @@ func (g *GetCmd) newGetAlertCommand(cmd *cobra.Command) *cobra.Command {
 	cmd.Flags().Lookup("objective-value").Hidden = true
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		names, err := readStdinArgs(cmd, args)
+		names, err := stdin.ReadArgs(cmd, args)
 		if err != nil {
 			return err
 		}
@@ -293,7 +294,7 @@ func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 		`Displays client_secret and client_id.`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		names, err := readStdinArgs(cmd, args)
+		names, err := stdin.ReadArgs(cmd, args)
 		if err != nil {
 			return err
 		}
