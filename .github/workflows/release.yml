@@ -23,7 +23,7 @@ jobs:
     needs: [test, qa-approval]
     steps:
       - name: Checkout Source
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.0
         with:
           fetch-depth: 0
       - name: Set up Go
@@ -46,7 +46,7 @@ jobs:
       dockerVersion: ${{ steps.meta.outputs.version }}
     steps:
       - name: Checkout Source
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.0
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4.1.0
       - name: Set up Docker Buildx
