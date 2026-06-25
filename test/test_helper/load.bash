@@ -294,6 +294,11 @@ assert_stderr() {
   assert_output "$@"
 }
 
+refute_stderr() {
+  output="$stderr"
+  refute_output "$@"
+}
+
 # run_mcp_inspector
 # ==========
 #
@@ -340,4 +345,3 @@ generate_outputs() {
 
   export TEST_OUTPUTS
 }
-

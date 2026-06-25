@@ -20,9 +20,11 @@ const programName = "sloctl"
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	if execute(NewRootCmd(), func() {
-		notifications.Notify(notifications.Config{
+	if execute(NewRootCmd(), func() notifications.Result {
+		return notifications.Notify(notifications.Config{
 			CurrentVersion: getBuildVersion(),
+			Stdin:          os.Stdin,
+			Stdout:         os.Stdout,
 			Stderr:         os.Stderr,
 		})
 	}) != 0 {
@@ -30,11 +32,17 @@ func Execute() {
 	}
 }
 
-func execute(cmd *cobra.Command, notify func()) int {
+func execute(cmd *cobra.Command, notify func() notifications.Result) int {
+	switch notify() {
+	case notifications.ResultExitSuccess:
+		return 0
+	case notifications.ResultExitFailure:
+		return 1
+	case notifications.ResultContinue:
+	}
 	if err := cmd.Execute(); err != nil {
 		return 1
 	}
-	notify()
 	return 0
 }
 

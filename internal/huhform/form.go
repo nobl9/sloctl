@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	huh "charm.land/huh/v2"
+
 	"github.com/nobl9/sloctl/internal/style"
 )
 

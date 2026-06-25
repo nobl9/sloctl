@@ -11,7 +11,7 @@ setup() {
   load_lib "bats-support"
   load_lib "bats-assert"
 
-  ensure_installed openssl python3
+  ensure_installed python3
 
   unset CI
   unset ALL_PROXY
@@ -24,246 +24,323 @@ setup() {
   unset http_proxy
   unset no_proxy
   unset SLOCTL_NO_NOTIFICATIONS
-  unset RELEASE_PROXY_BODY
-  unset RELEASE_PROXY_BODY_FILE
-  unset RELEASE_PROXY_HTML_URL
-  unset RELEASE_PROXY_RAW_RESPONSE
-  unset RELEASE_PROXY_STATUS
-  unset RELEASE_PROXY_TAG
+  unset SLOCTL_NOTIFICATIONS_RELEASE_URL
   unset SLOCTL_TEST_TTY_COLUMNS
+  unset SLOCTL_TEST_TTY_INPUT
+  unset RELEASE_SERVER_BODY
+  unset RELEASE_SERVER_BODY_FILE
+  unset RELEASE_SERVER_HTML_URL
+  unset RELEASE_SERVER_RAW_RESPONSE
+  unset RELEASE_SERVER_STATUS
+  unset RELEASE_SERVER_TAG
+
+  export NO_COLOR=1
+  export SLOCTL_ACCESSIBLE_MODE=1
   export XDG_CACHE_HOME="$BATS_TMPDIR/cache-$BATS_TEST_NUMBER"
-  export RELEASE_PROXY_LOG="$BATS_TMPDIR/release-proxy-$BATS_TEST_NUMBER.log"
+  export RELEASE_SERVER_LOG="$BATS_TMPDIR/release-server-$BATS_TEST_NUMBER.log"
+  select_update_action skip
 }
 
 teardown() {
-  if [ -n "${RELEASE_PROXY_PID:-}" ]; then
-    kill "$RELEASE_PROXY_PID"
-    wait "$RELEASE_PROXY_PID" 2> /dev/null || true
+  if [ -n "${RELEASE_SERVER_PID:-}" ]; then
+    kill "$RELEASE_SERVER_PID"
+    wait "$RELEASE_SERVER_PID" 2> /dev/null || true
   fi
 }
 
 @test "sloctl shows a feature notification on TTY stderr and caches it" {
-  start_release_proxy
+  start_release_server
 
-  run_sloctl_with_stderr_pty version
+  run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  assert_stderr_file "feature-notification.stderr"
-  assert_release_proxy_requests 1
+  assert_notification_stderr feature-prompt-skip
+  assert_release_requests 1
 
-  run_sloctl_with_stderr_pty version
+  run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  assert_stderr ""
-  assert_release_proxy_requests 1
+  refute_stderr
+  assert_release_requests 1
 }
 
-@test "sloctl shows a notification after successful commands" {
-  start_release_proxy
+@test "sloctl prompts before command validation and then runs the command after skip" {
+  start_release_server
 
-  run_sloctl_with_stderr_pty version
-  assert_success_joined_output
-  assert_stderr_file "feature-notification.stderr"
-  assert_release_proxy_requests 1
-}
-
-@test "sloctl skips notifications after failed commands" {
-  start_release_proxy
-
-  run_sloctl_with_stderr_pty config rename-context old
+  run_sloctl_with_tty_stderr config rename-context old
   assert_failure
-  assert_stderr_file "failed-command.stderr"
-  assert_release_proxy_requests 0
+  assert_notification_stderr failed-command-after-skip
+  assert_release_requests 1
+}
+
+@test "sloctl skips the notification until the next version" {
+  select_update_action skip-until-next-version
+  start_release_server
+
+  run_sloctl_with_tty_stderr version
+  assert_success_joined_output
+  assert_notification_stderr feature-prompt-skip-until-next-version
+  assert_release_requests 1
+
+  run_sloctl_with_tty_stderr version
+  assert_success_joined_output
+  refute_stderr
+  assert_release_requests 1
+}
+
+@test "sloctl runs upgrade and exits without running the command" {
+  use_release_body maintenance
+  select_update_action run-upgrade
+  export SLOCTL_TEST_UPGRADE_MARKER="$BATS_TEST_TMPDIR/upgrade-ran"
+  local tools_dir="$BATS_TEST_TMPDIR/tools"
+  mkdir -p "$tools_dir"
+  printf '%s\n' \
+    '#!/usr/bin/env bash' \
+    'printf "%s\n" "touch \"$SLOCTL_TEST_UPGRADE_MARKER\""' \
+    > "$tools_dir/curl"
+  chmod +x "$tools_dir/curl"
+  start_release_server
+
+  run_sloctl_binary_with_prefixed_path /usr/bin/sloctl "$tools_dir" version
+  assert_success_joined_output
+  assert_output ""
+  assert_notification_stderr version-prompt-run-upgrade
+  assert [ -f "$SLOCTL_TEST_UPGRADE_MARKER" ]
+  assert_release_requests 1
 }
 
 @test "sloctl does not show feature notification when opted out" {
-  start_release_proxy
+  start_release_server
   export SLOCTL_NO_NOTIFICATIONS=1
 
-  run_sloctl_with_stderr_pty version
+  run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  assert_stderr ""
-  assert_release_proxy_requests 0
+  refute_stderr
+  assert_release_requests 0
 }
 
 @test "sloctl does not show feature notification in CI" {
-  start_release_proxy
+  start_release_server
   export CI=true
 
-  run_sloctl_with_stderr_pty version
+  run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  assert_stderr ""
-  assert_release_proxy_requests 0
+  refute_stderr
+  assert_release_requests 0
 }
 
 @test "sloctl does not show feature notification without TTY stderr" {
-  start_release_proxy
+  start_release_server
 
   run_sloctl version
   assert_success_joined_output
-  assert_stderr ""
-  assert_release_proxy_requests 0
+  refute_stderr
+  assert_release_requests 0
 }
 
 @test "sloctl shows version notification when release has no feature notes" {
-  export RELEASE_PROXY_BODY_FILE="$TEST_INPUTS/release-bodies/maintenance.md"
-  start_release_proxy
+  use_release_body maintenance
+  start_release_server
 
-  run_sloctl_with_stderr_pty version
+  run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  assert_stderr_file "version-notification.stderr"
-  assert_release_proxy_requests 1
+  assert_notification_stderr version-prompt-skip
+  assert_release_requests 1
 }
 
 @test "sloctl uses the first non-empty release notes section" {
-  export RELEASE_PROXY_BODY_FILE="$TEST_INPUTS/release-bodies/empty-features-then-bug-fixes.md"
-  start_release_proxy
+  use_release_body empty-features-then-bug-fixes
+  start_release_server
 
-  run_sloctl_with_stderr_pty version
+  run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  assert_stderr_file "bug-fix-notification.stderr"
-  assert_release_proxy_requests 1
+  assert_notification_stderr bug-fix-prompt-skip
+  assert_release_requests 1
 }
 
 @test "sloctl keeps nested release-note details from the selected section" {
-  export RELEASE_PROXY_BODY_FILE="$TEST_INPUTS/release-bodies/features-with-details.md"
-  start_release_proxy
+  use_release_body features-with-details
+  start_release_server
 
-  run_sloctl_with_stderr_pty version
+  run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  assert_stderr_file "features-with-details.stderr"
-  assert_release_proxy_requests 1
+  assert_notification_stderr features-with-details-prompt-skip
+  assert_release_requests 1
 }
 
 @test "sloctl shows release note without author metadata" {
-  export RELEASE_PROXY_BODY_FILE="$TEST_INPUTS/release-bodies/feature-without-author.md"
-  start_release_proxy
+  use_release_body feature-without-author
+  start_release_server
 
-  run_sloctl_with_stderr_pty version
+  run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  assert_stderr_file "feature-without-author.stderr"
-  assert_release_proxy_requests 1
+  assert_notification_stderr feature-without-author-prompt-skip
+  assert_release_requests 1
 }
 
 @test "sloctl does not show notification for current release" {
-  export RELEASE_PROXY_TAG=v1.0.0
-  export RELEASE_PROXY_HTML_URL=https://github.com/nobl9/sloctl/releases/tag/v1.0.0
-  start_release_proxy
+  export RELEASE_SERVER_TAG=v1.0.0
+  export RELEASE_SERVER_HTML_URL=https://github.com/nobl9/sloctl/releases/tag/v1.0.0
+  start_release_server
 
-  run_sloctl_with_stderr_pty version
+  run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  assert_stderr ""
-  assert_release_proxy_requests 1
+  refute_stderr
+  assert_release_requests 1
 }
 
 @test "sloctl suppresses fetch failures and caches the check" {
-  export RELEASE_PROXY_STATUS=403
-  export RELEASE_PROXY_RAW_RESPONSE="rate limited"
-  start_release_proxy
+  export RELEASE_SERVER_STATUS=403
+  export RELEASE_SERVER_RAW_RESPONSE="rate limited"
+  start_release_server
 
-  run_sloctl_with_stderr_pty version
+  run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  assert_stderr ""
+  refute_stderr
 
-  run_sloctl_with_stderr_pty version
+  run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  assert_stderr ""
-  assert_release_proxy_requests 1
+  refute_stderr
+  assert_release_requests 1
 }
 
 @test "sloctl suppresses malformed release responses" {
-  export RELEASE_PROXY_RAW_RESPONSE="{"
-  start_release_proxy
+  export RELEASE_SERVER_RAW_RESPONSE="{"
+  start_release_server
 
-  run_sloctl_with_stderr_pty version
+  run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  assert_stderr ""
-  assert_release_proxy_requests 1
+  refute_stderr
+  assert_release_requests 1
 }
 
 @test "sloctl still shows notification when cache cannot be written" {
   export XDG_CACHE_HOME="$BATS_TEST_TMPDIR/cache-file"
   touch "$XDG_CACHE_HOME"
-  start_release_proxy
+  start_release_server
 
-  run_sloctl_with_stderr_pty version
+  run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  assert_stderr_file "feature-notification.stderr"
-  assert_release_proxy_requests 1
+  assert_notification_stderr feature-prompt-skip
+  assert_release_requests 1
 }
 
 @test "sloctl keeps install command on one line when terminal is wide" {
-  export RELEASE_PROXY_BODY_FILE="$TEST_INPUTS/release-bodies/maintenance.md"
+  use_release_body maintenance
   export SLOCTL_TEST_TTY_COLUMNS=140
   local tools_dir="$BATS_TEST_TMPDIR/tools"
   mkdir -p "$tools_dir"
   touch "$tools_dir/curl"
   chmod +x "$tools_dir/curl"
-  start_release_proxy
+  start_release_server
 
   run_sloctl_binary_with_path /usr/bin/sloctl "$tools_dir" version
   assert_success_joined_output
-  assert_stderr_file "install-curl-wide.stderr"
+  assert_notification_stderr install-curl-wide-prompt
 }
 
 @test "sloctl suggests Homebrew upgrade for Homebrew installs" {
-  export RELEASE_PROXY_BODY_FILE="$TEST_INPUTS/release-bodies/maintenance.md"
+  use_release_body maintenance
   local cellar_binary="$BATS_TEST_TMPDIR/opt/homebrew/Cellar/sloctl/1.2.0/bin/sloctl"
   local linked_binary="$BATS_TEST_TMPDIR/opt/homebrew/bin/sloctl"
   copy_sloctl_binary "$cellar_binary"
   mkdir -p "$(dirname "$linked_binary")"
   ln -s "$cellar_binary" "$linked_binary"
-  start_release_proxy
+  start_release_server
 
-  run_sloctl_binary_with_stderr_pty "$linked_binary" version
+  run_sloctl_binary_with_tty_stderr "$linked_binary" version
   assert_success_joined_output
-  assert_stderr_file "install-homebrew.stderr"
+  assert_notification_stderr install-homebrew-prompt
 }
 
 @test "sloctl suggests go install for Go bin installs" {
-  export RELEASE_PROXY_BODY_FILE="$TEST_INPUTS/release-bodies/maintenance.md"
+  use_release_body maintenance
   export HOME="$BATS_TEST_TMPDIR/home"
   local go_binary="$HOME/go/bin/sloctl"
   copy_sloctl_binary "$go_binary"
-  start_release_proxy
+  start_release_server
 
-  run_sloctl_binary_with_stderr_pty "$go_binary" version
+  run_sloctl_binary_with_tty_stderr "$go_binary" version
   assert_success_joined_output
-  assert_stderr_file "install-go.stderr"
+  assert_notification_stderr install-go-prompt
 }
 
 @test "sloctl falls back to wget when curl is unavailable" {
-  export RELEASE_PROXY_BODY_FILE="$TEST_INPUTS/release-bodies/maintenance.md"
+  use_release_body maintenance
   local tools_dir="$BATS_TEST_TMPDIR/tools"
   mkdir -p "$tools_dir"
   touch "$tools_dir/wget"
   chmod +x "$tools_dir/wget"
-  start_release_proxy
+  start_release_server
 
   run_sloctl_binary_with_path /usr/bin/sloctl "$tools_dir" version
   assert_success_joined_output
-  assert_stderr_file "install-wget.stderr"
+  assert_notification_stderr install-wget-prompt
 }
 
 @test "sloctl omits update command when no downloader is available" {
-  export RELEASE_PROXY_BODY_FILE="$TEST_INPUTS/release-bodies/maintenance.md"
+  use_release_body maintenance
+  select_update_action_without_update skip
   local tools_dir="$BATS_TEST_TMPDIR/tools"
   mkdir -p "$tools_dir"
-  start_release_proxy
+  start_release_server
 
   run_sloctl_binary_with_path /usr/bin/sloctl "$tools_dir" version
   assert_success_joined_output
-  assert_stderr_file "no-install-command.stderr"
+  assert_notification_stderr no-install-command-prompt
 }
 
-assert_stderr_file() {
-  local file="$1"
-  assert_stderr - < "$TEST_OUTPUTS/$file"
+assert_notification_stderr() {
+  local name="$1"
+  local expected
+  expected="$(normalize_tty_output < "$TEST_OUTPUTS/$name.stderr")"
+  output="$(normalize_tty_output <<< "$stderr")"
+  assert_output "$expected"
 }
 
-run_sloctl_with_stderr_pty() {
-  run_sloctl_binary_with_stderr_pty sloctl "$@"
+normalize_tty_output() {
+  sed -e 's/\r//g' -e 's/[[:blank:]]$//'
 }
 
-run_sloctl_binary_with_stderr_pty() {
+use_release_body() {
+  local name="$1"
+  export RELEASE_SERVER_BODY_FILE="$TEST_INPUTS/release-bodies/$name.md"
+}
+
+select_update_action() {
+  case "$1" in
+    run-upgrade)
+      export SLOCTL_TEST_TTY_INPUT=$'1\n'
+      ;;
+    skip)
+      export SLOCTL_TEST_TTY_INPUT=$'2\n'
+      ;;
+    skip-until-next-version)
+      export SLOCTL_TEST_TTY_INPUT=$'3\n'
+      ;;
+    *)
+      fail "unknown update action: $1"
+      ;;
+  esac
+}
+
+select_update_action_without_update() {
+  case "$1" in
+    skip)
+      export SLOCTL_TEST_TTY_INPUT=$'1\n'
+      ;;
+    skip-until-next-version)
+      export SLOCTL_TEST_TTY_INPUT=$'2\n'
+      ;;
+    *)
+      fail "unknown update action without update command: $1"
+      ;;
+  esac
+}
+
+run_sloctl_with_tty_stderr() {
+  run_sloctl_binary_with_tty_stderr sloctl "$@"
+}
+
+run_sloctl_binary_with_tty_stderr() {
   local binary="$1"
   shift
   bats_require_minimum_version 1.5.0
@@ -278,6 +355,14 @@ run_sloctl_binary_with_path() {
   run --separate-stderr env PATH="$path" /usr/bin/python3 "$TEST_INPUTS/run_with_stderr_pty.py" "$binary" "$@"
 }
 
+run_sloctl_binary_with_prefixed_path() {
+  local binary="$1"
+  local path="$2"
+  shift 2
+  bats_require_minimum_version 1.5.0
+  run --separate-stderr env PATH="$path:$PATH" /usr/bin/python3 "$TEST_INPUTS/run_with_stderr_pty.py" "$binary" "$@"
+}
+
 copy_sloctl_binary() {
   local target="$1"
   mkdir -p "$(dirname "$target")"
@@ -285,57 +370,29 @@ copy_sloctl_binary() {
   chmod +x "$target"
 }
 
-start_release_proxy() {
-  local port_file="$BATS_TMPDIR/release-proxy-$BATS_TEST_NUMBER.port"
-  local cert_config="$BATS_TMPDIR/api-github-$BATS_TEST_NUMBER-openssl.cnf"
-  local cert_file="$BATS_TMPDIR/api-github-$BATS_TEST_NUMBER.pem"
-  local key_file="$BATS_TMPDIR/api-github-$BATS_TEST_NUMBER-key.pem"
-
-  cat > "$cert_config" << EOF
-[req]
-distinguished_name = dn
-x509_extensions = extensions
-prompt = no
-
-[dn]
-CN = api.github.com
-
-[extensions]
-subjectAltName = DNS:api.github.com
-EOF
-
-  openssl req \
-    -x509 \
-    -newkey rsa:2048 \
-    -nodes \
-    -keyout "$key_file" \
-    -out "$cert_file" \
-    -days 1 \
-    -config "$cert_config" \
-    2> /dev/null
-
-  python3 "$TEST_INPUTS/release_proxy.py" "$port_file" "$cert_file" "$key_file" &
-  RELEASE_PROXY_PID="$!"
+start_release_server() {
+  local port_file="$BATS_TMPDIR/release-server-$BATS_TEST_NUMBER.port"
+  python3 "$TEST_INPUTS/release_server.py" "$port_file" &
+  RELEASE_SERVER_PID="$!"
 
   for _ in {1..50}; do
     if [ -s "$port_file" ]; then
       local port
       port="$(cat "$port_file")"
-      export HTTPS_PROXY="http://127.0.0.1:$port"
-      export SSL_CERT_FILE="$cert_file"
+      export SLOCTL_NOTIFICATIONS_RELEASE_URL="http://127.0.0.1:$port/repos/nobl9/sloctl/releases/latest"
       return 0
     fi
     sleep 0.1
   done
 
-  fail "release proxy did not start"
+  fail "release server did not start"
 }
 
-assert_release_proxy_requests() {
+assert_release_requests() {
   local expected="$1"
   local actual=0
-  if [ -f "$RELEASE_PROXY_LOG" ]; then
-    actual="$(wc -l < "$RELEASE_PROXY_LOG" | tr -d " ")"
+  if [ -f "$RELEASE_SERVER_LOG" ]; then
+    actual="$(wc -l < "$RELEASE_SERVER_LOG" | tr -d " ")"
   fi
   assert_equal "$actual" "$expected"
 }

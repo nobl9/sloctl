@@ -103,6 +103,14 @@ that cannot be normalized.
 If `--partial` is necessary, keep the assertion narrow and leave nearby context
 explaining why a full output fixture would be brittle.
 
+Interactive terminal tests should prefer deterministic plain-text fixtures.
+Set `NO_COLOR=1` and use accessible form mode when the command supports it.
+Keep source data, such as release bodies, in [test/inputs](../test/inputs/),
+and compare complete stdout or stderr messages against files in
+[test/outputs](../test/outputs/).
+For notification tests, use the local release fixture server instead of
+proxying GitHub, and use `refute_stderr` when stderr must be empty.
+
 ### End-to-end tests
 
 When creating new e2e tests make sure you adhere to the existing patterns

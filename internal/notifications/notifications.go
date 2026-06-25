@@ -15,14 +15,18 @@ import (
 	"strings"
 	"time"
 
+	huh "charm.land/huh/v2"
 	"github.com/charmbracelet/glamour"
 	"github.com/mattn/go-isatty"
-	"github.com/nobl9/sloctl/internal/style"
 	"golang.org/x/term"
+
+	"github.com/nobl9/sloctl/internal/huhform"
+	"github.com/nobl9/sloctl/internal/style"
 )
 
 const (
 	defaultReleaseURL = "https://api.github.com/repos/nobl9/sloctl/releases/latest"
+	releaseURLEnv     = "SLOCTL_NOTIFICATIONS_RELEASE_URL"
 	optOutEnv         = "SLOCTL_NO_NOTIFICATIONS"
 	ciEnv             = "CI"
 	checkInterval     = 24 * time.Hour
@@ -30,7 +34,6 @@ const (
 	maxResponseSize   = 1 << 20
 	defaultBoxWidth   = 92
 	minBoxWidth       = 48
-	boxPadding        = 2
 )
 
 var (
@@ -41,6 +44,8 @@ var (
 // Config defines notification runtime dependencies.
 type Config struct {
 	CurrentVersion string
+	Stdin          io.Reader
+	Stdout         io.Writer
 	Stderr         io.Writer
 
 	ReleaseURL string
@@ -56,17 +61,29 @@ type Config struct {
 	RenderMarkdown func(string, int) (string, error)
 	Executable     func() (string, error)
 	EvalSymlinks   func(string) (string, error)
+	RunCommand     func(context.Context, string) error
 }
 
-// Notify checks and displays an unobtrusive notification when configured to do so.
-func Notify(config Config) {
+// Result describes what the caller should do after checking notifications.
+type Result int
+
+const (
+	ResultContinue Result = iota
+	ResultExitSuccess
+	ResultExitFailure
+)
+
+// Notify checks and displays an interactive update prompt when configured to do so.
+func Notify(config Config) Result {
 	ctx, cancel := context.WithTimeout(context.Background(), checkTimeout)
 	defer cancel()
-	newNotifier(config).notify(ctx)
+	return newNotifier(config).notify(ctx)
 }
 
 type notifier struct {
 	currentVersion string
+	stdin          io.Reader
+	stdout         io.Writer
 	stderr         io.Writer
 	releaseURL     string
 	httpClient     *http.Client
@@ -79,6 +96,7 @@ type notifier struct {
 	renderMarkdown func(string, int) (string, error)
 	executable     func() (string, error)
 	evalSymlinks   func(string) (string, error)
+	runCommand     func(context.Context, string) error
 }
 
 type state struct {
@@ -106,12 +124,35 @@ const (
 	installChannelGo       installChannel = "go-install"
 )
 
+type updateAction string
+
+const (
+	updateActionRunUpgrade           updateAction = "run-upgrade"
+	updateActionSkip                 updateAction = "skip"
+	updateActionSkipUntilNextVersion updateAction = "skip-until-next-version"
+)
+
 func newNotifier(config Config) notifier {
+	stdin := io.Reader(os.Stdin)
+	if config.Stdin != nil {
+		stdin = config.Stdin
+	}
+	stdout := io.Writer(os.Stdout)
+	if config.Stdout != nil {
+		stdout = config.Stdout
+	}
 	stderr := io.Writer(os.Stderr)
 	if config.Stderr != nil {
 		stderr = config.Stderr
 	}
-	releaseURL := config.ReleaseURL
+	getenv := config.Getenv
+	if getenv == nil {
+		getenv = os.Getenv
+	}
+	releaseURL := strings.TrimSpace(config.ReleaseURL)
+	if releaseURL == "" {
+		releaseURL = strings.TrimSpace(getenv(releaseURLEnv))
+	}
 	if releaseURL == "" {
 		releaseURL = defaultReleaseURL
 	}
@@ -126,10 +167,6 @@ func newNotifier(config Config) notifier {
 	now := config.Now
 	if now == nil {
 		now = time.Now
-	}
-	getenv := config.Getenv
-	if getenv == nil {
-		getenv = os.Getenv
 	}
 	isTTY := config.IsTTY
 	if isTTY == nil {
@@ -175,8 +212,20 @@ func newNotifier(config Config) notifier {
 	if evalSymlinks == nil {
 		evalSymlinks = filepath.EvalSymlinks
 	}
+	runCommand := config.RunCommand
+	if runCommand == nil {
+		runCommand = func(ctx context.Context, command string) error {
+			cmd := exec.CommandContext(ctx, "sh", "-c", command)
+			cmd.Stdin = stdin
+			cmd.Stdout = stdout
+			cmd.Stderr = stderr
+			return cmd.Run()
+		}
+	}
 	return notifier{
 		currentVersion: strings.TrimSpace(config.CurrentVersion),
+		stdin:          stdin,
+		stdout:         stdout,
 		stderr:         stderr,
 		releaseURL:     releaseURL,
 		httpClient:     httpClient,
@@ -189,28 +238,29 @@ func newNotifier(config Config) notifier {
 		renderMarkdown: renderMarkdown,
 		executable:     executable,
 		evalSymlinks:   evalSymlinks,
+		runCommand:     runCommand,
 	}
 }
 
-func (n notifier) notify(ctx context.Context) {
+func (n notifier) notify(ctx context.Context) Result {
 	if !n.canNotify() {
-		return
+		return ResultContinue
 	}
 	currentState := n.readState()
 	now := n.now()
 	if !currentState.LastCheckedAt.IsZero() && now.Sub(currentState.LastCheckedAt) < checkInterval {
-		return
+		return ResultContinue
 	}
 
 	release, err := n.fetchLatestRelease(ctx)
 	currentState.LastCheckedAt = now
 	if err != nil {
 		n.saveState(currentState)
-		return
+		return ResultContinue
 	}
 	if isCurrentRelease(n.currentVersion, release.TagName) {
 		n.saveState(currentState)
-		return
+		return ResultContinue
 	}
 	releaseNotesMarkdown, _ := releaseNotesSection(release.Body)
 	var releaseNoteID string
@@ -221,13 +271,31 @@ func (n notifier) notify(ctx context.Context) {
 	}
 	if alreadyShown(currentState, release.TagName, releaseNoteID) {
 		n.saveState(currentState)
-		return
+		return ResultContinue
 	}
 
-	_, _ = fmt.Fprintln(n.stderr, n.renderNotification(release, releaseNotesMarkdown))
-	currentState.LastShownReleaseTag = release.TagName
-	currentState.LastShownFeatureID = releaseNoteID
+	updateCommand := n.updateCommand()
+	action, err := n.promptUpdate(release, releaseNotesMarkdown, updateCommand)
+	if err != nil {
+		n.saveState(currentState)
+		return ResultContinue
+	}
+	if action == updateActionSkipUntilNextVersion {
+		currentState.LastShownReleaseTag = release.TagName
+		currentState.LastShownFeatureID = releaseNoteID
+	}
 	n.saveState(currentState)
+	if action != updateActionRunUpgrade {
+		return ResultContinue
+	}
+	if updateCommand == "" {
+		return ResultContinue
+	}
+	if err := n.runCommand(context.Background(), updateCommand); err != nil {
+		_, _ = fmt.Fprintf(n.stderr, "failed to update sloctl: %v\n", err)
+		return ResultExitFailure
+	}
+	return ResultExitSuccess
 }
 
 func (n notifier) canNotify() bool {
@@ -296,12 +364,42 @@ func defaultCachePath() string {
 	return filepath.Join(cacheDir, "nobl9", "sloctl", "notifications.json")
 }
 
+func (n notifier) promptUpdate(
+	release githubRelease,
+	releaseNotesMarkdown string,
+	updateCommand string,
+) (updateAction, error) {
+	_, _ = fmt.Fprintln(n.stderr, n.renderNotification(release, releaseNotesMarkdown))
+	action := updateActionSkip
+	form := huhform.New(huh.NewGroup(
+		huh.NewSelect[updateAction]().
+			Title("Choose update action").
+			Options(updateActionOptions(updateCommand)...).
+			Value(&action),
+	)).
+		WithInput(n.stdin).
+		WithOutput(n.stderr)
+	return action, form.Run()
+}
+
+func updateActionOptions(updateCommand string) []huh.Option[updateAction] {
+	options := []huh.Option[updateAction]{
+		huh.NewOption("Skip", updateActionSkip),
+		huh.NewOption("Skip until next version", updateActionSkipUntilNextVersion),
+	}
+	if updateCommand == "" {
+		return options
+	}
+	return append(
+		[]huh.Option[updateAction]{
+			huh.NewOption(fmt.Sprintf("Update (runs %s)", updateCommand), updateActionRunUpgrade),
+		},
+		options...,
+	)
+}
+
 func (n notifier) renderNotification(release githubRelease, releaseNotesMarkdown string) string {
 	width := notificationWidth(n.terminalWidth())
-	border := style.NotificationBorder()
-	contentWidth := width - boxPadding - border.GetLeftSize() - border.GetRightSize()
-	updateCommand := n.updateCommand()
-	formattedUpdateCommand := formatShellPipeline(updateCommand, contentWidth-boxPadding*2)
 	parts := []string{
 		notificationTitleMarkdown(releaseNotesMarkdown, release.TagName),
 	}
@@ -309,27 +407,27 @@ func (n notifier) renderNotification(release githubRelease, releaseNotesMarkdown
 		parts = append(parts, strings.TrimSpace(releaseNotesMarkdown))
 	}
 	parts = append(parts, fmt.Sprintf("📜 %s", release.HTMLURL))
-	if updateCommand != "" {
-		parts = append(parts, fmt.Sprintf("Update sloctl with:\n\n```shell\n%s\n```", formattedUpdateCommand))
-	}
 	markdown := strings.Join(parts, "\n\n")
 
-	rendered := styledPlainNotification(release, releaseNotesMarkdown, formattedUpdateCommand)
+	rendered := styledPlainNotification(release, releaseNotesMarkdown)
 	if releaseNotesMarkdown != "" {
 		var err error
-		rendered, err = n.renderMarkdown(markdown, contentWidth)
+		rendered, err = n.renderMarkdown(markdown, width)
 		if err != nil {
-			rendered = styledPlainNotification(release, releaseNotesMarkdown, formattedUpdateCommand)
+			rendered = styledPlainNotification(release, releaseNotesMarkdown)
 		}
+		rendered = trimTrailingLineSpace(rendered)
 	}
-	rendered = strings.TrimSpace(rendered)
-
-	return style.NotificationBox(contentWidth).Render(rendered)
+	return strings.TrimSpace(rendered)
 }
 
 func renderMarkdownWithGlamour(markdown string, width int) (string, error) {
+	styleName := "dark"
+	if os.Getenv("NO_COLOR") != "" {
+		styleName = "ascii"
+	}
 	renderer, err := glamour.NewTermRenderer(
-		glamour.WithStandardStyle("dark"),
+		glamour.WithStandardStyle(styleName),
 		glamour.WithWordWrap(width),
 		glamour.WithPreservedNewLines(),
 	)
@@ -339,11 +437,10 @@ func renderMarkdownWithGlamour(markdown string, width int) (string, error) {
 	return renderer.Render(markdown)
 }
 
-func styledPlainNotification(release githubRelease, releaseNotesMarkdown, updateCommand string) string {
+func styledPlainNotification(release githubRelease, releaseNotesMarkdown string) string {
 	titleStyle := style.NotificationTitle()
 	linkStyle := style.NotificationLink()
 	labelStyle := style.NotificationLabel()
-	commandStyle := style.NotificationCommand()
 
 	parts := []string{
 		titleStyle.Render(notificationTitle(releaseNotesMarkdown, release.TagName)),
@@ -352,13 +449,15 @@ func styledPlainNotification(release githubRelease, releaseNotesMarkdown, update
 		parts = append(parts, stripMarkdownHeading(releaseNotesMarkdown))
 	}
 	parts = append(parts, labelStyle.Render("📜")+" "+linkStyle.Render(release.HTMLURL))
-	if updateCommand != "" {
-		parts = append(
-			parts,
-			labelStyle.Render("Update sloctl with:")+"\n"+commandStyle.Render(updateCommand),
-		)
-	}
 	return strings.Join(parts, "\n\n")
+}
+
+func trimTrailingLineSpace(text string) string {
+	lines := strings.Split(text, "\n")
+	for i, line := range lines {
+		lines[i] = strings.TrimRight(line, " \t")
+	}
+	return strings.Join(lines, "\n")
 }
 
 func notificationTitleMarkdown(releaseNotesMarkdown, releaseTag string) string {
@@ -373,36 +472,6 @@ func notificationTitle(releaseNotesMarkdown, releaseTag string) string {
 		return fmt.Sprintf("New sloctl version %s is available!", releaseTag)
 	}
 	return fmt.Sprintf("New sloctl updates in %s!", releaseTag)
-}
-
-func formatShellPipeline(command string, maxLineWidth int) string {
-	if len(command) <= maxLineWidth {
-		return command
-	}
-	left, right, ok := strings.Cut(command, " | ")
-	if !ok {
-		return command
-	}
-	pipeline := left + " \\\n| " + right
-	if maxLineLen(pipeline) <= maxLineWidth {
-		return pipeline
-	}
-	if url, ok := strings.CutPrefix(left, "curl -fsSL "); ok {
-		curlPipeline := "curl -fsSL \\\n" + url + " | " + right
-		if maxLineLen(curlPipeline) <= maxLineWidth {
-			return curlPipeline
-		}
-		return "curl -fsSL \\\n  " + url + " \\\n  | " + right
-	}
-	return pipeline
-}
-
-func maxLineLen(text string) int {
-	maxLen := 0
-	for _, line := range strings.Split(text, "\n") {
-		maxLen = max(maxLen, len(line))
-	}
-	return maxLen
 }
 
 func (n notifier) updateCommand() string {

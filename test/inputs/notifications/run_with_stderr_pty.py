@@ -24,13 +24,21 @@ def main():
             termios.TIOCSWINSZ,
             struct.pack("HHHH", 24, int(columns), 0, 0),
         )
+    stdin = subprocess.DEVNULL
+    input_text = os.environ.get("SLOCTL_TEST_TTY_INPUT")
+    if input_text is not None:
+        stdin = subprocess.PIPE
+
     process = subprocess.Popen(
         sys.argv[1:],
-        stdin=subprocess.DEVNULL,
+        stdin=stdin,
         stdout=subprocess.PIPE,
         stderr=slave_fd,
         close_fds=True,
     )
+    if input_text is not None:
+        process.stdin.write(input_text.encode())
+        process.stdin.close()
     os.close(slave_fd)
 
     selector = selectors.DefaultSelector()
@@ -55,7 +63,7 @@ def main():
                     key.fileobj.close()
                 continue
 
-            key.data.write(data.replace(b"\r\n", b"\n"))
+            key.data.write(data.replace(b"\r\n", b"\n").replace(b"\r", b""))
             key.data.flush()
 
     return process.wait()

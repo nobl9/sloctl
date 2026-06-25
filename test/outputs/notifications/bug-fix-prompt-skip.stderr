@@ -1,0 +1,12 @@
+### New sloctl updates in v1.1.0!
+
+  ## Bug Fixes
+
+  • Fix output formatting (#125) @octocat
+
+  📜 https://github.com/nobl9/sloctl/releases/tag/v1.1.0
+Choose update action
+1. Update (runs wget -O - -q https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash | bash)
+2. Skip
+3. Skip until next version
+Enter a number between 1 and 3:

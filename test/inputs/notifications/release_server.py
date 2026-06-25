@@ -3,81 +3,66 @@
 import json
 import os
 import socketserver
-import ssl
 import sys
+from http import HTTPStatus
 from pathlib import Path
 
 
-GITHUB_HOST = "api.github.com"
-GITHUB_PORT = "443"
 RELEASE_PATH = "/repos/nobl9/sloctl/releases/latest"
 DEFAULT_RELEASE_BODY_FILE = Path(__file__).with_name("release-bodies") / "feature.md"
 
 
-class Proxy(socketserver.BaseRequestHandler):
+class ReleaseHandler(socketserver.BaseRequestHandler):
     def handle(self):
         try:
-            self.handle_connect()
+            request = read_headers(self.request)
         except OSError:
             return
 
-    def handle_connect(self):
-        request = read_headers(self.request)
-        request_line = request.splitlines()[0]
-        method, target, _ = request_line.split(" ", 2)
-        if method != "CONNECT" or target != f"{GITHUB_HOST}:{GITHUB_PORT}":
-            self.request.sendall(b"HTTP/1.1 502 Bad Gateway\r\n\r\n")
+        lines = request.splitlines()
+        if not lines:
             return
 
-        self.request.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        context.load_cert_chain(certfile=self.server.cert_file, keyfile=self.server.key_file)
-        tls_socket = context.wrap_socket(self.request, server_side=True)
         try:
-            self.handle_github_request(tls_socket)
-        finally:
-            tls_socket.close()
+            method, path, _ = lines[0].split(" ", 2)
+        except ValueError:
+            self.request.sendall(b"HTTP/1.1 400 Bad Request\r\n\r\n")
+            return
 
-    def handle_github_request(self, tls_socket):
-        request = read_headers(tls_socket)
-        lines = request.splitlines()
-        method, path, _ = lines[0].split(" ", 2)
         headers = parse_headers(lines[1:])
         log_request(method, path, headers)
         if (
             method != "GET"
             or path != RELEASE_PATH
-            or headers.get("host") != GITHUB_HOST
             or headers.get("accept") != "application/vnd.github+json"
             or headers.get("user-agent") != "sloctl"
         ):
-            tls_socket.sendall(b"HTTP/1.1 502 Bad Gateway\r\n\r\n")
+            self.request.sendall(b"HTTP/1.1 502 Bad Gateway\r\n\r\n")
             return
 
-        status = int(os.environ.get("RELEASE_PROXY_STATUS", "200"))
-        raw_body = os.environ.get("RELEASE_PROXY_RAW_RESPONSE")
+        status = int(os.environ.get("RELEASE_SERVER_STATUS", "200"))
+        raw_body = os.environ.get("RELEASE_SERVER_RAW_RESPONSE")
         if raw_body is None:
             raw_body = json.dumps(
                 {
-                    "tag_name": os.environ.get("RELEASE_PROXY_TAG", "v1.1.0"),
+                    "tag_name": os.environ.get("RELEASE_SERVER_TAG", "v1.1.0"),
                     "body": release_body(),
                     "html_url": os.environ.get(
-                        "RELEASE_PROXY_HTML_URL",
+                        "RELEASE_SERVER_HTML_URL",
                         "https://github.com/nobl9/sloctl/releases/tag/v1.1.0",
                     ),
                 }
             )
         body = raw_body.encode()
-        reason = "OK" if status == 200 else "Error"
         response = (
-            f"HTTP/1.1 {status} {reason}\r\n".encode()
+            f"HTTP/1.1 {status} {reason_phrase(status)}\r\n".encode()
             + b"Content-Type: application/json\r\n"
             + f"Content-Length: {len(body)}\r\n".encode()
             + b"Connection: close\r\n"
             + b"\r\n"
             + body
         )
-        tls_socket.sendall(response)
+        self.request.sendall(response)
 
 
 class ThreadingTCPServer(socketserver.ThreadingTCPServer):
@@ -95,10 +80,10 @@ def read_headers(sock):
 
 
 def release_body():
-    body_file = os.environ.get("RELEASE_PROXY_BODY_FILE")
+    body_file = os.environ.get("RELEASE_SERVER_BODY_FILE")
     if body_file:
         return Path(body_file).read_text(encoding="utf-8")
-    body = os.environ.get("RELEASE_PROXY_BODY")
+    body = os.environ.get("RELEASE_SERVER_BODY")
     if body is not None:
         return body
     return DEFAULT_RELEASE_BODY_FILE.read_text(encoding="utf-8")
@@ -115,7 +100,7 @@ def parse_headers(lines):
 
 
 def log_request(method, path, headers):
-    log_path = os.environ.get("RELEASE_PROXY_LOG")
+    log_path = os.environ.get("RELEASE_SERVER_LOG")
     if not log_path:
         return
     with open(log_path, "a", encoding="utf-8") as log_file:
@@ -133,13 +118,16 @@ def log_request(method, path, headers):
         )
 
 
+def reason_phrase(status):
+    try:
+        return HTTPStatus(status).phrase
+    except ValueError:
+        return "Status"
+
+
 def main():
     port_file = Path(sys.argv[1])
-    cert_file = sys.argv[2]
-    key_file = sys.argv[3]
-    with ThreadingTCPServer(("127.0.0.1", 0), Proxy) as server:
-        server.cert_file = cert_file
-        server.key_file = key_file
+    with ThreadingTCPServer(("127.0.0.1", 0), ReleaseHandler) as server:
         port_file.write_text(str(server.server_address[1]), encoding="utf-8")
         server.serve_forever()
 
