@@ -4,11 +4,11 @@ import errno
 import fcntl
 import os
 import pty
-import struct
-import termios
 import selectors
+import struct
 import subprocess
 import sys
+import termios
 
 
 def main():
@@ -24,10 +24,13 @@ def main():
             termios.TIOCSWINSZ,
             struct.pack("HHHH", 24, int(columns), 0, 0),
         )
-    stdin = subprocess.DEVNULL
     input_text = os.environ.get("SLOCTL_TEST_TTY_INPUT")
+    stdin = subprocess.DEVNULL
     if input_text is not None:
-        stdin = subprocess.PIPE
+        attrs = termios.tcgetattr(slave_fd)
+        attrs[3] &= ~termios.ECHO
+        termios.tcsetattr(slave_fd, termios.TCSANOW, attrs)
+        stdin = slave_fd
 
     process = subprocess.Popen(
         sys.argv[1:],
@@ -37,8 +40,7 @@ def main():
         close_fds=True,
     )
     if input_text is not None:
-        process.stdin.write(input_text.encode())
-        process.stdin.close()
+        os.write(master_fd, input_text.encode())
     os.close(slave_fd)
 
     selector = selectors.DefaultSelector()

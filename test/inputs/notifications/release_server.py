@@ -2,9 +2,9 @@
 
 import json
 import os
-import socketserver
 import sys
 from http import HTTPStatus
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 
@@ -12,32 +12,16 @@ RELEASE_PATH = "/repos/nobl9/sloctl/releases/latest"
 DEFAULT_RELEASE_BODY_FILE = Path(__file__).with_name("release-bodies") / "feature.md"
 
 
-class ReleaseHandler(socketserver.BaseRequestHandler):
-    def handle(self):
-        try:
-            request = read_headers(self.request)
-        except OSError:
-            return
-
-        lines = request.splitlines()
-        if not lines:
-            return
-
-        try:
-            method, path, _ = lines[0].split(" ", 2)
-        except ValueError:
-            self.request.sendall(b"HTTP/1.1 400 Bad Request\r\n\r\n")
-            return
-
-        headers = parse_headers(lines[1:])
-        log_request(method, path, headers)
+class ReleaseHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        log_request(self.command, self.path, self.headers)
         if (
-            method != "GET"
-            or path != RELEASE_PATH
-            or headers.get("accept") != "application/vnd.github+json"
-            or headers.get("user-agent") != "sloctl"
+            self.path != RELEASE_PATH
+            or self.headers.get("Accept") != "application/vnd.github+json"
+            or self.headers.get("User-Agent") != "sloctl"
         ):
-            self.request.sendall(b"HTTP/1.1 502 Bad Gateway\r\n\r\n")
+            self.send_response(HTTPStatus.BAD_GATEWAY)
+            self.end_headers()
             return
 
         status = int(os.environ.get("RELEASE_SERVER_STATUS", "200"))
@@ -54,49 +38,22 @@ class ReleaseHandler(socketserver.BaseRequestHandler):
                 }
             )
         body = raw_body.encode()
-        response = (
-            f"HTTP/1.1 {status} {reason_phrase(status)}\r\n".encode()
-            + b"Content-Type: application/json\r\n"
-            + f"Content-Length: {len(body)}\r\n".encode()
-            + b"Connection: close\r\n"
-            + b"\r\n"
-            + body
-        )
-        self.request.sendall(response)
 
+        self.send_response(status, reason_phrase(status))
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
-class ThreadingTCPServer(socketserver.ThreadingTCPServer):
-    allow_reuse_address = True
-
-
-def read_headers(sock):
-    data = b""
-    while b"\r\n\r\n" not in data:
-        chunk = sock.recv(4096)
-        if not chunk:
-            raise OSError("connection closed while reading headers")
-        data += chunk
-    return data.decode("iso-8859-1")
+    def log_message(self, format, *args):
+        pass
 
 
 def release_body():
     body_file = os.environ.get("RELEASE_SERVER_BODY_FILE")
     if body_file:
         return Path(body_file).read_text(encoding="utf-8")
-    body = os.environ.get("RELEASE_SERVER_BODY")
-    if body is not None:
-        return body
     return DEFAULT_RELEASE_BODY_FILE.read_text(encoding="utf-8")
-
-
-def parse_headers(lines):
-    headers = {}
-    for line in lines:
-        if not line:
-            continue
-        name, value = line.split(":", 1)
-        headers[name.lower()] = value.strip()
-    return headers
 
 
 def log_request(method, path, headers):
@@ -109,8 +66,8 @@ def log_request(method, path, headers):
                 {
                     "method": method,
                     "path": path,
-                    "accept": headers.get("accept"),
-                    "userAgent": headers.get("user-agent"),
+                    "accept": headers.get("Accept"),
+                    "userAgent": headers.get("User-Agent"),
                 },
                 sort_keys=True,
             )
@@ -127,7 +84,7 @@ def reason_phrase(status):
 
 def main():
     port_file = Path(sys.argv[1])
-    with ThreadingTCPServer(("127.0.0.1", 0), ReleaseHandler) as server:
+    with ThreadingHTTPServer(("127.0.0.1", 0), ReleaseHandler) as server:
         port_file.write_text(str(server.server_address[1]), encoding="utf-8")
         server.serve_forever()
 

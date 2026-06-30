@@ -14,9 +14,15 @@ import (
 // It can be useful in old terminal emulators (e.g. remote shells).
 const accessibleModeEnv = "SLOCTL_ACCESSIBLE_MODE"
 
+// New returns a form configured with sloctl's shared terminal theme.
 func New(groups ...*huh.Group) *huh.Form {
+	return NewWithTheme(huh.ThemeFunc(style.HuhTheme), groups...)
+}
+
+// NewWithTheme returns a form configured with the provided terminal theme.
+func NewWithTheme(theme huh.Theme, groups ...*huh.Group) *huh.Form {
 	return huh.NewForm(groups...).
-		WithTheme(huh.ThemeFunc(style.HuhTheme)).
+		WithTheme(theme).
 		WithAccessible(getAccessibleEnvValue())
 }
 

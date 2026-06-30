@@ -2,6 +2,10 @@
 # bats file_tags=unit
 
 setup_file() {
+  load "test_helper/load"
+
+  ensure_installed python3
+
   export TEST_INPUTS="$BATS_TEST_DIRNAME/inputs/notifications"
   export TEST_OUTPUTS="$BATS_TEST_DIRNAME/outputs/notifications"
 }
@@ -10,8 +14,6 @@ setup() {
   load "test_helper/load"
   load_lib "bats-support"
   load_lib "bats-assert"
-
-  ensure_installed python3
 
   unset CI
   unset ALL_PROXY
@@ -27,7 +29,6 @@ setup() {
   unset SLOCTL_NOTIFICATIONS_RELEASE_URL
   unset SLOCTL_TEST_TTY_COLUMNS
   unset SLOCTL_TEST_TTY_INPUT
-  unset RELEASE_SERVER_BODY
   unset RELEASE_SERVER_BODY_FILE
   unset RELEASE_SERVER_HTML_URL
   unset RELEASE_SERVER_RAW_RESPONSE
@@ -38,14 +39,12 @@ setup() {
   export SLOCTL_ACCESSIBLE_MODE=1
   export XDG_CACHE_HOME="$BATS_TMPDIR/cache-$BATS_TEST_NUMBER"
   export RELEASE_SERVER_LOG="$BATS_TMPDIR/release-server-$BATS_TEST_NUMBER.log"
+  RELEASE_SERVER_START_COUNT=0
   select_update_action skip
 }
 
 teardown() {
-  if [ -n "${RELEASE_SERVER_PID:-}" ]; then
-    kill "$RELEASE_SERVER_PID"
-    wait "$RELEASE_SERVER_PID" 2> /dev/null || true
-  fi
+  stop_release_server
 }
 
 @test "sloctl shows a feature notification on TTY stderr and caches it" {
@@ -58,7 +57,7 @@ teardown() {
 
   run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  refute_stderr
+  assert_stderr ""
   assert_release_requests 1
 }
 
@@ -82,13 +81,23 @@ teardown() {
 
   run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  refute_stderr
+  assert_stderr ""
   assert_release_requests 1
+
+  expire_notification_cache
+  stop_release_server
+  use_release_body feature-without-author
+  start_release_server
+
+  run_sloctl_with_tty_stderr version
+  assert_success_joined_output
+  assert_stderr ""
+  assert_release_requests 2
 }
 
-@test "sloctl runs upgrade and exits without running the command" {
+@test "sloctl defaults to update action and exits without running the command" {
   use_release_body maintenance
-  select_update_action run-upgrade
+  select_default_update_action
   export SLOCTL_TEST_UPGRADE_MARKER="$BATS_TEST_TMPDIR/upgrade-ran"
   local tools_dir="$BATS_TEST_TMPDIR/tools"
   mkdir -p "$tools_dir"
@@ -113,7 +122,7 @@ teardown() {
 
   run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  refute_stderr
+  assert_stderr ""
   assert_release_requests 0
 }
 
@@ -123,7 +132,7 @@ teardown() {
 
   run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  refute_stderr
+  assert_stderr ""
   assert_release_requests 0
 }
 
@@ -132,7 +141,7 @@ teardown() {
 
   run_sloctl version
   assert_success_joined_output
-  refute_stderr
+  assert_stderr ""
   assert_release_requests 0
 }
 
@@ -146,7 +155,7 @@ teardown() {
   assert_release_requests 1
 }
 
-@test "sloctl uses the first non-empty release notes section" {
+@test "sloctl skips empty release notes sections" {
   use_release_body empty-features-then-bug-fixes
   start_release_server
 
@@ -156,7 +165,17 @@ teardown() {
   assert_release_requests 1
 }
 
-@test "sloctl keeps nested release-note details from the selected section" {
+@test "sloctl shows breaking change notification" {
+  use_release_body breaking
+  start_release_server
+
+  run_sloctl_with_tty_stderr version
+  assert_success_joined_output
+  assert_notification_stderr breaking-prompt-skip
+  assert_release_requests 1
+}
+
+@test "sloctl keeps nested details and additional release-note sections" {
   use_release_body features-with-details
   start_release_server
 
@@ -183,7 +202,7 @@ teardown() {
 
   run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  refute_stderr
+  assert_stderr ""
   assert_release_requests 1
 }
 
@@ -194,11 +213,11 @@ teardown() {
 
   run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  refute_stderr
+  assert_stderr ""
 
   run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  refute_stderr
+  assert_stderr ""
   assert_release_requests 1
 }
 
@@ -208,7 +227,7 @@ teardown() {
 
   run_sloctl_with_tty_stderr version
   assert_success_joined_output
-  refute_stderr
+  assert_stderr ""
   assert_release_requests 1
 }
 
@@ -292,8 +311,8 @@ assert_notification_stderr() {
   local name="$1"
   local expected
   expected="$(normalize_tty_output < "$TEST_OUTPUTS/$name.stderr")"
-  output="$(normalize_tty_output <<< "$stderr")"
-  assert_output "$expected"
+  stderr="$(normalize_tty_output <<< "$stderr")"
+  assert_stderr "$expected"
 }
 
 normalize_tty_output() {
@@ -336,6 +355,10 @@ select_update_action_without_update() {
   esac
 }
 
+select_default_update_action() {
+  export SLOCTL_TEST_TTY_INPUT=$'\n'
+}
+
 run_sloctl_with_tty_stderr() {
   run_sloctl_binary_with_tty_stderr sloctl "$@"
 }
@@ -371,7 +394,8 @@ copy_sloctl_binary() {
 }
 
 start_release_server() {
-  local port_file="$BATS_TMPDIR/release-server-$BATS_TEST_NUMBER.port"
+  RELEASE_SERVER_START_COUNT=$((RELEASE_SERVER_START_COUNT + 1))
+  local port_file="$BATS_TMPDIR/release-server-$BATS_TEST_NUMBER-$RELEASE_SERVER_START_COUNT.port"
   python3 "$TEST_INPUTS/release_server.py" "$port_file" &
   RELEASE_SERVER_PID="$!"
 
@@ -386,6 +410,19 @@ start_release_server() {
   done
 
   fail "release server did not start"
+}
+
+stop_release_server() {
+  if [ -n "${RELEASE_SERVER_PID:-}" ]; then
+    kill "$RELEASE_SERVER_PID"
+    wait "$RELEASE_SERVER_PID" 2> /dev/null || true
+    unset RELEASE_SERVER_PID
+  fi
+}
+
+expire_notification_cache() {
+  local cache_file="$XDG_CACHE_HOME/nobl9/sloctl/notifications.json"
+  sed -i 's/"lastCheckedAt": "[^"]*"/"lastCheckedAt": "2000-01-01T00:00:00Z"/' "$cache_file"
 }
 
 assert_release_requests() {

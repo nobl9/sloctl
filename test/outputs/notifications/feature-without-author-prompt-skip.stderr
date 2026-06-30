@@ -1,10 +1,13 @@
-### New sloctl updates in v1.1.0!
+# Changes in version v1.1.0
 
-  ## Features
+## Features
 
-  • Add direct upload (#333)
+• Add direct upload
 
-  📜 https://github.com/nobl9/sloctl/releases/tag/v1.1.0
+📜 https://github.com/nobl9/sloctl/releases/tag/v1.1.0
+
+────────────────────────────────────────────────────────────────────────────────────────────
+
 Choose update action
 1. Update (runs wget -O - -q https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash | bash)
 2. Skip

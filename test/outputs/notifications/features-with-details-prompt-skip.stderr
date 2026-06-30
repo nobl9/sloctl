@@ -1,16 +1,23 @@
-### New sloctl updates in v1.1.0!
+# Changes in version v1.1.0
 
-  ## 🚀 Features
+## 🚀 Features
 
-  • Add workflow insights (#123) @octocat
-  | Extra release-note detail.
+• Add workflow insights
+| Extra release-note detail.
 
 
-  ### Details
+### Details
 
-  • Preserves nested feature details.
+• Preserves nested feature details.
 
-  📜 https://github.com/nobl9/sloctl/releases/tag/v1.1.0
+## 🐞 Bug Fixes
+
+• Fix output formatting
+
+📜 https://github.com/nobl9/sloctl/releases/tag/v1.1.0
+
+────────────────────────────────────────────────────────────────────────────────────────────
+
 Choose update action
 1. Update (runs wget -O - -q https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash | bash)
 2. Skip

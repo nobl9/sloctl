@@ -251,8 +251,8 @@ load_lib() {
 #
 # Usage: assert_success_joined_output
 #
-# In case erroroneus code is detected, both stderr and stdout are conjoined.
-# This is neccessary due to `run --separate-stderr` usage.
+# In case an erroneous exit code is detected, both stderr and stdout are combined.
+# This is necessary due to `run --separate-stderr` usage.
 # Otherwise, only stdout is printed which is not very useful.
 assert_success_joined_output() {
   output+="
@@ -283,20 +283,14 @@ $stderr" assert_success
 #   1 - otherwise
 #
 # Similarly to `assert_output`, this function verifies that a command or function produces the expected stderr.
-# (It is the logical complement of `refute_stderr`.)
 # The stderr matching can be literal (the default), partial or by regular expression.
 # The expected stderr can be specified either by positional argument or read from STDIN by passing the `-`/`--stdin` flag.
 #
 # NOTE: This was copied from bats-assert,
-# once a new version is avilable in the official Docker image, we can abandond this.
+# once a new version is available in the official Docker image, we can abandon this.
 assert_stderr() {
   output="$stderr"
   assert_output "$@"
-}
-
-refute_stderr() {
-  output="$stderr"
-  refute_output "$@"
 }
 
 # run_mcp_inspector
