@@ -3,8 +3,11 @@ package internal
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"runtime"
+	"slices"
+	"strings"
 	"sync"
 
 	v1alphaParser "github.com/nobl9/nobl9-go/manifest/v1alpha/parser"
@@ -56,6 +59,7 @@ More detailed help is available for each command.`,
 	rootCmd.PersistentFlags().StringVar(&root.Flags.ConfigFile, "config", "", "Config file path.")
 	rootCmd.PersistentFlags().StringVarP(&root.Flags.Context, "context", "c", "",
 		`Overrides the default context for the duration of the selected command.`)
+	_ = rootCmd.RegisterFlagCompletionFunc("context", root.completeContextFlag)
 	rootCmd.PersistentFlags().BoolVarP(&root.Flags.NoConfigFile, "no-config-file", "", false,
 		`Don't create config.toml, operate only on env variables.`)
 
@@ -90,6 +94,32 @@ func (r *RootCmd) GetClient() *sdk.Client {
 		}
 	})
 	return r.Client
+}
+
+func (r *RootCmd) completeContextFlag(
+	_ *cobra.Command,
+	_ []string,
+	toComplete string,
+) ([]cobra.Completion, cobra.ShellCompDirective) {
+	if r.Flags.NoConfigFile {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	configPath, err := configFilePath(r.Flags.ConfigFile)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	config := new(sdk.FileConfig)
+	if err = config.Load(configPath); err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	contexts := slices.Sorted(maps.Keys(config.Contexts))
+	completions := make([]cobra.Completion, 0, len(contexts))
+	for _, contextName := range contexts {
+		if strings.HasPrefix(contextName, toComplete) {
+			completions = append(completions, contextName)
+		}
+	}
+	return completions, cobra.ShellCompDirectiveNoFileComp
 }
 
 const sdkEnvPrefix = "SLOCTL_"

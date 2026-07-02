@@ -18,7 +18,7 @@ LDFLAGS := -s -w \
 # renovate datasource=github-releases depName=golangci/golangci-lint
 GOLANGCI_LINT_VERSION := v2.12.2
 # renovate datasource=go depName=golang.org/x/vuln/cmd/govulncheck
-GOVULNCHECK_VERSION := v1.3.0
+GOVULNCHECK_VERSION := v1.5.0
 
 # Check if the program is present in $PATH and install otherwise.
 # ${1} - oneOf{binary,yarn}
