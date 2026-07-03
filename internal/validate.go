@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	stderrors "errors"
@@ -441,7 +442,9 @@ func printValidateSLIHumanSummary(out io.Writer, output validateSLIOutput) {
 		_, _ = fmt.Fprintln(out, result.HumanName())
 		if len(result.Errors) > 0 {
 			for _, apiErr := range result.Errors {
-				_, _ = fmt.Fprintf(out, "  %s\n", validateSLIHumanError(apiErr))
+				for _, line := range strings.Split(validateSLIHumanError(apiErr), "\n") {
+					_, _ = fmt.Fprintf(out, "  %s\n", line)
+				}
 			}
 			continue
 		}
@@ -646,14 +649,10 @@ func validateSLIHumanError(apiErr sdk.APIError) string {
 	if apiErr.Title == "" {
 		return detail
 	}
+	if strings.Contains(detail, "\n") {
+		return apiErr.Title + ":\n" + detail
+	}
 	return apiErr.Title + ": " + detail
-}
-
-type validateSLIJSONErrorDetail struct {
-	Status    string `json:"status"`
-	ErrorType string `json:"errorType"`
-	Error     string `json:"error"`
-	Message   string `json:"message"`
 }
 
 func validateSLIHumanErrorDetail(detail string) string {
@@ -669,7 +668,7 @@ func validateSLIHumanErrorDetail(detail string) string {
 			return formatted.String()
 		}
 		formatted.WriteString(detail[:start])
-		jsonDetail, consumed, ok := validateSLIJSONErrorDetailFromPrefix(detail[start:])
+		jsonDetail, consumed, ok := validateSLIFormatJSONFromPrefix(detail[start:])
 		if !ok {
 			formatted.WriteByte(detail[start])
 			detail = detail[start+1:]
@@ -680,26 +679,17 @@ func validateSLIHumanErrorDetail(detail string) string {
 	}
 }
 
-func validateSLIJSONErrorDetailFromPrefix(input string) (string, int, bool) {
+func validateSLIFormatJSONFromPrefix(input string) (string, int, bool) {
 	decoder := json.NewDecoder(strings.NewReader(input))
-	var parsed validateSLIJSONErrorDetail
-	if err := decoder.Decode(&parsed); err != nil {
+	var raw json.RawMessage
+	if err := decoder.Decode(&raw); err != nil {
 		return "", 0, false
 	}
-	message := parsed.Error
-	if message == "" {
-		message = parsed.Message
-	}
-	if message == "" {
+	var formatted bytes.Buffer
+	if err := json.Indent(&formatted, raw, "", "  "); err != nil {
 		return "", 0, false
 	}
-	if parsed.ErrorType != "" {
-		return parsed.ErrorType + ": " + message, int(decoder.InputOffset()), true
-	}
-	if parsed.Status != "" {
-		return parsed.Status + ": " + message, int(decoder.InputOffset()), true
-	}
-	return message, int(decoder.InputOffset()), true
+	return formatted.String(), int(decoder.InputOffset()), true
 }
 
 func validateSLIPlural(count int, singular, plural string) string {
