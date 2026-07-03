@@ -314,11 +314,13 @@ Time range: 2026-07-02T10:00:00Z - 2026-07-02T10:15:00Z
 
 checkout/default latency rawMetric
   datasource command failed:
-  countMetrics.good: failed to query metrics: unexpected status code 400: {
+  countMetrics.good: failed to query metrics: unexpected status code 400:
+  {
     "status": "error",
     "errorType": "bad_data",
     "error": "1:118: parse error: unclosed left parenthesis"
-  }: invalid query
+  }
+  invalid query
 `, out.String())
 }
 

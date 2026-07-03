@@ -667,15 +667,29 @@ func validateSLIHumanErrorDetail(detail string) string {
 			formatted.WriteString(detail)
 			return formatted.String()
 		}
-		formatted.WriteString(detail[:start])
+		prefix := detail[:start]
 		jsonDetail, consumed, ok := validateSLIFormatJSONFromPrefix(detail[start:])
 		if !ok {
+			formatted.WriteString(prefix)
 			formatted.WriteByte(detail[start])
 			detail = detail[start+1:]
 			continue
 		}
+		if prefix != "" && !strings.HasSuffix(prefix, "\n") {
+			prefix = strings.TrimRight(prefix, " \t")
+			formatted.WriteString(prefix)
+			formatted.WriteByte('\n')
+		} else {
+			formatted.WriteString(prefix)
+		}
 		formatted.WriteString(jsonDetail)
 		detail = detail[start+consumed:]
+		if detail != "" && !strings.HasPrefix(detail, "\n") {
+			if strings.HasPrefix(detail, ": ") {
+				detail = strings.TrimPrefix(detail, ": ")
+			}
+			formatted.WriteByte('\n')
+		}
 	}
 }
 
