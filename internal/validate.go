@@ -22,6 +22,7 @@ import (
 	dataSourceV1 "github.com/nobl9/nobl9-go/sdk/endpoints/datasource/v1"
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
 
+	"github.com/nobl9/sloctl/internal/csv"
 	"github.com/nobl9/sloctl/internal/flags"
 	"github.com/nobl9/sloctl/internal/printer"
 )
@@ -165,6 +166,15 @@ func (v *ValidateSLICmd) Run(cmd *cobra.Command) error {
 }
 
 func (v *ValidateSLICmd) arguments(cmd *cobra.Command, args []string) error {
+	if err := requireFlagsIfFlagIsSet(
+		cmd,
+		printer.OutputFlagName,
+		"jq",
+		csv.RecordSeparatorFlag,
+		csv.FieldSeparatorFlag,
+	); err != nil {
+		return err
+	}
 	options := validateSLIOptions{
 		FileCount:  len(v.definitionPaths),
 		ArgCount:   len(args),

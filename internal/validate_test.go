@@ -35,6 +35,36 @@ func TestValidateSLICommandIsRegistered(t *testing.T) {
 	assert.Equal(t, "sli", cmd.Name())
 }
 
+func TestValidateSLIArgumentsRequireOutputForJQ(t *testing.T) {
+	for name, test := range map[string]struct {
+		SetOutput     bool
+		ExpectedError string
+	}{
+		"reject jq without output": {
+			ExpectedError: "--jq flag can only be set if --output flag is also provided",
+		},
+		"allow jq with output": {
+			SetOutput: true,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			cmd := (&ValidateCmd{}).NewSLICmd(func() *sdk.Client { return nil })
+			require.NoError(t, cmd.PersistentFlags().Set("jq", ".results"))
+			if test.SetOutput {
+				require.NoError(t, cmd.PersistentFlags().Set(printer.OutputFlagName, string(printer.JSONFormat)))
+			}
+
+			err := cmd.Args(cmd, []string{"checkout"})
+
+			if test.ExpectedError == "" {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, test.ExpectedError)
+			}
+		})
+	}
+}
+
 func TestValidateSLIExecutesRequestsInParallelAndPreservesResultOrder(t *testing.T) {
 	timeRange := dataSourceV1.TimeRange{
 		From: time.Date(2026, 7, 2, 10, 0, 0, 0, time.UTC),
