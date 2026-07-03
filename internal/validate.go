@@ -661,24 +661,45 @@ func validateSLIHumanErrorDetail(detail string) string {
 	if detail == "" {
 		return ""
 	}
+	var formatted strings.Builder
+	for {
+		start := strings.IndexByte(detail, '{')
+		if start == -1 {
+			formatted.WriteString(detail)
+			return formatted.String()
+		}
+		formatted.WriteString(detail[:start])
+		jsonDetail, consumed, ok := validateSLIJSONErrorDetailFromPrefix(detail[start:])
+		if !ok {
+			formatted.WriteByte(detail[start])
+			detail = detail[start+1:]
+			continue
+		}
+		formatted.WriteString(jsonDetail)
+		detail = detail[start+consumed:]
+	}
+}
+
+func validateSLIJSONErrorDetailFromPrefix(input string) (string, int, bool) {
+	decoder := json.NewDecoder(strings.NewReader(input))
 	var parsed validateSLIJSONErrorDetail
-	if err := json.Unmarshal([]byte(detail), &parsed); err != nil {
-		return detail
+	if err := decoder.Decode(&parsed); err != nil {
+		return "", 0, false
 	}
 	message := parsed.Error
 	if message == "" {
 		message = parsed.Message
 	}
 	if message == "" {
-		return detail
+		return "", 0, false
 	}
 	if parsed.ErrorType != "" {
-		return parsed.ErrorType + ": " + message
+		return parsed.ErrorType + ": " + message, int(decoder.InputOffset()), true
 	}
 	if parsed.Status != "" {
-		return parsed.Status + ": " + message
+		return parsed.Status + ": " + message, int(decoder.InputOffset()), true
 	}
-	return message
+	return message, int(decoder.InputOffset()), true
 }
 
 func validateSLIPlural(count int, singular, plural string) string {
