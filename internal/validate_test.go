@@ -260,6 +260,31 @@ checkout/default latency rawMetric
 `, out.String())
 }
 
+func TestValidateSLIPrintHumanSummaryFormatsJSONErrorDetails(t *testing.T) {
+	output := validateSLITestOutput(validateSLIStatusFailed)
+	output.Results[0].TimeSeries = nil
+	output.Results[0].Errors = []sdk.APIError{{
+		Title:  "datasource command failed",
+		Detail: `{"status":"error","errorType":"bad_data","error":"1:118: parse error: unclosed left parenthesis"}`,
+	}}
+	var out bytes.Buffer
+	validateSLI := &ValidateSLICmd{}
+	cmd := &cobra.Command{}
+	cmd.SetOut(&out)
+
+	err := validateSLI.print(cmd, output)
+
+	require.NoError(t, err)
+	assert.Equal(t, `Invalid
+
+Validated 1 SLI query for 1 SLO.
+Time range: 2026-07-02T10:00:00Z - 2026-07-02T10:15:00Z
+
+checkout/default latency rawMetric
+  datasource command failed: bad_data: 1:118: parse error: unclosed left parenthesis
+`, out.String())
+}
+
 func TestValidateSLIPrintUsesStructuredOutputWhenOutputFlagIsSet(t *testing.T) {
 	output := validateSLITestOutput(validateSLIStatusSuccess)
 	var out bytes.Buffer

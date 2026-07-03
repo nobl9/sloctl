@@ -639,13 +639,46 @@ func validateSLITimeSeriesName(measurement string) string {
 }
 
 func validateSLIHumanError(apiErr sdk.APIError) string {
-	if apiErr.Detail == "" {
+	detail := validateSLIHumanErrorDetail(apiErr.Detail)
+	if detail == "" {
 		return apiErr.Title
 	}
 	if apiErr.Title == "" {
-		return apiErr.Detail
+		return detail
 	}
-	return apiErr.Title + ": " + apiErr.Detail
+	return apiErr.Title + ": " + detail
+}
+
+type validateSLIJSONErrorDetail struct {
+	Status    string `json:"status"`
+	ErrorType string `json:"errorType"`
+	Error     string `json:"error"`
+	Message   string `json:"message"`
+}
+
+func validateSLIHumanErrorDetail(detail string) string {
+	detail = strings.TrimSpace(detail)
+	if detail == "" {
+		return ""
+	}
+	var parsed validateSLIJSONErrorDetail
+	if err := json.Unmarshal([]byte(detail), &parsed); err != nil {
+		return detail
+	}
+	message := parsed.Error
+	if message == "" {
+		message = parsed.Message
+	}
+	if message == "" {
+		return detail
+	}
+	if parsed.ErrorType != "" {
+		return parsed.ErrorType + ": " + message
+	}
+	if parsed.Status != "" {
+		return parsed.Status + ": " + message
+	}
+	return message
 }
 
 func validateSLIPlural(count int, singular, plural string) string {
