@@ -667,15 +667,13 @@ func validateSLIHumanErrorDetail(detail string) string {
 		formatted.WriteString(jsonDetail)
 		detail = detail[start+consumed:]
 		if detail != "" && !strings.HasPrefix(detail, "\n") {
-			if strings.HasPrefix(detail, ": ") {
-				detail = strings.TrimPrefix(detail, ": ")
-			}
+			detail = strings.TrimPrefix(detail, ": ")
 			formatted.WriteByte('\n')
 		}
 	}
 }
 
-func validateSLIFormatJSONFromPrefix(input string) (string, int, bool) {
+func validateSLIFormatJSONFromPrefix(input string) (formattedJSON string, consumed int, ok bool) {
 	decoder := json.NewDecoder(strings.NewReader(input))
 	var raw json.RawMessage
 	if err := decoder.Decode(&raw); err != nil {
