@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nobl9/govy/pkg/govy"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
@@ -127,7 +126,7 @@ func (v *ValidateSLICmd) Run(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	if err = validateSLIPlanValidation.Validate(validateSLIPlan{QueryCount: len(candidates)}); err != nil {
+	if err = validateSLIPlan(len(candidates)); err != nil {
 		return err
 	}
 	spinner := NewSpinner(fmt.Sprintf("Validating %d SLI queries...", len(candidates)))
@@ -167,7 +166,7 @@ func (v *ValidateSLICmd) arguments(cmd *cobra.Command, args []string) error {
 		HasTo:      cmd.Flags().Changed("to"),
 		HasSLOFlag: cmd.Flags().Changed("slo"),
 	}
-	if err := validateSLIOptionsValidation.Validate(options); err != nil {
+	if err := validateSLICommandOptions(options); err != nil {
 		return err
 	}
 	if len(args) == 1 {
@@ -187,7 +186,7 @@ func (v *ValidateSLICmd) resolveTimeRange(cmd *cobra.Command) (dataSourceV1.Time
 		HasTo:   cmd.Flags().Changed("to"),
 		Now:     now,
 	}
-	if err := validateSLITimeRangeValidation.Validate(options); err != nil {
+	if err := validateSLITimeRangeFlags(options); err != nil {
 		return dataSourceV1.TimeRange{}, err
 	}
 	to := v.to
@@ -718,28 +717,24 @@ type validateSLIOptions struct {
 	HasSLOFlag bool
 }
 
-var validateSLIOptionsValidation = govy.New[validateSLIOptions](
-	govy.For(govy.GetSelf[validateSLIOptions]()).Rules(
-		govy.NewRule(func(o validateSLIOptions) error {
-			switch {
-			case o.ArgCount > 1:
-				return stderrors.New("accepts at most one SLO name argument")
-			case o.FileCount == 0 && o.ArgCount == 0:
-				return stderrors.New("provide an SLO name or use the --file flag")
-			case o.FileCount > 0 && o.ArgCount > 0:
-				return stderrors.New("the --file flag and SLO name argument are mutually exclusive")
-			case o.FileCount == 0 && o.HasSLOFlag:
-				return stderrors.New("the --slo flag can be used only with --file")
-			case o.HasLast && (o.HasFrom || o.HasTo):
-				return stderrors.New("the --last flag cannot be used with --from or --to")
-			case o.HasTo && !o.HasFrom:
-				return stderrors.New("the --to flag requires --from")
-			default:
-				return nil
-			}
-		}),
-	),
-)
+func validateSLICommandOptions(o validateSLIOptions) error {
+	switch {
+	case o.ArgCount > 1:
+		return stderrors.New("accepts at most one SLO name argument")
+	case o.FileCount == 0 && o.ArgCount == 0:
+		return stderrors.New("provide an SLO name or use the --file flag")
+	case o.FileCount > 0 && o.ArgCount > 0:
+		return stderrors.New("the --file flag and SLO name argument are mutually exclusive")
+	case o.FileCount == 0 && o.HasSLOFlag:
+		return stderrors.New("the --slo flag can be used only with --file")
+	case o.HasLast && (o.HasFrom || o.HasTo):
+		return stderrors.New("the --last flag cannot be used with --from or --to")
+	case o.HasTo && !o.HasFrom:
+		return stderrors.New("the --to flag requires --from")
+	default:
+		return nil
+	}
+}
 
 type validateSLITimeRangeOptions struct {
 	Last    time.Duration
@@ -751,49 +746,37 @@ type validateSLITimeRangeOptions struct {
 	HasTo   bool
 }
 
-var validateSLITimeRangeValidation = govy.New[validateSLITimeRangeOptions](
-	govy.For(govy.GetSelf[validateSLITimeRangeOptions]()).Rules(
-		govy.NewRule(func(o validateSLITimeRangeOptions) error {
-			if !o.HasFrom {
-				if o.Last <= 0 {
-					return stderrors.New("the --last flag must be greater than zero")
-				}
-				if o.Last > maxValidateSLITimeRange {
-					return fmt.Errorf("the --last flag cannot exceed %s", maxValidateSLITimeRange)
-				}
-				return nil
-			}
-			to := o.To
-			if !o.HasTo {
-				to = o.Now
-			}
-			if !o.From.Before(to) {
-				return stderrors.New("the --from value must be before --to")
-			}
-			if to.Sub(o.From) > maxValidateSLITimeRange {
-				return fmt.Errorf("the requested time range cannot exceed %s", maxValidateSLITimeRange)
-			}
-			return nil
-		}),
-	),
-)
-
-type validateSLIPlan struct {
-	QueryCount int
+func validateSLITimeRangeFlags(o validateSLITimeRangeOptions) error {
+	if !o.HasFrom {
+		if o.Last <= 0 {
+			return stderrors.New("the --last flag must be greater than zero")
+		}
+		if o.Last > maxValidateSLITimeRange {
+			return fmt.Errorf("the --last flag cannot exceed %s", maxValidateSLITimeRange)
+		}
+		return nil
+	}
+	to := o.To
+	if !o.HasTo {
+		to = o.Now
+	}
+	if !o.From.Before(to) {
+		return stderrors.New("the --from value must be before --to")
+	}
+	if to.Sub(o.From) > maxValidateSLITimeRange {
+		return fmt.Errorf("the requested time range cannot exceed %s", maxValidateSLITimeRange)
+	}
+	return nil
 }
 
-var validateSLIPlanValidation = govy.New[validateSLIPlan](
-	govy.For(govy.GetSelf[validateSLIPlan]()).Rules(
-		govy.NewRule(func(p validateSLIPlan) error {
-			switch {
-			case p.QueryCount == 0:
-				return stderrors.New("no SLI queries were found")
-			case p.QueryCount > maxValidateSLIQueryCount:
-				return fmt.Errorf("too many SLI queries selected: %d, maximum is %d",
-					p.QueryCount, maxValidateSLIQueryCount)
-			default:
-				return nil
-			}
-		}),
-	),
-)
+func validateSLIPlan(queryCount int) error {
+	switch {
+	case queryCount == 0:
+		return stderrors.New("no SLI queries were found")
+	case queryCount > maxValidateSLIQueryCount:
+		return fmt.Errorf("too many SLI queries selected: %d, maximum is %d",
+			queryCount, maxValidateSLIQueryCount)
+	default:
+		return nil
+	}
+}

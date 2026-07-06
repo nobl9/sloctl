@@ -442,7 +442,7 @@ func TestValidateSLITimeRangeValidation(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			err := validateSLITimeRangeValidation.Validate(test.Options)
+			err := validateSLITimeRangeFlags(test.Options)
 
 			require.Error(t, err)
 		})
