@@ -36,6 +36,7 @@ const (
 	validateSLIMetricRaw       = "rawMetric"
 	validateSLIMetricCount     = "countMetrics"
 	validateSLIMetricIndicator = "indicator.rawMetric"
+	unsupportedDatasourceCode  = "unsupported_datasource"
 )
 
 var errSLIValidationFailed = stderrors.New("SLI validation failed")
@@ -133,6 +134,9 @@ func (v *ValidateSLICmd) Run(cmd *cobra.Command) error {
 	spinner.Go()
 	results := v.executeCandidates(cmd, timeRange, candidates)
 	spinner.Stop()
+	if err = validateSLIUnsupportedDatasourceError(results); err != nil {
+		return err
+	}
 
 	output := validateSLIOutput{
 		TimeRange: validateSLITimeRange{From: timeRange.From, To: timeRange.To},
@@ -704,6 +708,17 @@ func hasFailedSLIResults(results []validateSLIResult) bool {
 		}
 	}
 	return false
+}
+
+func validateSLIUnsupportedDatasourceError(results []validateSLIResult) error {
+	for _, result := range results {
+		for _, apiErr := range result.Errors {
+			if apiErr.Code == unsupportedDatasourceCode {
+				return stderrors.New(validateSLIHumanError(apiErr))
+			}
+		}
+	}
+	return nil
 }
 
 type validateSLIOptions struct {

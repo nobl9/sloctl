@@ -324,6 +324,23 @@ checkout/default latency rawMetric
 `, out.String())
 }
 
+func TestValidateSLIUnsupportedDatasourceError(t *testing.T) {
+	err := validateSLIUnsupportedDatasourceError([]validateSLIResult{{
+		Status: validateSLIStatusFailed,
+		Errors: []sdk.APIError{{
+			Title:  "unsupported datasource",
+			Code:   "unsupported_datasource",
+			Detail: "datasource kind Agent and type Prometheus are not supported by V2 interactive commands",
+		}},
+	}})
+
+	require.EqualError(
+		t,
+		err,
+		"unsupported datasource: datasource kind Agent and type Prometheus are not supported by V2 interactive commands",
+	)
+}
+
 func TestValidateSLIPrintUsesStructuredOutputWhenOutputFlagIsSet(t *testing.T) {
 	output := validateSLITestOutput(validateSLIStatusSuccess)
 	var out bytes.Buffer

@@ -18,6 +18,7 @@ func NewSpinner(description string) *Spinner {
 		progressbar.OptionSetDescription(description),
 		progressbar.OptionSetWriter(os.Stderr),
 		progressbar.OptionOnCompletion(func() { _, _ = fmt.Fprint(os.Stderr, "\n") }),
+		progressbar.OptionClearOnFinish(),
 		progressbar.OptionSpinnerType(14))
 	return &Spinner{bar: bar, stop: make(chan struct{})}
 }
