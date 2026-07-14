@@ -37,9 +37,13 @@ func (n notifier) promptUpdate(
 	release githubRelease,
 	releaseNotesMarkdown string,
 	updateCommand string,
+	showUpdateForm bool,
 ) (updateAction, error) {
 	terminal := n.terminalInfo()
 	n.printNotification(release, releaseNotesMarkdown, terminal)
+	if !showUpdateForm {
+		return updateActionSkip, nil
+	}
 
 	action := defaultUpdateAction(updateCommand)
 	form := huhform.NewWithTheme(

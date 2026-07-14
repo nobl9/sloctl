@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -102,7 +103,12 @@ func (n notifier) notify() Result {
 
 	releaseNotesMarkdown := extractReleaseNotesMarkdown(release.Body)
 	updateCommand := n.updateCommand()
-	action, err := n.promptUpdate(release, releaseNotesMarkdown, updateCommand)
+	action, err := n.promptUpdate(
+		release,
+		releaseNotesMarkdown,
+		updateCommand,
+		isUpdateFormSupported(runtime.GOOS, systemName),
+	)
 	if err != nil {
 		n.saveState(currentState)
 		return ResultContinue
@@ -137,6 +143,23 @@ func (n notifier) canNotify() bool {
 		os.Getenv(ciEnv) == "" &&
 		os.Getenv(optOutEnv) == "" &&
 		!isDevelopmentVersion(n.currentVersion)
+}
+
+func isUpdateFormSupported(goOS string, readSystemName func() (string, error)) bool {
+	if goOS != "windows" {
+		return true
+	}
+	systemName, err := readSystemName()
+	if err != nil {
+		return false
+	}
+	systemName = strings.ToLower(strings.TrimSpace(systemName))
+	return strings.HasPrefix(systemName, "mingw") || strings.HasPrefix(systemName, "cygwin")
+}
+
+func systemName() (string, error) {
+	output, err := exec.Command("uname").Output()
+	return string(output), err
 }
 
 func (n notifier) runCommand(command string) error {
