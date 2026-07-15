@@ -4,6 +4,7 @@ MAKEFLAGS += --silent --no-print-directory
 BIN_DIR := ./bin
 TEST_DIR := ./test
 APP_NAME := sloctl
+GO_EXE := $(shell go env GOEXE)
 VERSION_PKG := "$(shell go list -m)/internal"
 
 VERSION ?= 1.0.0-test
@@ -63,7 +64,7 @@ endef
 ## Build sloctl binary.
 build:
 	$(call _print_step,Building sloctl binary)
-	go build -ldflags="$(LDFLAGS)" -o $(BIN_DIR)/$(APP_NAME) ./cmd/$(APP_NAME)/
+	go build -ldflags="$(LDFLAGS)" -o $(BIN_DIR)/$(APP_NAME)$(GO_EXE) ./cmd/$(APP_NAME)/
 
 .PHONY: install
 ## Install sloctl binary.
@@ -85,7 +86,7 @@ test: test/unit test/e2e
 ## Run all unit tests.
 test/unit: test/go/unit test/bats/unit
 
-.PHONY: test/e2e test/bats/unit test/bats/e2e test/go/e2e-docker
+.PHONY: test/e2e test/bats/unit test/bats/platform test/bats/e2e test/go/e2e-docker
 ## Run all e2e tests.
 test/e2e: test/bats/e2e test/go/e2e-docker
 
@@ -105,7 +106,15 @@ test/bats/unit:
 	$(call _build_docker,sloctl-unit-test-bin,v1.0.0,PC-123-test,e2602ddc)
 	docker build -t sloctl-bats-unit -f $(TEST_DIR)/docker/Dockerfile.unit .
 	docker run -e TERM=linux --rm \
-		sloctl-bats-unit -F pretty --filter-tags unit $(TEST_DIR)/*
+		sloctl-bats-unit -F pretty --filter-tags unit,!platform $(TEST_DIR)/*
+
+## Run native platform notification tests.
+test/bats/platform:
+	$(MAKE) VERSION=v1.0.0 build
+	$(call _print_step,Running native platform notification tests)
+	bats -F pretty \
+		--setup-suite-file $(TEST_DIR)/setup_platform_suite.bash \
+		--filter-tags platform $(TEST_DIR)/notifications.bats
 
 ## Run bats e2e tests.
 test/bats/e2e:

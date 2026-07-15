@@ -241,6 +241,10 @@ ensure_installed() {
 #   <name>    Name of the library to load.
 load_lib() {
   local name="$1"
+  if [ -n "${BATS_LIB_PATH:-}" ]; then
+    bats_load_library "$name"
+    return
+  fi
   load "/usr/lib/bats/${name}/load.bash"
 }
 

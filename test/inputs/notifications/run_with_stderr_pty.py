@@ -16,36 +16,42 @@ def main():
         print("usage: run_with_stderr_pty.py COMMAND [ARG...]", file=sys.stderr)
         return 2
 
-    master_fd, slave_fd = pty.openpty()
+    controller_fd, terminal_fd = pty.openpty()
+    join_output = os.environ.get("SLOCTL_TEST_TTY_JOIN_OUTPUT") == "1"
     columns = os.environ.get("SLOCTL_TEST_TTY_COLUMNS")
     if columns:
         fcntl.ioctl(
-            slave_fd,
+            terminal_fd,
             termios.TIOCSWINSZ,
             struct.pack("HHHH", 24, int(columns), 0, 0),
         )
     input_text = os.environ.get("SLOCTL_TEST_TTY_INPUT")
-    stdin = subprocess.DEVNULL
+    stdin = terminal_fd if join_output else subprocess.DEVNULL
     if input_text is not None:
-        attrs = termios.tcgetattr(slave_fd)
+        attrs = termios.tcgetattr(terminal_fd)
         attrs[3] &= ~termios.ECHO
-        termios.tcsetattr(slave_fd, termios.TCSANOW, attrs)
-        stdin = slave_fd
+        termios.tcsetattr(terminal_fd, termios.TCSANOW, attrs)
+        stdin = terminal_fd
 
     process = subprocess.Popen(
         sys.argv[1:],
         stdin=stdin,
-        stdout=subprocess.PIPE,
-        stderr=slave_fd,
+        stdout=terminal_fd if join_output else subprocess.PIPE,
+        stderr=terminal_fd,
         close_fds=True,
     )
     if input_text is not None:
-        os.write(master_fd, input_text.encode())
-    os.close(slave_fd)
+        os.write(controller_fd, input_text.encode())
+    os.close(terminal_fd)
 
     selector = selectors.DefaultSelector()
-    selector.register(process.stdout, selectors.EVENT_READ, sys.stdout.buffer)
-    selector.register(master_fd, selectors.EVENT_READ, sys.stderr.buffer)
+    if not join_output:
+        selector.register(process.stdout, selectors.EVENT_READ, sys.stdout.buffer)
+    selector.register(
+        controller_fd,
+        selectors.EVENT_READ,
+        sys.stdout.buffer if join_output else sys.stderr.buffer,
+    )
 
     while selector.get_map():
         for key, _ in selector.select():

@@ -137,12 +137,17 @@ func (n notifier) fetchLatestReleaseWithTimeout() (githubRelease, error) {
 }
 
 func (n notifier) canNotify() bool {
-	return isatty.IsTerminal(n.stdin.Fd()) &&
-		isatty.IsTerminal(n.stderr.Fd()) &&
+	return isTerminal(n.stdin) &&
+		isTerminal(n.stderr) &&
 		n.cachePath != "" &&
 		os.Getenv(ciEnv) == "" &&
 		os.Getenv(optOutEnv) == "" &&
 		!isDevelopmentVersion(n.currentVersion)
+}
+
+func isTerminal(file *os.File) bool {
+	fd := file.Fd()
+	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }
 
 func isUpdateFormSupported(goOS string, readSystemName func() (string, error)) bool {

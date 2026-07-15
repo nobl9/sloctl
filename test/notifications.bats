@@ -29,6 +29,7 @@ setup() {
   unset SLOCTL_NOTIFICATIONS_RELEASE_URL
   unset SLOCTL_TEST_TTY_COLUMNS
   unset SLOCTL_TEST_TTY_INPUT
+  unset SLOCTL_TEST_TTY_JOIN_OUTPUT
   unset RELEASE_SERVER_BODY_FILE
   unset RELEASE_SERVER_HTML_URL
   unset RELEASE_SERVER_RAW_RESPONSE
@@ -38,6 +39,7 @@ setup() {
   export NO_COLOR=1
   export SLOCTL_ACCESSIBLE_MODE=1
   export XDG_CACHE_HOME="$BATS_TMPDIR/cache-$BATS_TEST_NUMBER"
+  export LocalAppData="$BATS_TMPDIR/cache-$BATS_TEST_NUMBER"
   export RELEASE_SERVER_LOG="$BATS_TMPDIR/release-server-$BATS_TEST_NUMBER.log"
   RELEASE_SERVER_START_COUNT=0
   select_update_action skip
@@ -155,6 +157,38 @@ teardown() {
   assert_release_requests 1
 }
 
+# bats test_tags=platform
+@test "sloctl shows the new version notification and update form on supported terminals" {
+  use_release_body maintenance
+  start_release_server
+
+  run_sloctl_with_tty_stderr version
+  assert_success_joined_output
+  # Exact prompt rendering is covered by unit cases; this test isolates platform form support.
+  assert_stderr --partial "New sloctl version v1.1.0 is available!"
+  assert_stderr --partial "Choose update action"
+  assert_release_requests 1
+}
+
+# bats test_tags=platform
+@test "sloctl in a native Windows console shows the notification without the update form" {
+  if [[ "$(uname -s)" != MINGW* && "$(uname -s)" != CYGWIN* ]]; then
+    skip "Windows-specific compatibility test"
+  fi
+
+  use_release_body maintenance
+  local tools_dir="$BATS_TEST_TMPDIR/tools-without-uname"
+  mkdir -p "$tools_dir"
+  start_release_server
+
+  run_sloctl_binary_in_windows_console_with_path "$(native_sloctl_binary)" "$tools_dir" version
+  assert_success_joined_output
+  # winpty combines native console streams, so assertions use its joined terminal output.
+  assert_output --partial "New sloctl version v1.1.0 is available!"
+  refute_output --partial "Choose update action"
+  assert_release_requests 1
+}
+
 @test "sloctl skips empty release notes sections" {
   use_release_body empty-features-then-bug-fixes
   start_release_server
@@ -256,7 +290,12 @@ teardown() {
   assert_notification_stderr install-curl-wide-prompt
 }
 
+# bats test_tags=platform
 @test "sloctl suggests Homebrew upgrade for Homebrew installs" {
+  if [ "$(uname -s)" != "Darwin" ]; then
+    skip "native Homebrew compatibility is tested on macOS"
+  fi
+
   use_release_body maintenance
   local cellar_binary="$BATS_TEST_TMPDIR/opt/homebrew/Cellar/sloctl/1.2.0/bin/sloctl"
   local linked_binary="$BATS_TEST_TMPDIR/opt/homebrew/bin/sloctl"
@@ -360,7 +399,11 @@ select_default_update_action() {
 }
 
 run_sloctl_with_tty_stderr() {
-  run_sloctl_binary_with_tty_stderr sloctl "$@"
+  local binary="sloctl"
+  if has_bats_tag platform; then
+    binary="$(native_sloctl_binary)"
+  fi
+  run_sloctl_binary_with_tty_stderr "$binary" "$@"
 }
 
 run_sloctl_binary_with_tty_stderr() {
@@ -378,6 +421,17 @@ run_sloctl_binary_with_path() {
   run --separate-stderr env PATH="$path" /usr/bin/python3 "$TEST_INPUTS/run_with_stderr_pty.py" "$binary" "$@"
 }
 
+run_sloctl_binary_in_windows_console_with_path() {
+  local binary="$1"
+  local path="$2"
+  shift 2
+  bats_require_minimum_version 1.5.0
+  run --separate-stderr env \
+    PATH="$path" \
+    SLOCTL_TEST_TTY_JOIN_OUTPUT=1 \
+    /usr/bin/python3 "$TEST_INPUTS/run_with_stderr_pty.py" /usr/bin/winpty "$binary" "$@"
+}
+
 run_sloctl_binary_with_prefixed_path() {
   local binary="$1"
   local path="$2"
@@ -388,9 +442,26 @@ run_sloctl_binary_with_prefixed_path() {
 
 copy_sloctl_binary() {
   local target="$1"
+  local source="/usr/bin/sloctl"
+  if has_bats_tag platform; then
+    source="$(native_sloctl_binary)"
+  fi
   mkdir -p "$(dirname "$target")"
-  cp /usr/bin/sloctl "$target"
+  cp "$source" "$target"
   chmod +x "$target"
+}
+
+has_bats_tag() {
+  local expected="$1"
+  [[ " ${BATS_TEST_TAGS[*]} " == *" $expected "* ]]
+}
+
+native_sloctl_binary() {
+  local binary="$BATS_TEST_DIRNAME/../bin/sloctl"
+  case "$(uname -s)" in
+    CYGWIN* | MINGW* | MSYS*) binary+=".exe" ;;
+  esac
+  printf '%s\n' "$binary"
 }
 
 start_release_server() {
