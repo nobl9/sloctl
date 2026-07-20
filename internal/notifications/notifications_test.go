@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -36,9 +37,10 @@ func TestNotifier_promptUpdate_WithoutForm(t *testing.T) {
 	require.NoError(t, err)
 	output, err := io.ReadAll(stderr)
 	require.NoError(t, err)
-	assert.Contains(t, string(output), "New sloctl version v1.2.3 is available!")
-	assert.Contains(t, string(output), "https://github.com/nobl9/sloctl/releases/tag/v1.2.3")
-	assert.NotContains(t, string(output), "Choose update action")
+	plainOutput := ansi.Strip(string(output))
+	assert.Contains(t, plainOutput, "New sloctl version v1.2.3 is available!")
+	assert.Contains(t, plainOutput, "https://github.com/nobl9/sloctl/releases/tag/v1.2.3")
+	assert.NotContains(t, plainOutput, "Choose update action")
 }
 
 func Test_isUpdateFormSupported(t *testing.T) {

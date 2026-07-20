@@ -8,6 +8,7 @@ require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/OpenSLO/go-sdk v0.9.2
 	github.com/charmbracelet/glamour v1.0.0
+	github.com/charmbracelet/x/ansi v0.11.7
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/goccy/go-yaml v1.19.2
 	github.com/itchyny/gojq v0.12.19
@@ -38,7 +39,6 @@ require (
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20260720091822-7cc6674724ac // indirect
-	github.com/charmbracelet/x/ansi v0.11.7 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.15 // indirect
 	github.com/charmbracelet/x/exp/ordered v0.1.0 // indirect
 	github.com/charmbracelet/x/exp/slice v0.0.0-20260720091843-3eef36eaaa28 // indirect
@@ -49,7 +49,6 @@ require (
 	github.com/clipperhouse/displaywidth v0.11.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/dlclark/regexp2 v1.12.0 // indirect
 	github.com/dlclark/regexp2/v2 v2.5.2 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fatih/color v1.19.0 // indirect
@@ -76,9 +75,9 @@ require (
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/nobl9/govy v0.26.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/prometheus/client_golang v1.24.0 // indirect
+	github.com/prometheus/client_golang v1.23.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.70.0 // indirect
+	github.com/prometheus/common v0.67.5 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/teambition/rrule-go v1.8.2 // indirect
 	github.com/tidwall/gjson v1.19.0 // indirect
