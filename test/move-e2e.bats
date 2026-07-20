@@ -7,13 +7,7 @@ setup_file() {
   load_lib "bats-assert"
 
   generate_inputs "$BATS_FILE_TMPDIR"
-
-  export TEST_OUTPUTS="$TEST_SUITE_OUTPUTS/move-e2e"
-
-  # Use generated project name in the outputs too.
-  for file in "$TEST_OUTPUTS"/*; do
-    run sed -i "s/<PROJECT>/$TEST_PROJECT/g" "$file"
-  done
+  generate_outputs
 
   run_sloctl apply -f "'$TEST_INPUTS/**'"
   assert_success_joined_output
@@ -21,7 +15,8 @@ setup_file() {
 
 # teardown_file is run only once for the whole file.
 teardown_file() {
-  run_sloctl delete -f "'$TEST_INPUTS/**'" -f "'$TEST_OUTPUTS/**'"
+  run_sloctl delete -f "'$TEST_INPUTS/**'"
+  run_sloctl delete -f "'$TEST_OUTPUTS/**'"
   assert_success_joined_output
 }
 
@@ -106,6 +101,38 @@ The SLOs were successfully moved.
 EOF
 
   assert_applied "$(read_files "${TEST_OUTPUTS}/custom-target-service.yaml")"
+}
+
+@test "same-project service move" {
+  run_sloctl move slo same-project-service-move -p "$TEST_PROJECT" --to-service="new-service"
+
+  assert_success_joined_output
+  assert_stderr - <<EOF
+Moving 'same-project-service-move' SLO to a different Service within '$TEST_PROJECT' Project.
+'new-service' Service in '$TEST_PROJECT' Project will be assigned to all the moved SLOs.
+If the target Service does not exist in this Project, it will be created.
+
+The SLOs were successfully moved.
+EOF
+
+  assert_applied "$(read_files "${TEST_OUTPUTS}/same-project-service-move.yaml")"
+}
+
+@test "same-project service move with multiple slos" {
+  run_sloctl move slo same-project-multi-1 same-project-multi-2 -p "$TEST_PROJECT" --to-service="new-service"
+
+  assert_success_joined_output
+  assert_stderr - <<EOF
+Moving the following SLOs to a different Service within '$TEST_PROJECT' Project:
+ - same-project-multi-1
+ - same-project-multi-2
+'new-service' Service in '$TEST_PROJECT' Project will be assigned to all the moved SLOs.
+If the target Service does not exist in this Project, it will be created.
+
+The SLOs were successfully moved.
+EOF
+
+  assert_applied "$(read_files "${TEST_OUTPUTS}/same-project-multi.yaml")"
 }
 
 @test "error for attached Alert Policies" {

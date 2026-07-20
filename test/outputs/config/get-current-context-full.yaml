@@ -1,0 +1,8 @@
+clientId: full_client_id
+clientSecret: fu***et
+project: default
+url: https://apps.nobl9.com/api
+oktaOrgUrl: https://accounts.nobl9.com
+oktaAuthServer: auseg9kiegWKEtJZC416
+disableOkta: true
+timeout: 1m0s

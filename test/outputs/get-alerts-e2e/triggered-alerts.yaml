@@ -1,0 +1,175 @@
+- apiVersion: n9/v1alpha
+  kind: Alert
+  metadata:
+    name: b5e3a7c1-0002-4000-8000-000000000002
+    project: alert-test-project
+  spec:
+    alertPolicy:
+      displayName: Alert Test Policy High
+      name: alert-test-policy-high
+      project: alert-test-project
+    conditions:
+    - measurement: burnedBudget
+      op: gte
+      status:
+        firstMetMetricTime: "2026-01-15T10:05:00Z"
+        lastMetMetricTime: "2026-01-15T10:05:00Z"
+        lastsForMetMetricTime: "2026-01-15T10:05:00Z"
+      value: 0.9
+    coolDown: 5m0s
+    objective:
+      displayName: default
+      name: default
+      value: 0.9
+    service:
+      displayName: Alert Test Service
+      name: alert-test-service
+      project: alert-test-project
+    severity: High
+    slo:
+      displayName: Alert Test SLO
+      name: alert-test-slo
+      project: alert-test-project
+    status: Triggered
+    triggeredClockTime: "2026-01-15T10:05:00Z"
+    triggeredMetricTime: "2026-01-15T10:05:00Z"
+- apiVersion: n9/v1alpha
+  kind: Alert
+  metadata:
+    name: b5e3a7c1-0001-4000-8000-000000000001
+    project: alert-test-project
+  spec:
+    alertPolicy:
+      displayName: Alert Test Policy High
+      name: alert-test-policy-high
+      project: alert-test-project
+    conditions:
+    - measurement: burnedBudget
+      op: gte
+      status:
+        firstMetMetricTime: "2026-01-15T10:00:00Z"
+        lastMetMetricTime: "2026-01-15T10:00:00Z"
+        lastsForMetMetricTime: "2026-01-15T10:00:00Z"
+      value: 0.9
+    coolDown: 5m0s
+    objective:
+      displayName: critical
+      name: critical
+      value: 0.95
+    service:
+      displayName: Alert Test Service
+      name: alert-test-service
+      project: alert-test-project
+    severity: High
+    slo:
+      displayName: Alert Test SLO
+      name: alert-test-slo
+      project: alert-test-project
+    status: Triggered
+    triggeredClockTime: "2026-01-15T10:00:00Z"
+    triggeredMetricTime: "2026-01-15T10:00:00Z"
+- apiVersion: n9/v1alpha
+  kind: Alert
+  metadata:
+    name: b5e3a7c1-0003-4000-8000-000000000003
+    project: alert-test-project
+  spec:
+    alertPolicy:
+      displayName: Alert Test Policy Medium
+      name: alert-test-policy-medium
+      project: alert-test-project
+    conditions:
+    - measurement: burnedBudget
+      op: gte
+      status:
+        firstMetMetricTime: "2026-01-15T10:10:00Z"
+        lastMetMetricTime: "2026-01-15T10:10:00Z"
+        lastsForMetMetricTime: "2026-01-15T10:10:00Z"
+      value: 0.8
+    coolDown: 5m0s
+    objective:
+      displayName: default
+      name: default
+      value: 0.9
+    service:
+      displayName: Alert Test Service
+      name: alert-test-service
+      project: alert-test-project
+    severity: Medium
+    slo:
+      displayName: Alert Test SLO
+      name: alert-test-slo
+      project: alert-test-project
+    status: Triggered
+    triggeredClockTime: "2026-01-15T10:10:00Z"
+    triggeredMetricTime: "2026-01-15T10:10:00Z"
+- apiVersion: n9/v1alpha
+  kind: Alert
+  metadata:
+    name: b5e3a7c1-0004-4000-8000-000000000004
+    project: alert-test-project
+  spec:
+    alertPolicy:
+      displayName: Alert Test Policy Low
+      name: alert-test-policy-low
+      project: alert-test-project
+    conditions:
+    - measurement: burnedBudget
+      op: gte
+      status:
+        firstMetMetricTime: "2026-01-15T10:15:00Z"
+        lastMetMetricTime: "2026-01-15T10:15:00Z"
+        lastsForMetMetricTime: "2026-01-15T10:15:00Z"
+      value: 0.7
+    coolDown: 5m0s
+    objective:
+      displayName: default
+      name: default
+      value: 0.9
+    service:
+      displayName: Alert Test Service
+      name: alert-test-service
+      project: alert-test-project
+    severity: Low
+    slo:
+      displayName: Alert Test SLO
+      name: alert-test-slo
+      project: alert-test-project
+    status: Triggered
+    triggeredClockTime: "2026-01-15T10:15:00Z"
+    triggeredMetricTime: "2026-01-15T10:15:00Z"
+- apiVersion: n9/v1alpha
+  kind: Alert
+  metadata:
+    name: b5e3a7c1-0008-4000-8000-000000000008
+    project: alert-test-project
+  spec:
+    alertPolicy:
+      displayName: Alert Test Policy High
+      name: alert-test-policy-high
+      project: alert-test-project
+    conditions:
+    - measurement: burnedBudget
+      op: gte
+      status:
+        firstMetMetricTime: "2026-01-15T06:00:00Z"
+        lastMetMetricTime: "2026-01-15T06:00:00Z"
+        lastsForMetMetricTime: "2026-01-15T06:00:00Z"
+      value: 0.9
+    coolDown: 5m0s
+    objective:
+      displayName: critical
+      name: critical
+      value: 0.95
+    service:
+      displayName: Alert Test Service
+      name: alert-test-service
+      project: alert-test-project
+    severity: High
+    slo:
+      displayName: Alert Test SLO
+      name: alert-test-slo
+      project: alert-test-project
+    status: Triggered
+    triggeredClockTime: "2026-01-15T06:00:00Z"
+    triggeredMetricTime: "2026-01-15T06:00:00Z"

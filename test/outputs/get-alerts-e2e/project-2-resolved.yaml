@@ -1,0 +1,33 @@
+- apiVersion: n9/v1alpha
+  kind: Alert
+  metadata:
+    name: b5e3a7c1-000a-4000-8000-00000000000a
+    project: alert-test-project-2
+  spec:
+    alertPolicy:
+      displayName: Alert Test Policy High 2
+      name: alert-test-policy-high-2
+      project: alert-test-project-2
+    conditions:
+    - measurement: burnedBudget
+      op: gte
+      value: 0.85
+    coolDown: 5m0s
+    objective:
+      displayName: default
+      name: default
+      value: 0.9
+    resolvedClockTime: "2026-01-15T10:30:00Z"
+    resolvedMetricTime: "2026-01-15T10:30:00Z"
+    service:
+      displayName: Alert Test Service 2
+      name: alert-test-service-2
+      project: alert-test-project-2
+    severity: High
+    slo:
+      displayName: Alert Test SLO 2
+      name: alert-test-slo-2
+      project: alert-test-project-2
+    status: Resolved
+    triggeredClockTime: "2026-01-15T05:00:00Z"
+    triggeredMetricTime: "2026-01-15T05:00:00Z"

@@ -102,7 +102,7 @@ func TestExpressionRunner_EvaluateAndPrint(t *testing.T) {
 				Expression: tc.expr,
 			})
 
-			iter, err := runner.Evaluate(tc.input)
+			iterator, err := runner.Evaluate(tc.input)
 
 			if tc.err != "" {
 				require.Error(t, err)
@@ -110,7 +110,7 @@ func TestExpressionRunner_EvaluateAndPrint(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 
-				values, iterErr := collectResults(iter)
+				values, iterErr := collectResults(iterator)
 				require.NoError(t, iterErr)
 
 				if tc.expected == nil {
@@ -201,18 +201,18 @@ func TestExpressionRunner_EvaluateAndPrint_ComplexDataTypes(t *testing.T) {
 		Expression: ".name",
 	})
 
-	iter, err := runner.Evaluate(input)
+	iterator, err := runner.Evaluate(input)
 	require.NoError(t, err)
 
-	values, iterErr := collectResults(iter)
+	values, iterErr := collectResults(iterator)
 	require.NoError(t, iterErr)
 	assert.Equal(t, []any{"test"}, values)
 }
 
 // collectResults collects values from an iter.Seq2[any, error] and returns them as a slice
-func collectResults(iter iter.Seq2[any, error]) ([]any, error) {
+func collectResults(iterator iter.Seq2[any, error]) ([]any, error) {
 	var values []any // nolint: prealloc
-	for v, err := range iter {
+	for v, err := range iterator {
 		if err != nil {
 			return nil, err
 		}

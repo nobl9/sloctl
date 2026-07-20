@@ -1,0 +1,35 @@
+- apiVersion: n9/v1alpha
+  kind: Alert
+  metadata:
+    name: b5e3a7c1-0009-4000-8000-000000000009
+    project: alert-test-project-2
+  spec:
+    alertPolicy:
+      displayName: Alert Test Policy High 2
+      name: alert-test-policy-high-2
+      project: alert-test-project-2
+    conditions:
+    - measurement: burnedBudget
+      op: gte
+      status:
+        firstMetMetricTime: "2026-01-15T10:20:00Z"
+        lastMetMetricTime: "2026-01-15T10:20:00Z"
+        lastsForMetMetricTime: "2026-01-15T10:20:00Z"
+      value: 0.85
+    coolDown: 5m0s
+    objective:
+      displayName: p99-latency
+      name: p99-latency
+      value: 0.99
+    service:
+      displayName: Alert Test Service 2
+      name: alert-test-service-2
+      project: alert-test-project-2
+    severity: High
+    slo:
+      displayName: Alert Test SLO 2
+      name: alert-test-slo-2
+      project: alert-test-project-2
+    status: Triggered
+    triggeredClockTime: "2026-01-15T10:20:00Z"
+    triggeredMetricTime: "2026-01-15T10:20:00Z"

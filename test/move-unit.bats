@@ -14,11 +14,11 @@ setup() {
   load_lib "bats-assert"
 }
 
-@test "missing --to-project flag" {
+@test "missing required flags" {
   run_sloctl move slo splunk-raw-rolling
 
   assert_failure
-  assert_stderr 'Error: required flag(s) "to-project" not set'
+  assert_stderr 'Error: Either --to-project or --to-service must be provided.'
 }
 
 @test "validation error" {
@@ -28,6 +28,6 @@ setup() {
   assert_stderr - <<EOF
 Error: Validation for Move SLOs request has failed for the following properties:
   - 'newProject' with value 'NewProject':
-    - string must match regular expression: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$' (e.g. 'my-name', '123-abc'); an RFC-1123 compliant label name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character
+    - string must match regular expression: '^[a-z0-9]([a-z0-9-]*[a-z0-9])?$'; must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character
 EOF
 }

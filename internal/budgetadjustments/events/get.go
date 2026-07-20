@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/nobl9/nobl9-go/sdk"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/nobl9/sloctl/internal/budgetadjustments/sdkclient"
-	"github.com/nobl9/sloctl/internal/flags"
 	"github.com/nobl9/sloctl/internal/printer"
 )
 
@@ -20,7 +20,7 @@ type GetCmd struct {
 	client           *sdk.Client
 	printer          *printer.Printer
 	adjustment       string
-	from, to         flags.TimeValue
+	from, to         time.Time
 	project, sloName string
 }
 
@@ -72,7 +72,10 @@ func NewGetCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 }
 
 func (g *GetCmd) run(cmd *cobra.Command) error {
-	values := url.Values{"from": {g.from.String()}, "to": {g.to.String()}}
+	values := url.Values{
+		"from": {g.from.Format(time.RFC3339)},
+		"to":   {g.to.Format(time.RFC3339)},
+	}
 	if g.sloName != "" {
 		values.Add("sloName", g.sloName)
 	}
@@ -80,11 +83,11 @@ func (g *GetCmd) run(cmd *cobra.Command) error {
 		values.Add("sloProject", g.project)
 	}
 
-	resBody, err := DoRequest(
+	resBody, err := doRequest(
 		g.client,
 		cmd.Context(),
 		http.MethodGet,
-		fmt.Sprintf("%s/%s/events", BudgetAdjustmentAPI, g.adjustment),
+		fmt.Sprintf("%s/%s/events", budgetAdjustmentAPI, g.adjustment),
 		values,
 		nil,
 	)

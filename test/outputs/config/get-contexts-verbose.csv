@@ -1,0 +1,2 @@
+full.clientId,full.clientSecret,full.disableOkta,full.oktaAuthServer,full.oktaOrgUrl,full.project,full.timeout,full.url,minimal.clientId,minimal.clientSecret
+"full_client_id","fu***et",true,"auseg9kiegWKEtJZC416","https://accounts.nobl9.com","default",6e+10,"https://apps.nobl9.com/api","minimal_client_id","mi***et"

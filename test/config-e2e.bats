@@ -13,30 +13,28 @@ setup() {
   load_lib "bats-support"
 }
 
-@test "sloctl config current-user (default YAML)" {
+@test "sloctl config current-user id" {
   run_sloctl config current-user
+  assert_success_joined_output
+  assert_regex "$output" "[a-zA-Z0-9]+"
+}
 
+@test "sloctl config current-user (verbose, default YAML)" {
+  run_sloctl config current-user --verbose
   assert_success_joined_output
   assert_regex "$output" "$(cat "$TEST_OUTPUTS/get-current-user-regex.yaml")"
 }
 
-@test "sloctl config current-user (YAML)" {
-  run_sloctl config current-user -o yaml
-
-  assert_success_joined_output
-  assert_regex "$output" "$(cat "$TEST_OUTPUTS/get-current-user-regex.yaml")"
+@test "sloctl config current-user (verbose)" {
+  for format in yaml json csv; do
+    run_sloctl config current-user -v -o "$format"
+    assert_success_joined_output
+    assert_regex "$output" "$(cat "$TEST_OUTPUTS/get-current-user-regex.$format")"
+  done
 }
 
-@test "sloctl config current-user (JSON)" {
+@test "sloctl config current-user, output flag without verbose" {
   run_sloctl config current-user -o json
-
-  assert_success_joined_output
-  assert_regex "$output" "$(cat "$TEST_OUTPUTS/get-current-user-regex.json")"
-}
-
-@test "sloctl config current-user (CSV)" {
-  run_sloctl config current-user -o csv
-
-  assert_success_joined_output
-  assert_regex "$output" "$(cat "$TEST_OUTPUTS/get-current-user-regex.csv")"
+  assert_failure
+  assert_stderr 'Error: --output flag can only be set if --verbose flag is also provided'
 }

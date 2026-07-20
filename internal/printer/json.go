@@ -15,10 +15,10 @@ type jsonPrinter struct {
 	out io.Writer
 }
 
-func (p *jsonPrinter) Print(content any) error {
+func (p jsonPrinter) Print(content any) error {
 	switch v := content.(type) {
 	case []manifest.Object:
-		return sdk.PrintObjects(v, p.out, manifest.ObjectFormatJSON)
+		return sdk.EncodeObjects(v, p.out, manifest.ObjectFormatJSON)
 	default:
 		if str, ok := p.jsonScalarToString(content); ok {
 			_, err := fmt.Fprintln(p.out, str)
@@ -26,11 +26,9 @@ func (p *jsonPrinter) Print(content any) error {
 				return err
 			}
 		} else {
-			b, err := json.MarshalIndent(content, "", "  ")
-			if err != nil {
-				return err
-			}
-			if _, err = p.out.Write(b); err != nil {
+			enc := json.NewEncoder(p.out)
+			enc.SetIndent("", "  ")
+			if err := enc.Encode(content); err != nil {
 				return err
 			}
 		}
@@ -38,7 +36,7 @@ func (p *jsonPrinter) Print(content any) error {
 	return nil
 }
 
-func (p *jsonPrinter) jsonScalarToString(input any) (string, bool) {
+func (p jsonPrinter) jsonScalarToString(input any) (string, bool) {
 	switch v := input.(type) {
 	case string:
 		return v, true

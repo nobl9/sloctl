@@ -39,7 +39,7 @@ func noPositionalArgsCondition(_ *cobra.Command, args []string) error {
 
 func printSourcesDetails(verb string, objects []manifest.Object, out io.Writer) {
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("%s %d objects from the following sources: \n", verb, len(objects)))
+	fmt.Fprintf(&b, "%s %d objects from the following sources: \n", verb, len(objects))
 	uniq := make(map[string]struct{}, len(objects)/2) // Rough estimation of the objects from provided sources.
 	sort.SliceStable(objects, func(i, j int) bool {
 		return objects[j].GetManifestSource() > objects[i].GetManifestSource()
@@ -111,5 +111,14 @@ func pluralForKind(kind manifest.Kind) string {
 		return "AlertPolicies"
 	default:
 		return kind.String() + "s"
+	}
+}
+
+func aliasesForKind(kind manifest.Kind) []string {
+	switch kind {
+	case manifest.KindService:
+		return []string{"svc", "svcs"}
+	default:
+		return nil
 	}
 }

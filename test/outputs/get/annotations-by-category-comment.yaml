@@ -1,0 +1,21 @@
+- apiVersion: n9/v1alpha
+  kind: Annotation
+  metadata:
+    name: anakin
+    project: death-star
+  spec:
+    slo: newrelic-rolling-timeslices-threshold
+    description: Dummy Annotation for 'sloctl get' e2e tests
+    startTime: 2023-01-02T17:10:05Z
+    endTime: 2023-01-02T17:10:05Z
+- apiVersion: n9/v1alpha
+  kind: Annotation
+  metadata:
+    name: sidious
+    project: death-star
+  spec:
+    slo: splunk-raw-rolling
+    description: Dummy Annotation for 'sloctl get' e2e tests
+    startTime: 2023-01-02T17:20:05Z
+    endTime: 2023-01-02T17:30:05Z
+    category: Comment

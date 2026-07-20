@@ -1,0 +1,11 @@
+- apiVersion: n9/v1alpha
+  kind: Annotation
+  metadata:
+    name: vader
+    project: death-star
+  spec:
+    slo: splunk-raw-rolling
+    description: Dummy review note for 'sloctl get' e2e tests
+    startTime: 2023-02-02T00:00:00Z
+    endTime: 2023-02-02T23:59:59Z
+    category: ReviewNote

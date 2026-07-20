@@ -3,36 +3,37 @@ package internal
 import (
 	"context"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/manifest/v1alpha"
+	v1alphaAnnotation "github.com/nobl9/nobl9-go/manifest/v1alpha/annotation"
 	"github.com/nobl9/nobl9-go/sdk"
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
+	usersV2 "github.com/nobl9/nobl9-go/sdk/endpoints/users/v2"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/nobl9/sloctl/internal/flags"
 	"github.com/nobl9/sloctl/internal/printer"
 )
 
 //go:embed get_alert_example.sh
 var getAlertExample string
 
+//go:embed get_annotation_example.sh
+var getAnnotationExample string
+
 type GetCmd struct {
-	client      *sdk.Client
-	printer     *printer.Printer
-	labels      []string
-	project     string
-	services    []string
-	allProjects bool
-	slo         string
+	client    *sdk.Client
+	printer   *printer.Printer
+	selection objectSelectionFlags
 }
 
 // NewGetCmd returns cobra command get with all flags for it.
@@ -48,10 +49,10 @@ func (r *RootCmd) NewGetCmd() *cobra.Command {
 To get more details in output use one of the available flags.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			get.client = r.GetClient()
-			if get.allProjects {
+			if get.selection.allProjects {
 				get.client.Config.Project = "*"
-			} else if get.project != "" {
-				get.client.Config.Project = get.project
+			} else if get.selection.project != "" {
+				get.client.Config.Project = get.selection.project
 			}
 		},
 	}
@@ -65,41 +66,36 @@ To get more details in output use one of the available flags.`,
 		Aliases  []string
 		Extender func(cmd *cobra.Command) *cobra.Command
 	}{
-		{Kind: manifest.KindAgent, Aliases: []string{"agent", "Agents", "Agent"}, Extender: get.newGetAgentCommand},
+		{Kind: manifest.KindAgent, Extender: get.newGetAgentCommand},
 		{Kind: manifest.KindAlertMethod},
 		{Kind: manifest.KindAlertPolicy},
 		{Kind: manifest.KindAlert, Extender: get.newGetAlertCommand},
 		{Kind: manifest.KindAlertSilence},
-		{Kind: manifest.KindAnnotation},
+		{Kind: manifest.KindAnnotation, Extender: get.newGetAnnotationCommand},
 		{Kind: manifest.KindDataExport, Extender: get.newGetDataExportCommand},
 		{Kind: manifest.KindDirect},
 		{Kind: manifest.KindProject},
 		{Kind: manifest.KindRoleBinding},
-		{Kind: manifest.KindService, Aliases: []string{"svc", "svcs"}},
-		{Kind: manifest.KindSLO, Extender: get.newGetSLOCommand},
+		{Kind: manifest.KindService, Aliases: aliasesForKind(manifest.KindService)},
+		{Kind: manifest.KindSLO},
 		{Kind: manifest.KindUserGroup},
-		{Kind: manifest.KindBudgetAdjustment, Extender: get.newGetBudgetAdjustmentCommand},
+		{Kind: manifest.KindBudgetAdjustment},
 		{Kind: manifest.KindReport},
 	} {
 		plural := pluralForKind(subCmd.Kind)
 		short := fmt.Sprintf("Displays all of the %s.", plural)
 		use := strings.ToLower(plural)
-		subCmd.Aliases = append(subCmd.Aliases, subCmd.Kind.ToLower(), subCmd.Kind.String())
+		subCmd.Aliases = append(subCmd.Aliases, subCmd.Kind.ToLower(), subCmd.Kind.String(), plural)
 
 		sc := get.newGetObjectsCommand(subCmd.Kind, short, use, subCmd.Aliases)
 		if subCmd.Extender != nil {
 			subCmd.Extender(sc)
 		}
-		if objectKindSupportsProjectFlag(subCmd.Kind) {
-			registerProjectFlag(sc, &get.project)
-			sc.Flags().BoolVarP(&get.allProjects, "all-projects", "A", false,
-				`List the requested object(s) across all projects.`)
-		}
-		if objectKindSupportsLabelsFlag(subCmd.Kind) {
-			registerLabelsFlag(sc, &get.labels)
-		}
+		registerObjectSelectionFlags(sc, subCmd.Kind, &get.selection,
+			`List the requested object(s) across all projects.`)
 		cmd.AddCommand(sc)
 	}
+	cmd.AddCommand(get.newGetUserCommand())
 
 	return cmd
 }
@@ -113,8 +109,13 @@ func (g *GetCmd) newGetObjectsCommand(
 		Use:     use,
 		Aliases: aliases,
 		Short:   short,
+		Long:    "Resource names can be provided as positional arguments or read from stdin.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			objects, err := g.getObjects(cmd.Context(), kind, args)
+			names, err := readStdinArgs(cmd, args)
+			if err != nil {
+				return err
+			}
+			objects, err := g.getObjects(cmd.Context(), kind, names)
 			if err != nil {
 				return err
 			}
@@ -123,60 +124,103 @@ func (g *GetCmd) newGetObjectsCommand(
 	}
 }
 
+func (g *GetCmd) newGetUserCommand() *cobra.Command {
+	limit := uint(100)
+	cmd := &cobra.Command{
+		Use:   "user",
+		Short: "Displays users by ID.",
+		Long: "Provide user IDs as arguments, when no user ID is provided, all users are returned.\n" +
+			"User IDs can also be read from stdin.\n" +
+			fmt.Sprintf("By default a maximum of %d users are returned when no IDs are provided.", limit),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ids, err := readStdinArgs(cmd, args)
+			if err != nil {
+				return err
+			}
+			request := usersV2.GetUsersRequest{IDs: ids}
+			if len(ids) == 0 || cmd.Flags().Changed("limit") {
+				request.Limit = limit
+			}
+			users, err := g.client.Users().V2().GetUsers(
+				cmd.Context(),
+				request,
+			)
+			if err != nil {
+				return err
+			}
+			return g.printUsers(users)
+		},
+	}
+	cmd.Flags().UintVar(&limit, "limit", limit, "Maximum number of users to return.")
+	return cmd
+}
+
 // nolint: gocognit
 func (g *GetCmd) newGetAlertCommand(cmd *cobra.Command) *cobra.Command {
 	cmd.Example = getAlertExample
 	cmd.Long = "Get alerts based on search criteria. You can use specific criteria using flags to find alerts " +
 		"related to specific SLO, objective, service, alert policy, time range, or alert status.\n\n" +
 		"For example, you can use the same flag multiple times to find alerts triggered for a given SLO OR " +
-		"another SLO. Keep in mind that the different types of flags are linked by the AND logical operator.\n\n" +
-		"Only alerts triggered in given project only (alert project is the same as the SLO project). If you don't " +
-		"have permission to view SLO in a given project, alerts from that project will not be returned.\n\n"
+		"another SLO. Keep in mind that the different types of flags are linked by the logical AND operator.\n\n" +
+		"If you don't have permission to view SLO in a given project, alerts from that project will not be returned.\n\n"
 
-	alertPolicyNames := cmd.Flags().StringArray(
+	params := objectsV1.GetAlertsRequest{
+		Resolved:  new(bool),
+		Triggered: new(bool),
+	}
+	cmd.Flags().StringArrayVar(
+		&params.AlertPolicyNames,
 		"alert-policy",
 		[]string{},
 		"Get alerts triggered for a given alert policy (name) only.",
 	)
-	sloNames := cmd.Flags().StringArray(
+	cmd.Flags().StringArrayVar(
+		&params.SLONames,
 		"slo",
 		[]string{},
 		"Get alerts triggered for a given SLO (name) only.",
 	)
-	objectiveNames := cmd.Flags().StringArray(
+	cmd.Flags().StringArrayVar(
+		&params.ObjectiveNames,
 		"objective",
 		[]string{},
 		"Get alerts triggered for a given objective name of the SLO only.",
 	)
-	serviceNames := cmd.Flags().StringArray(
+	cmd.Flags().StringArrayVar(
+		&params.ServiceNames,
 		"service",
 		[]string{},
 		"Get alerts triggered for SLOs related to a given service only.",
 	)
-	objectiveValues := cmd.Flags().StringArray(
+	objectiveValuesFlag := flags.FloatArray{}
+	cmd.Flags().Var(
+		&objectiveValuesFlag,
 		"objective-value",
-		[]string{},
 		"Get alerts triggered for a given objective value of the SLO only.",
 	)
-	resolved := cmd.Flags().Bool(
+	cmd.Flags().BoolVar(
+		params.Resolved,
 		"resolved",
 		true,
 		"Get alerts that are resolved only.",
 	)
-	triggered := cmd.Flags().Bool(
+	cmd.Flags().BoolVar(
+		params.Triggered,
 		"triggered",
 		true,
 		"Get alerts that are still active (not resolved yet) only.",
 	)
-	from := cmd.Flags().String(
+	flags.RegisterTimeVar(
+		cmd,
+		&params.From,
 		"from",
-		"",
 		"Get active alerts after `from` time only, based on metric timestamp (RFC3339), "+
 			"for example 2023-02-09T10:00:00Z.",
 	)
-	to := cmd.Flags().String(
+	flags.RegisterTimeVar(
+		cmd,
+		&params.To,
 		"to",
-		"",
 		"Get active alerts before `to` time only, based on metric timestamp (RFC3339), "+
 			"for example 2023-02-09T10:00:00Z.",
 	)
@@ -185,52 +229,25 @@ func (g *GetCmd) newGetAlertCommand(cmd *cobra.Command) *cobra.Command {
 	cmd.Flags().Lookup("objective-value").Hidden = true
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		query := make(url.Values)
-
-		if len(args) > 0 {
-			query[objectsV1.QueryKeyName] = args
-		}
-		if len(*sloNames) > 0 {
-			query[objectsV1.QueryKeySLOName] = *sloNames
-		}
-		if len(*serviceNames) > 0 {
-			query[objectsV1.QueryKeyServiceName] = *serviceNames
-		}
-		if len(*alertPolicyNames) > 0 {
-			query[objectsV1.QueryKeyAlertPolicyName] = *alertPolicyNames
-		}
-		if len(*objectiveNames) > 0 {
-			query[objectsV1.QueryKeyObjectiveName] = *objectiveNames
-		}
-		if len(*objectiveValues) > 0 {
-			query[objectsV1.QueryKeyObjectiveValue] = *objectiveValues
-		}
-		if cmd.Flags().Lookup(objectsV1.QueryKeyFrom).Changed {
-			query[objectsV1.QueryKeyFrom] = []string{*from}
-		}
-		if cmd.Flags().Lookup(objectsV1.QueryKeyTo).Changed {
-			query[objectsV1.QueryKeyTo] = []string{*to}
-		}
-		if cmd.Flags().Lookup(objectsV1.QueryKeyResolved).Changed {
-			query[objectsV1.QueryKeyResolved] = []string{strconv.FormatBool(*resolved)}
-		}
-		if cmd.Flags().Lookup(objectsV1.QueryKeyTriggered).Changed {
-			query[objectsV1.QueryKeyTriggered] = []string{strconv.FormatBool(*triggered)}
-		}
-
-		objects, truncatedMax, err := g.client.Objects().V1().GetAlerts(
-			cmd.Context(),
-			http.Header{sdk.HeaderProject: []string{g.client.Config.Project}},
-			query,
-		)
+		names, err := readStdinArgs(cmd, args)
 		if err != nil {
 			return err
 		}
-		if len(objects) == 0 {
+		if len(names) > 0 {
+			params.Names = names
+		}
+		params.ObjectiveValues = objectiveValuesFlag
+
+		//nolint: staticcheck
+		alerts, truncatedMax, err := g.client.Objects().V1().GetAlerts(cmd.Context(), params)
+		if err != nil {
+			return err
+		}
+		if len(alerts) == 0 {
 			fmt.Printf("No resources found in '%s' project.\n", g.client.Config.Project)
 			return nil
 		}
-		if err = g.printer.Print(objects); err != nil {
+		if err = g.printer.Print(alerts); err != nil {
 			return err
 		}
 		if truncatedMax > 0 {
@@ -276,7 +293,11 @@ func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 		`Displays client_secret and client_id.`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		objects, err := g.getObjects(cmd.Context(), manifest.KindAgent, args)
+		names, err := readStdinArgs(cmd, args)
+		if err != nil {
+			return err
+		}
+		objects, err := g.getObjects(cmd.Context(), manifest.KindAgent, names)
 		if err != nil {
 			return err
 		}
@@ -299,16 +320,15 @@ func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 	return cmd
 }
 
-func (g *GetCmd) newGetSLOCommand(cmd *cobra.Command) *cobra.Command {
-	cmd.Flags().StringArrayVarP(&g.services, "service", "s", nil, "Filter SLOs by service name.")
-	return cmd
-}
+func (g *GetCmd) newGetAnnotationCommand(cmd *cobra.Command) *cobra.Command {
+	cmd.Example = getAnnotationExample
+	cmd.Long = fmt.Sprintf("Get annotations based on search criteria. "+
+		"You can use specific criteria using flags to find annotations "+
+		"related to specific project, SLO, time range, or categories.\n"+
+		"By default only %s categories are returned.\n\n"+
+		"Keep in mind that the different types of flags are linked by the logical AND operator.\n\n",
+		strings.Join(stringsTypeToStrings(v1alphaAnnotation.GetUserCategories()), ", "))
 
-func (g *GetCmd) newGetBudgetAdjustmentCommand(cmd *cobra.Command) *cobra.Command {
-	cmd.Flags().StringVarP(&g.slo, "slo", "", "",
-		`Filter resource by SLO name. Example: my-sample-slo-name`)
-	registerProjectFlag(cmd, &g.project)
-	cmd.MarkFlagsRequiredTogether("slo", "project")
 	return cmd
 }
 
@@ -360,23 +380,102 @@ func (g *GetCmd) enrichAgentWithSecrets(
 }
 
 func (g *GetCmd) getObjects(ctx context.Context, kind manifest.Kind, args []string) ([]manifest.Object, error) {
-	query := url.Values{objectsV1.QueryKeyName: args}
-	if len(g.labels) > 0 {
-		query.Set(objectsV1.QueryKeyLabels, parseFilterLabel(g.labels))
+	if kind == manifest.KindAnnotation {
+		return g.getAnnotations(ctx, args)
 	}
-	if len(g.services) > 0 && kind == manifest.KindSLO {
-		query[objectsV1.QueryKeyServiceName] = g.services
-	}
-	if len(g.slo) > 0 && len(g.project) > 0 && kind == manifest.KindBudgetAdjustment {
-		query.Set(objectsV1.QueryKeySLOProjectName, g.project)
-		query.Set(objectsV1.QueryKeySLOName, g.slo)
-	}
+	query := buildObjectSelectionQuery(kind, args, g.selection)
 	header := http.Header{sdk.HeaderProject: []string{g.client.Config.Project}}
 	objects, err := g.client.Objects().V1().Get(ctx, kind, header, query)
 	if err != nil {
 		return nil, err
 	}
 	return objects, nil
+}
+
+func (g *GetCmd) getAnnotations(ctx context.Context, names []string) ([]manifest.Object, error) {
+	params, err := buildGetAnnotationsRequest(names, g.selection)
+	if err != nil {
+		return nil, err
+	}
+	header := http.Header{}
+	if params.Project != "" {
+		header.Set(sdk.HeaderProject, params.Project)
+	}
+	req, err := g.client.CreateRequest(
+		ctx,
+		http.MethodGet,
+		"/annotations",
+		header,
+		buildGetAnnotationsQuery(params),
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := g.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var annotations []v1alpha.GenericObject
+	decoder := json.NewDecoder(resp.Body)
+	decoder.UseNumber()
+	if err = decoder.Decode(&annotations); err != nil {
+		return nil, err
+	}
+	objects := make([]manifest.Object, 0, len(annotations))
+	for _, annotation := range annotations {
+		objects = append(objects, annotationResponseToGenericObject(annotation))
+	}
+	return objects, nil
+}
+
+func annotationResponseToGenericObject(annotation v1alpha.GenericObject) v1alpha.GenericObject {
+	if _, ok := annotation["apiVersion"]; ok {
+		if _, ok = annotation["kind"]; ok {
+			return annotation
+		}
+	}
+
+	metadata := map[string]any{
+		"name": annotation["name"],
+	}
+	if project, ok := annotation["project"]; ok {
+		metadata["project"] = project
+	}
+	if labels, ok := annotation["labels"]; ok {
+		metadata["labels"] = labels
+	}
+
+	spec := map[string]any{
+		"slo":         annotation["slo"],
+		"description": annotation["description"],
+		"startTime":   annotation["startTime"],
+	}
+	if objectiveName, ok := annotation["objectiveName"]; ok {
+		spec["objectiveName"] = objectiveName
+	}
+	if endTime, ok := annotation["endTime"]; ok && endTime != nil {
+		spec["endTime"] = endTime
+	}
+	if category, ok := annotation["category"]; ok {
+		spec["category"] = category
+	}
+	if author, ok := annotation["author"]; ok {
+		spec["createdBy"] = author
+	}
+
+	object := v1alpha.GenericObject{
+		"apiVersion": manifest.VersionV1alpha.String(),
+		"kind":       manifest.KindAnnotation.String(),
+		"metadata":   metadata,
+		"spec":       spec,
+	}
+	if status, ok := annotation["status"]; ok {
+		object["status"] = status
+	}
+	return object
 }
 
 func (g *GetCmd) printObjects(kind manifest.Kind, objects []manifest.Object) error {
@@ -390,6 +489,14 @@ func (g *GetCmd) printObjects(kind manifest.Kind, objects []manifest.Object) err
 		return nil
 	}
 	return g.printer.Print(objects)
+}
+
+func (g *GetCmd) printUsers(users []usersV2.User) error {
+	if len(users) == 0 {
+		fmt.Printf("No resources found.\n")
+		return nil
+	}
+	return g.printer.Print(users)
 }
 
 func parseFilterLabel(filterLabels []string) string {
@@ -418,4 +525,12 @@ func parseFilterLabel(filterLabels []string) string {
 		}
 	}
 	return strings.Join(strLabels, ",")
+}
+
+func stringsTypeToStrings[T ~string](generic []T) []string {
+	s := make([]string, 0, len(generic))
+	for _, v := range generic {
+		s = append(s, string(v))
+	}
+	return s
 }

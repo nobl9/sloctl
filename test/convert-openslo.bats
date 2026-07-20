@@ -7,7 +7,7 @@ setup_file() {
   load_lib "bats-assert"
 
   generate_inputs "$BATS_TEST_TMPDIR"
-  export TEST_OUTPUTS="$TEST_SUITE_OUTPUTS/convert-openslo"
+  generate_outputs
 }
 
 # setup is run before each test.

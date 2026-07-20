@@ -45,7 +45,8 @@ age: 30
 			expected: `{
   "name": "foo",
   "age": 30
-}`,
+}
+`,
 		},
 		"JSON string scalar": {
 			config:   Config{OutputFormat: JSONFormat},
@@ -160,6 +161,7 @@ func TestPrinter_MustRegisterFlags(t *testing.T) {
 			getExpected: func() Config {
 				conf := defaultConfig
 				conf.OutputFormat = JSONFormat
+				conf.SupportedFromats = ObjectsSupportedFormats
 				return conf
 			},
 		},
@@ -168,6 +170,7 @@ func TestPrinter_MustRegisterFlags(t *testing.T) {
 			getExpected: func() Config {
 				conf := defaultConfig
 				conf.OutputFormat = YAMLFormat
+				conf.SupportedFromats = ObjectsSupportedFormats
 				return conf
 			},
 		},
@@ -182,6 +185,7 @@ func TestPrinter_MustRegisterFlags(t *testing.T) {
 				conf.OutputFormat = CSVFormat
 				conf.CSVRecordSeparator = "|"
 				conf.CSVFieldSeparator = "~"
+				conf.SupportedFromats = ObjectsSupportedFormats
 				return conf
 			},
 		},

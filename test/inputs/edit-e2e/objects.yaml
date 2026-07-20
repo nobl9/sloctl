@@ -1,0 +1,193 @@
+- apiVersion: n9/v1alpha
+  kind: Project
+  metadata:
+    name: <PROJECT>
+  spec:
+    description: Dummy Project for 'sloctl edit' e2e tests
+- apiVersion: n9/v1alpha
+  kind: Service
+  metadata:
+    displayName: Edit Target
+    labels:
+      edit-filter:
+        - primary
+    name: edit-target
+    project: <PROJECT>
+  spec:
+    description: Dummy Service for 'sloctl edit' e2e tests
+- apiVersion: n9/v1alpha
+  kind: Service
+  metadata:
+    displayName: Edit Target Secondary
+    name: edit-target-secondary
+    project: <PROJECT>
+  spec:
+    description: Dummy secondary Service for 'sloctl edit' e2e tests
+- apiVersion: n9/v1alpha
+  kind: Agent
+  metadata:
+    displayName: Edit Agent
+    name: edit-agent
+    project: <PROJECT>
+  spec:
+    cloudwatch: {}
+    sourceOf:
+      - Metrics
+- apiVersion: n9/v1alpha
+  kind: AlertMethod
+  metadata:
+    name: edit-alert-method
+    project: <PROJECT>
+  spec:
+    description: Dummy AlertMethod for 'sloctl edit' e2e tests
+    email:
+      body: "$alert_policy_name has triggered"
+      subject: Your SLO $slo_name needs attention!
+      to:
+        - custodian@nobl9.com
+- apiVersion: n9/v1alpha
+  kind: AlertPolicy
+  metadata:
+    name: edit-alert-policy
+    project: <PROJECT>
+  spec:
+    description: Dummy AlertPolicy for 'sloctl edit' e2e tests
+    severity: Medium
+    coolDown: 5m
+    conditions:
+      - lastsFor: 2m
+        measurement: timeToBurnBudget
+        op: lt
+        value: 72h
+    alertMethods:
+      - metadata:
+          name: edit-alert-method
+- apiVersion: n9/v1alpha
+  kind: Direct
+  metadata:
+    displayName: Edit Direct
+    name: edit-direct
+    project: <PROJECT>
+  spec:
+    description: Dummy Direct for 'sloctl edit' e2e tests
+    sourceOf:
+      - Metrics
+      - Services
+    newRelic:
+      accountId: 1437038
+      insightsQueryKey: NRIQ-123
+- apiVersion: n9/v1alpha
+  kind: SLO
+  metadata:
+    name: edit-slo
+    project: <PROJECT>
+  spec:
+    description: Dummy SLO for 'sloctl edit' e2e tests
+    service: edit-target
+    indicator:
+      metricSource:
+        kind: Direct
+        name: edit-direct
+    timeWindows:
+      - count: 1
+        isRolling: true
+        unit: Hour
+    budgetingMethod: Timeslices
+    objectives:
+      - displayName: Objective
+        name: objective-1
+        op: lte
+        rawMetric:
+          query:
+            newRelic:
+              nrql: SELECT average(duration) FROM Transaction TIMESERIES
+        target: 0.99
+        timeSliceTarget: 0.99
+        value: 1.2
+    alertPolicies:
+      - edit-alert-policy
+- apiVersion: n9/v1alpha
+  kind: AlertSilence
+  metadata:
+    name: edit-alert-silence
+    project: <PROJECT>
+  spec:
+    description: Dummy AlertSilence for 'sloctl edit' e2e tests
+    slo: edit-slo
+    alertPolicy:
+      name: edit-alert-policy
+    period:
+      duration: 1h
+- apiVersion: n9/v1alpha
+  kind: Annotation
+  metadata:
+    name: edit-annotation
+    project: <PROJECT>
+  spec:
+    description: Dummy Annotation for 'sloctl edit' e2e tests
+    slo: edit-slo
+    startTime: 2023-01-02T17:10:05Z
+    endTime: 2023-01-02T17:10:05Z
+    category: Comment
+- apiVersion: n9/v1alpha
+  kind: Annotation
+  metadata:
+    name: edit-annotation-secondary
+    project: <PROJECT>
+  spec:
+    description: Dummy secondary Annotation for 'sloctl edit' e2e tests
+    slo: edit-slo
+    startTime: 2023-02-02T17:10:05Z
+    endTime: 2023-02-02T17:10:05Z
+    category: ReviewNote
+- apiVersion: n9/v1alpha
+  kind: RoleBinding
+  metadata:
+    name: edit-role-binding
+  spec:
+    projectRef: <PROJECT>
+    roleRef: project-viewer
+    user: 00u4d8j2imVHGmBJH4x1
+- apiVersion: n9/v1alpha
+  kind: BudgetAdjustment
+  metadata:
+    displayName: Edit Budget Adjustment
+    name: edit-budget-adjustment
+  spec:
+    description: Dummy BudgetAdjustment for 'sloctl edit' e2e tests
+    firstEventStart: <NEXT_DAY_TIME>
+    duration: 2h0m0s
+    rrule: FREQ=DAILY;INTERVAL=7
+    filters:
+      slos:
+        - name: edit-slo
+          project: <PROJECT>
+- apiVersion: n9/v1alpha
+  kind: Report
+  metadata:
+    displayName: Edit Report
+    name: edit-report
+  spec:
+    shared: true
+    filters:
+      projects:
+        - <PROJECT>
+    systemHealthReview:
+      timeFrame:
+        snapshot:
+          point: latest
+        timeZone: Europe/Warsaw
+      rowGroupBy: project
+      columns:
+        - displayName: Tatooine
+          labels:
+            planet:
+              - tatooine
+        - displayName: Alderaan
+          labels:
+            planet:
+              - alderaan
+      thresholds:
+        redLte: 0.8
+        greenGt: 0.95
+        showNoData: false

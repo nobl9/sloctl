@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 
 	"github.com/nobl9/sloctl/internal/csv"
 	"github.com/nobl9/sloctl/internal/jq"
@@ -15,9 +16,13 @@ type Config struct {
 	OutputFormat       Format
 	CSVFieldSeparator  string
 	CSVRecordSeparator string
+	SupportedFromats   []Format
 }
 
 func NewPrinter(config Config) *Printer {
+	if len(config.SupportedFromats) == 0 {
+		config.SupportedFromats = ObjectsSupportedFormats
+	}
 	if config.Output == nil {
 		config.Output = os.Stdout
 	}
@@ -38,6 +43,14 @@ func NewPrinter(config Config) *Printer {
 type Printer struct {
 	config Config
 	jq     *jq.ExpressionRunner
+}
+
+// Validate should be called before [Printer.Print], after the flag values are assigned.
+func (o *Printer) Validate() error {
+	if !slices.Contains(o.config.SupportedFromats, o.config.OutputFormat) {
+		return errInvalidFormat(o.config.OutputFormat)
+	}
+	return nil
 }
 
 func (o *Printer) Print(v any) error {
@@ -69,34 +82,6 @@ func (o *Printer) Print(v any) error {
 	return nil
 }
 
-// All supported output formats by [Printer].
-const (
-	YAMLFormat Format = "yaml"
-	JSONFormat Format = "json"
-	CSVFormat  Format = "csv"
-)
-
-// Format represents supported printing outputs.
-type Format string
-
-func (f *Format) String() string {
-	return string(*f)
-}
-
-func (f *Format) Set(value string) error {
-	switch value {
-	case "yaml", "json", "csv":
-		*f = Format(value)
-		return nil
-	default:
-		return fmt.Errorf("invalid value for Format: %s", value)
-	}
-}
-
-func (f *Format) Type() string {
-	return "format"
-}
-
 // printerInterface represents generic printer for cli
 type printerInterface interface {
 	Print(any) error
@@ -111,6 +96,8 @@ func newPrinter(out io.Writer, format Format, fieldSeparator, recordSeparator st
 		return &yamlPrinter{out: out}, nil
 	case CSVFormat:
 		return &csvPrinter{out: out, fieldSeparator: fieldSeparator, recordSeparator: recordSeparator}, nil
+	case TOMLFormat:
+		return &tomlPrinter{out: out}, nil
 	default:
 		return nil, fmt.Errorf("unknown output format %q", format)
 	}

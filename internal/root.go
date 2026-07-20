@@ -3,8 +3,11 @@ package internal
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"runtime"
+	"slices"
+	"strings"
 	"sync"
 
 	v1alphaParser "github.com/nobl9/nobl9-go/manifest/v1alpha/parser"
@@ -36,8 +39,8 @@ func NewRootCmd() *cobra.Command {
 		Use:   programName,
 		Short: "Create, get and delete SLO definitions from command line easily.",
 		Long: `All available commands for execution are listed below.
-Use this tool to work with definitions of SLO in YAML files.
-For every command more detailed help is available.`,
+Use this tool to work with Nobl9 YAML configuration files (including, but not limited to SLOs).
+More detailed help is available for each command.`,
 		SilenceUsage: true,
 	}
 
@@ -46,12 +49,14 @@ For every command more detailed help is available.`,
 	rootCmd.PersistentFlags().StringVar(&root.Flags.ConfigFile, "config", "", "Config file path.")
 	rootCmd.PersistentFlags().StringVarP(&root.Flags.Context, "context", "c", "",
 		`Overrides the default context for the duration of the selected command.`)
+	_ = rootCmd.RegisterFlagCompletionFunc("context", root.completeContextFlag)
 	rootCmd.PersistentFlags().BoolVarP(&root.Flags.NoConfigFile, "no-config-file", "", false,
 		`Don't create config.toml, operate only on env variables.`)
 
 	rootCmd.AddCommand(root.NewApplyCmd())
 	rootCmd.AddCommand(root.NewDeleteCmd())
 	rootCmd.AddCommand(root.NewGetCmd())
+	rootCmd.AddCommand(root.NewEditCmd())
 	rootCmd.AddCommand(NewVersionCmd())
 	rootCmd.AddCommand(root.NewConfigCmd())
 	rootCmd.AddCommand(root.NewReplayCmd())
@@ -60,6 +65,7 @@ For every command more detailed help is available.`,
 	rootCmd.AddCommand(root.NewConvertCmd())
 	rootCmd.AddCommand(root.NewMoveCmd())
 	rootCmd.AddCommand(root.NewMCPCmd())
+	rootCmd.AddCommand(root.NewReviewCmd())
 
 	return rootCmd
 }
@@ -80,9 +86,37 @@ func (r *RootCmd) GetClient() *sdk.Client {
 	return r.Client
 }
 
+func (r *RootCmd) completeContextFlag(
+	_ *cobra.Command,
+	_ []string,
+	toComplete string,
+) ([]cobra.Completion, cobra.ShellCompDirective) {
+	if r.Flags.NoConfigFile {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	configPath, err := configFilePath(r.Flags.ConfigFile)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	config := new(sdk.FileConfig)
+	if err = config.Load(configPath); err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	contexts := slices.Sorted(maps.Keys(config.Contexts))
+	completions := make([]cobra.Completion, 0, len(contexts))
+	for _, contextName := range contexts {
+		if strings.HasPrefix(contextName, toComplete) {
+			completions = append(completions, contextName)
+		}
+	}
+	return completions, cobra.ShellCompDirectiveNoFileComp
+}
+
+const sdkEnvPrefix = "SLOCTL_"
+
 // setupClient reads in config file, ENV variables if set and sets up an API client.
 func (r *RootCmd) setupClient() error {
-	options := []sdk.ConfigOption{sdk.ConfigOptionEnvPrefix("SLOCTL_")}
+	options := []sdk.ConfigOption{sdk.ConfigOptionEnvPrefix(sdkEnvPrefix)}
 	if r.Flags.NoConfigFile {
 		options = append(options, sdk.ConfigOptionNoConfigFile())
 	}
