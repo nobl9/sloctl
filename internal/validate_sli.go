@@ -397,12 +397,10 @@ func (v *ValidateSLICmd) print(cmd *cobra.Command, output validateSLIOutput) err
 }
 
 func printValidateSLIHumanSummary(out io.Writer, output validateSLIOutput) {
-	status := "Valid"
 	if hasFailedSLIResults(output.Results) {
-		status = "Invalid"
+		_, _ = fmt.Fprintln(out, "Invalid")
+		_, _ = fmt.Fprintln(out)
 	}
-	_, _ = fmt.Fprintln(out, status)
-	_, _ = fmt.Fprintln(out)
 	_, _ = fmt.Fprintf(
 		out,
 		"Validated %d %s for %d %s.\n",
@@ -506,10 +504,12 @@ func (t validateSLITimeSeries) HumanSummary() string {
 		maxValue = max(maxValue, value.Value)
 	}
 	return fmt.Sprintf(
-		"%s: %d %s, min %s, max %s",
+		"%s: %d %s, first %s, last %s, min %s, max %s",
 		t.Name,
 		len(t.Values),
 		validateSLIPlural(len(t.Values), "point", "points"),
+		validateSLIFormatTimestamp(t.Values[0].Timestamp),
+		validateSLIFormatTimestamp(t.Values[len(t.Values)-1].Timestamp),
 		validateSLIFormatFloat(minValue),
 		validateSLIFormatFloat(maxValue),
 	)
@@ -699,6 +699,10 @@ func validateSLIPlural(count int, singular, plural string) string {
 
 func validateSLIFormatFloat(value float64) string {
 	return strconv.FormatFloat(value, 'f', -1, 64)
+}
+
+func validateSLIFormatTimestamp(timestamp int64) string {
+	return time.Unix(timestamp, 0).UTC().Format(flags.TimeLayout)
 }
 
 func hasFailedSLIResults(results []validateSLIResult) bool {

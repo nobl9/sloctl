@@ -225,13 +225,11 @@ func TestValidateSLIPrintDefaultsToHumanSummary(t *testing.T) {
 	err := validateSLI.print(cmd, output)
 
 	require.NoError(t, err)
-	assert.Equal(t, `Valid
-
-Validated 1 SLI query for 1 SLO.
+	assert.Equal(t, `Validated 1 SLI query for 1 SLO.
 Time range: 2026-07-02T10:00:00Z - 2026-07-02T10:15:00Z
 
 checkout/default latency rawMetric
-  raw: 2 points, min 0.41255780025567085, max 0.5
+  raw: 2 points, first 2026-07-02T10:22:01Z, last 2026-07-02T10:23:01Z, min 0.41255780025567085, max 0.5
 `, out.String())
 }
 
