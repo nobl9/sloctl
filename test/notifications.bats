@@ -38,6 +38,7 @@ setup() {
 
   export NO_COLOR=1
   export SLOCTL_ACCESSIBLE_MODE=1
+  export HOME="$BATS_TEST_TMPDIR/home"
   export XDG_CACHE_HOME="$BATS_TMPDIR/cache-$BATS_TEST_NUMBER"
   export LocalAppData="$BATS_TMPDIR/cache-$BATS_TEST_NUMBER"
   export RELEASE_SERVER_LOG="$BATS_TMPDIR/release-server-$BATS_TEST_NUMBER.log"
@@ -183,7 +184,7 @@ teardown() {
 
   run_sloctl_binary_in_windows_console_with_path "$(native_sloctl_binary)" "$tools_dir" version
   assert_success_joined_output
-  # winpty combines native console streams, so assertions use its joined terminal output.
+  # winpty combines native console streams, so assertions use its joined output.
   assert_output --partial "New sloctl version v1.1.0 is available!"
   refute_output --partial "Choose update action"
   assert_release_requests 1
@@ -428,8 +429,7 @@ run_sloctl_binary_in_windows_console_with_path() {
   bats_require_minimum_version 1.5.0
   run --separate-stderr env \
     PATH="$path" \
-    SLOCTL_TEST_TTY_JOIN_OUTPUT=1 \
-    /usr/bin/python3 "$TEST_INPUTS/run_with_stderr_pty.py" /usr/bin/winpty "$binary" "$@"
+    /usr/bin/winpty -Xallow-non-tty "$binary" "$@"
 }
 
 run_sloctl_binary_with_prefixed_path() {
