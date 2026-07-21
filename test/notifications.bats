@@ -426,11 +426,15 @@ run_sloctl_binary_in_windows_console_with_path() {
   local path="$2"
   shift 2
   bats_require_minimum_version 1.5.0
+
+  local helper python
+  helper="$(cygpath -w "$TEST_INPUTS/run_with_windows_pty.py")"
+  python="$(cygpath -u "$pythonLocation")/python.exe"
+  binary="$(cygpath -w "$binary")"
+
   run --separate-stderr env \
     PATH="$path" \
-    SLOCTL_TEST_TTY_COLUMNS=80 \
-    SLOCTL_TEST_TTY_JOIN_OUTPUT=1 \
-    /usr/bin/python3 "$TEST_INPUTS/run_with_stderr_pty.py" /usr/bin/winpty "$binary" "$@"
+    "$python" "$helper" "$binary" "$@"
 }
 
 run_sloctl_binary_with_prefixed_path() {
