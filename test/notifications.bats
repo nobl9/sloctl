@@ -184,7 +184,7 @@ teardown() {
 
   run_sloctl_binary_in_windows_console_with_path "$(native_sloctl_binary)" "$tools_dir" version
   assert_success_joined_output
-  # winpty combines native console streams, so assertions use its joined output.
+  output+=$'\n'"${stderr}"
   assert_output --partial "New sloctl version v1.1.0 is available!"
   refute_output --partial "Choose update action"
   assert_release_requests 1
