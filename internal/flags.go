@@ -93,13 +93,18 @@ func registerSLOServiceFlag(cmd *cobra.Command, storeIn *[]string) {
 // requireFlagsIfFlagIsSet validates that the provided deps are only set if the "parent" flag is set.
 // This one way dependency is not supported natively by cobra and requires custom verification.
 func requireFlagsIfFlagIsSet(cmd *cobra.Command, flag string, deps ...string) error {
-	if cmd.Flags().Changed(flag) {
+	if commandFlagChanged(cmd, flag) {
 		return nil
 	}
 	for _, d := range deps {
-		if cmd.Flags().Changed(d) {
+		if commandFlagChanged(cmd, d) {
 			return fmt.Errorf("--%s flag can only be set if --%s flag is also provided", d, flag)
 		}
 	}
 	return nil
+}
+
+func commandFlagChanged(cmd *cobra.Command, name string) bool {
+	flag := cmd.Flag(name)
+	return flag != nil && flag.Changed
 }
