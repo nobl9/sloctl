@@ -184,7 +184,6 @@ teardown() {
 
   run_sloctl_binary_in_windows_console_with_path "$(native_sloctl_binary)" "$tools_dir" version
   assert_success_joined_output
-  output+=$'\n'"${stderr}"
   assert_output --partial "New sloctl version v1.1.0 is available!"
   refute_output --partial "Choose update action"
   assert_release_requests 1
@@ -429,7 +428,9 @@ run_sloctl_binary_in_windows_console_with_path() {
   bats_require_minimum_version 1.5.0
   run --separate-stderr env \
     PATH="$path" \
-    /usr/bin/winpty -Xallow-non-tty "$binary" "$@"
+    SLOCTL_TEST_TTY_COLUMNS=80 \
+    SLOCTL_TEST_TTY_JOIN_OUTPUT=1 \
+    /usr/bin/python3 "$TEST_INPUTS/run_with_stderr_pty.py" /usr/bin/winpty "$binary" "$@"
 }
 
 run_sloctl_binary_with_prefixed_path() {
