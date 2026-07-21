@@ -35,6 +35,9 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
+      - uses: actions/setup-python@v6.2.0
+        with:
+          python-version: "3.13"
       - name: Set up Bats
         id: setup-bats
         uses: bats-core/bats-action@4.0.0
@@ -48,6 +51,7 @@ jobs:
   notification-windows:
     name: Notification compatibility (windows-latest)
     runs-on: windows-latest
+    timeout-minutes: 10
     steps:
       - name: Configure Git line endings
         run: git config --global core.autocrlf input

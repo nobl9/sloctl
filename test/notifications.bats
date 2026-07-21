@@ -157,7 +157,7 @@ teardown() {
   assert_release_requests 1
 }
 
-# bats test_tags=platform
+# bats test_tags=platform,platform:unix
 @test "sloctl shows the new version notification and update form on supported terminals" {
   use_release_body maintenance
   start_release_server
@@ -170,7 +170,7 @@ teardown() {
   assert_release_requests 1
 }
 
-# bats test_tags=platform
+# bats test_tags=platform,platform:windows
 @test "sloctl in a native Windows console shows the notification without the update form" {
   if [[ "$(uname -s)" != MINGW* && "$(uname -s)" != CYGWIN* ]]; then
     skip "Windows-specific compatibility test"
@@ -290,7 +290,7 @@ teardown() {
   assert_notification_stderr install-curl-wide-prompt
 }
 
-# bats test_tags=platform
+# bats test_tags=platform,platform:macos
 @test "sloctl suggests Homebrew upgrade for Homebrew installs" {
   if [ "$(uname -s)" != "Darwin" ]; then
     skip "native Homebrew compatibility is tested on macOS"
@@ -466,21 +466,29 @@ native_sloctl_binary() {
 
 start_release_server() {
   RELEASE_SERVER_START_COUNT=$((RELEASE_SERVER_START_COUNT + 1))
-  local port_file="$BATS_TMPDIR/release-server-$BATS_TEST_NUMBER-$RELEASE_SERVER_START_COUNT.port"
-  python3 "$TEST_INPUTS/release_server.py" "$port_file" &
+  local port_file="$BATS_TEST_TMPDIR/release-server-$RELEASE_SERVER_START_COUNT.port"
+  local error_file="$BATS_TEST_TMPDIR/release-server-$RELEASE_SERVER_START_COUNT.stderr"
+  python3 "$TEST_INPUTS/release_server.py" "$port_file" 2> "$error_file" &
   RELEASE_SERVER_PID="$!"
 
-  for _ in {1..50}; do
-    if [ -s "$port_file" ]; then
+  for _ in {1..300}; do
+    if [[ -s "$port_file" ]]; then
       local port
       port="$(cat "$port_file")"
       export SLOCTL_NOTIFICATIONS_RELEASE_URL="http://127.0.0.1:$port/repos/nobl9/sloctl/releases/latest"
       return 0
     fi
+    if ! kill -0 "$RELEASE_SERVER_PID" 2> /dev/null; then
+      wait "$RELEASE_SERVER_PID" 2> /dev/null || true
+      unset RELEASE_SERVER_PID
+      local server_error
+      server_error="$(< "$error_file")"
+      fail "release server exited before startup: ${server_error:-no error output}"
+    fi
     sleep 0.1
   done
 
-  fail "release server did not start"
+  fail "release server did not start within 30 seconds"
 }
 
 stop_release_server() {

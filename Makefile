@@ -112,9 +112,14 @@ test/bats/unit:
 test/bats/platform:
 	$(MAKE) VERSION=v1.0.0 build
 	$(call _print_step,Running native platform notification tests)
+	@set -- --filter-tags platform:unix; \
+	case "$$(uname -s)" in \
+		CYGWIN*|MINGW*|MSYS*) set -- --filter-tags platform:windows ;; \
+		Darwin*) set -- "$$@" --filter-tags platform:macos ;; \
+	esac; \
 	bats -F pretty \
 		--setup-suite-file $(TEST_DIR)/setup_platform_suite.bash \
-		--filter-tags platform $(TEST_DIR)/notifications.bats
+		"$$@" $(TEST_DIR)/notifications.bats
 
 ## Run bats e2e tests.
 test/bats/e2e:
