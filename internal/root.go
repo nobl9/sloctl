@@ -15,13 +15,23 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/nobl9/sloctl/internal/budgetadjustments"
+	"github.com/nobl9/sloctl/internal/notifications"
 )
 
 const programName = "sloctl"
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+// Execute checks for updates and then runs the requested command.
+// When the user chooses to update sloctl, it runs the update command and exits
+// without running the requested command.
 func Execute() {
+	switch notifications.Notify(getBuildVersion()) {
+	case notifications.ResultExitSuccess:
+		return
+	case notifications.ResultExitFailure:
+		os.Exit(1)
+	case notifications.ResultContinue:
+	}
+
 	if err := NewRootCmd().Execute(); err != nil {
 		os.Exit(1)
 	}

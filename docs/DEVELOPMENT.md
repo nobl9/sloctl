@@ -81,6 +81,36 @@ make test/e2e
 Bats tests are fully containerized, refer to Makefile for more details on
 how they're executed.
 
+### Bats output assertions
+
+Prefer exact stdout and stderr assertions for complete CLI messages.
+Store input fixtures, such as request payloads and release bodies, under
+[test/inputs](../test/inputs/), and store expected output fixtures under
+[test/outputs](../test/outputs/).
+When a test file needs a narrower fixture root, set `TEST_INPUTS` or
+`TEST_OUTPUTS` in `setup_file` and compare against files from there.
+
+Use file-backed assertions for expected output:
+
+```bash
+assert_output - < "$TEST_OUTPUTS/result.stdout"
+assert_stderr - < "$TEST_OUTPUTS/error.stderr"
+```
+
+Use `--partial` only as a last resort when exact output would be unstable for
+reasons unrelated to the behavior under test, such as nondeterministic fields
+that cannot be normalized.
+If `--partial` is necessary, keep the assertion narrow and leave nearby context
+explaining why a full output fixture would be brittle.
+
+Interactive terminal tests should prefer deterministic plain-text fixtures.
+Set `NO_COLOR=1` and use accessible form mode when the command supports it.
+Keep source data, such as release bodies, in [test/inputs](../test/inputs/),
+and compare complete stdout or stderr messages against files in
+[test/outputs](../test/outputs/).
+For notification tests, use the local release fixture server instead of
+proxying GitHub, and use `refute_stderr` when stderr must be empty.
+
 ### End-to-end tests
 
 When creating new e2e tests make sure you adhere to the existing patterns
@@ -88,8 +118,6 @@ and use [test helper utility functions](../test/test_helper/load.bash).
 The helper functions are documented inline in that file; read them before
 adding a new test, especially if you need fixture generation or output
 assertion helpers.
-Prefer asserting entire outputs with predefined _INPUTS_ and _OUTPUTS_ read
-from files and NOT redirected in the test's code via _heredoc_.
 
 Input fixtures for e2e tests live under [test/inputs](../test/inputs/).
 The fixture directory name must match the test filename without the `.bats`
