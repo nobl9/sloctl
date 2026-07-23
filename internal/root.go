@@ -2,8 +2,11 @@
 package internal
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"maps"
+	"net/url"
 	"os"
 	"runtime"
 	"slices"
@@ -17,14 +20,37 @@ import (
 	"github.com/nobl9/sloctl/internal/budgetadjustments"
 )
 
-const programName = "sloctl"
+const (
+	programName                    = "sloctl"
+	clientTimeoutErrorMarker       = "Client.Timeout exceeded"
+	clientTimeoutConfigurationHint = "Hint: The request exceeded sloctl's client-side timeout. " +
+		`Increase the active context's "timeout" setting or set SLOCTL_TIMEOUT ` +
+		"(for example, SLOCTL_TIMEOUT=2m)."
+)
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+// Execute runs sloctl and exits with status 1 if command execution fails.
 func Execute() {
-	if err := NewRootCmd().Execute(); err != nil {
+	if err := executeRootCommand(NewRootCmd()); err != nil {
 		os.Exit(1)
 	}
+}
+
+func executeRootCommand(cmd *cobra.Command) error {
+	err := cmd.Execute()
+	if isClientTimeout(err) {
+		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), clientTimeoutConfigurationHint)
+	}
+	return err
+}
+
+func isClientTimeout(err error) bool {
+	if !errors.Is(err, context.DeadlineExceeded) {
+		return false
+	}
+	urlError, ok := errors.AsType[*url.Error](err)
+	return ok &&
+		urlError.Err != nil &&
+		strings.Contains(urlError.Err.Error(), clientTimeoutErrorMarker)
 }
 
 type globalFlags struct {
