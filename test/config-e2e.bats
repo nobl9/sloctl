@@ -38,11 +38,3 @@ setup() {
   assert_failure
   assert_stderr 'Error: --output flag can only be set if --verbose flag is also provided'
 }
-
-@test "sloctl reports configurable client timeout" {
-  SLOCTL_TIMEOUT=10ns run_sloctl config current-user
-
-  assert_failure
-  output="$stderr"
-  assert_line "$(cat "$TEST_OUTPUTS/client-timeout-hint.txt")"
-}

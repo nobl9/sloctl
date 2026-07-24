@@ -25,7 +25,7 @@ const (
 	clientTimeoutErrorMarker       = "Client.Timeout exceeded"
 	clientTimeoutConfigurationHint = "Hint: The request exceeded sloctl's client-side timeout. " +
 		`Increase the active context's "timeout" setting or set SLOCTL_TIMEOUT ` +
-		"(for example, SLOCTL_TIMEOUT=2m)."
+		"(for example, SLOCTL_TIMEOUT=50s)."
 )
 
 // Execute runs sloctl and exits with status 1 if command execution fails.
