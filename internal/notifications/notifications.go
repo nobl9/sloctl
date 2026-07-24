@@ -17,14 +17,15 @@ import (
 	"github.com/mattn/go-isatty"
 )
 
+// latestReleaseURL can be replaced at link time for deterministic notification tests.
+var latestReleaseURL = "https://api.github.com/repos/nobl9/sloctl/releases/latest"
+
 const (
-	defaultReleaseURL = "https://api.github.com/repos/nobl9/sloctl/releases/latest"
-	releaseURLEnv     = "SLOCTL_NOTIFICATIONS_RELEASE_URL"
-	optOutEnv         = "SLOCTL_NO_NOTIFICATIONS"
-	ciEnv             = "CI"
-	checkInterval     = 24 * time.Hour
-	checkTimeout      = 750 * time.Millisecond
-	maxResponseSize   = 1 << 20
+	optOutEnv       = "SLOCTL_NO_NOTIFICATIONS"
+	ciEnv           = "CI"
+	checkInterval   = 24 * time.Hour
+	checkTimeout    = 750 * time.Millisecond
+	maxResponseSize = 1 << 20
 )
 
 // Result describes what the caller should do after checking notifications.
@@ -62,16 +63,12 @@ type githubRelease struct {
 }
 
 func newNotifier(currentVersion string) notifier {
-	releaseURL := strings.TrimSpace(os.Getenv(releaseURLEnv))
-	if releaseURL == "" {
-		releaseURL = defaultReleaseURL
-	}
 	return notifier{
 		currentVersion: strings.TrimSpace(currentVersion),
 		stdin:          os.Stdin,
 		stdout:         os.Stdout,
 		stderr:         os.Stderr,
-		releaseURL:     releaseURL,
+		releaseURL:     latestReleaseURL,
 		cachePath:      defaultCachePath(),
 	}
 }

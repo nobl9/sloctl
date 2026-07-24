@@ -49,6 +49,10 @@ class ReleaseHandler(BaseHTTPRequestHandler):
         pass
 
 
+class ReleaseServer(ThreadingHTTPServer):
+    allow_reuse_address = True
+
+
 def release_body():
     body_file = os.environ.get("RELEASE_SERVER_BODY_FILE")
     if body_file:
@@ -84,7 +88,8 @@ def reason_phrase(status):
 
 def main():
     port_file = Path(sys.argv[1])
-    with ThreadingHTTPServer(("127.0.0.1", 0), ReleaseHandler) as server:
+    port = int(sys.argv[2])
+    with ReleaseServer(("127.0.0.1", port), ReleaseHandler) as server:
         port_file.write_text(str(server.server_address[1]), encoding="utf-8")
         server.serve_forever()
 

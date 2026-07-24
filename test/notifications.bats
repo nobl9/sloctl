@@ -26,7 +26,6 @@ setup() {
   unset http_proxy
   unset no_proxy
   unset SLOCTL_NO_NOTIFICATIONS
-  unset SLOCTL_NOTIFICATIONS_RELEASE_URL
   unset SLOCTL_TEST_TTY_COLUMNS
   unset SLOCTL_TEST_TTY_INPUT
   unset SLOCTL_TEST_TTY_JOIN_OUTPUT
@@ -473,14 +472,11 @@ start_release_server() {
   RELEASE_SERVER_START_COUNT=$((RELEASE_SERVER_START_COUNT + 1))
   local port_file="$BATS_TEST_TMPDIR/release-server-$RELEASE_SERVER_START_COUNT.port"
   local error_file="$BATS_TEST_TMPDIR/release-server-$RELEASE_SERVER_START_COUNT.stderr"
-  python3 "$TEST_INPUTS/release_server.py" "$port_file" 2> "$error_file" &
+  python3 "$TEST_INPUTS/release_server.py" "$port_file" "$RELEASE_SERVER_PORT" 2> "$error_file" &
   RELEASE_SERVER_PID="$!"
 
   for _ in {1..300}; do
     if [[ -s "$port_file" ]]; then
-      local port
-      port="$(cat "$port_file")"
-      export SLOCTL_NOTIFICATIONS_RELEASE_URL="http://127.0.0.1:$port/repos/nobl9/sloctl/releases/latest"
       return 0
     fi
     if ! kill -0 "$RELEASE_SERVER_PID" 2> /dev/null; then
