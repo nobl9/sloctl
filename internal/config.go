@@ -528,16 +528,9 @@ sloctl config delete-context context-1 context-2`,
 }
 
 func (c *ConfigCmd) loadFileConfig(configPath string) error {
-	if configPath == "" {
-		if v, ok := os.LookupEnv(sdkEnvPrefix + "CONFIG_FILE_PATH"); ok {
-			configPath = strings.TrimSpace(v)
-		} else {
-			var err error
-			configPath, err = sdk.GetDefaultConfigPath()
-			if err != nil {
-				return err
-			}
-		}
+	configPath, err := configFilePath(configPath)
+	if err != nil {
+		return err
 	}
 	c.config = new(sdk.FileConfig)
 	if err := c.config.Load(configPath); err != nil {
@@ -547,6 +540,16 @@ func (c *ConfigCmd) loadFileConfig(configPath string) error {
 		c.config.Contexts = make(map[string]sdk.ContextConfig)
 	}
 	return nil
+}
+
+func configFilePath(configPath string) (string, error) {
+	if configPath != "" {
+		return configPath, nil
+	}
+	if v, ok := os.LookupEnv(sdkEnvPrefix + "CONFIG_FILE_PATH"); ok {
+		return strings.TrimSpace(v), nil
+	}
+	return sdk.GetDefaultConfigPath()
 }
 
 func (c *ConfigCmd) validateContextIsInUse(name string) error {

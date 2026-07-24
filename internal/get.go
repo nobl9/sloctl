@@ -16,6 +16,7 @@ import (
 	v1alphaAnnotation "github.com/nobl9/nobl9-go/manifest/v1alpha/annotation"
 	"github.com/nobl9/nobl9-go/sdk"
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
+	usersV2 "github.com/nobl9/nobl9-go/sdk/endpoints/users/v2"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
@@ -94,6 +95,7 @@ To get more details in output use one of the available flags.`,
 			`List the requested object(s) across all projects.`)
 		cmd.AddCommand(sc)
 	}
+	cmd.AddCommand(get.newGetUserCommand())
 
 	return cmd
 }
@@ -107,14 +109,50 @@ func (g *GetCmd) newGetObjectsCommand(
 		Use:     use,
 		Aliases: aliases,
 		Short:   short,
+		Long:    "Resource names can be provided as positional arguments or read from stdin.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			objects, err := g.getObjects(cmd.Context(), kind, args)
+			names, err := readStdinArgs(cmd, args)
+			if err != nil {
+				return err
+			}
+			objects, err := g.getObjects(cmd.Context(), kind, names)
 			if err != nil {
 				return err
 			}
 			return g.printObjects(kind, objects)
 		},
 	}
+}
+
+func (g *GetCmd) newGetUserCommand() *cobra.Command {
+	limit := uint(100)
+	cmd := &cobra.Command{
+		Use:   "user",
+		Short: "Displays users by ID.",
+		Long: "Provide user IDs as arguments, when no user ID is provided, all users are returned.\n" +
+			"User IDs can also be read from stdin.\n" +
+			fmt.Sprintf("By default a maximum of %d users are returned when no IDs are provided.", limit),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ids, err := readStdinArgs(cmd, args)
+			if err != nil {
+				return err
+			}
+			request := usersV2.GetUsersRequest{IDs: ids}
+			if len(ids) == 0 || cmd.Flags().Changed("limit") {
+				request.Limit = limit
+			}
+			users, err := g.client.Users().V2().GetUsers(
+				cmd.Context(),
+				request,
+			)
+			if err != nil {
+				return err
+			}
+			return g.printUsers(users)
+		},
+	}
+	cmd.Flags().UintVar(&limit, "limit", limit, "Maximum number of users to return.")
+	return cmd
 }
 
 // nolint: gocognit
@@ -191,8 +229,12 @@ func (g *GetCmd) newGetAlertCommand(cmd *cobra.Command) *cobra.Command {
 	cmd.Flags().Lookup("objective-value").Hidden = true
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if len(args) > 0 {
-			params.Names = args
+		names, err := readStdinArgs(cmd, args)
+		if err != nil {
+			return err
+		}
+		if len(names) > 0 {
+			params.Names = names
 		}
 		params.ObjectiveValues = objectiveValuesFlag
 
@@ -251,7 +293,11 @@ func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 		`Displays client_secret and client_id.`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		objects, err := g.getObjects(cmd.Context(), manifest.KindAgent, args)
+		names, err := readStdinArgs(cmd, args)
+		if err != nil {
+			return err
+		}
+		objects, err := g.getObjects(cmd.Context(), manifest.KindAgent, names)
 		if err != nil {
 			return err
 		}
@@ -443,6 +489,14 @@ func (g *GetCmd) printObjects(kind manifest.Kind, objects []manifest.Object) err
 		return nil
 	}
 	return g.printer.Print(objects)
+}
+
+func (g *GetCmd) printUsers(users []usersV2.User) error {
+	if len(users) == 0 {
+		fmt.Printf("No resources found.\n")
+		return nil
+	}
+	return g.printer.Print(users)
 }
 
 func parseFilterLabel(filterLabels []string) string {

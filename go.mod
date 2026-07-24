@@ -1,10 +1,10 @@
 module github.com/nobl9/sloctl
 
-go 1.26.4
+go 1.26.5
 
 require (
 	charm.land/huh/v2 v2.0.3
-	charm.land/lipgloss/v2 v2.0.3
+	charm.land/lipgloss/v2 v2.0.5
 	github.com/BurntSushi/toml v1.6.0
 	github.com/OpenSLO/go-sdk v0.9.2
 	github.com/go-playground/validator/v10 v10.30.3
@@ -12,10 +12,10 @@ require (
 	github.com/itchyny/gojq v0.12.19
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/nobl9/go-yaml v1.0.1
-	github.com/nobl9/nobl9-go v0.131.0-rc3
+	github.com/nobl9/nobl9-go v0.133.1
 	github.com/nobl9/nobl9-openslo v0.1.6
 	github.com/pkg/errors v0.9.1
-	github.com/schollz/progressbar/v3 v3.19.0
+	github.com/schollz/progressbar/v3 v3.19.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
@@ -78,7 +78,7 @@ require (
 	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/term v0.43.0 // indirect
+	golang.org/x/term v0.44.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 	golang.org/x/tools v0.48.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect

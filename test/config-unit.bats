@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # bats file_tags=unit
 
+bats_require_minimum_version 1.5.0
+
 # setup_file is run only once for the whole file.
 setup_file() {
   CONFIG_FILENAME="config.toml"
@@ -73,6 +75,21 @@ teardown() {
   run_sloctl config current-context -o json
   assert_failure
   assert_stderr 'Error: --output flag can only be set if --verbose flag is also provided'
+}
+
+@test "sloctl --context completion lists config contexts" {
+  run --separate-stderr sloctl __complete --config "$SLOCTL_DEFAULT_CONFIG" --context ""
+  assert_success
+  assert_output 'full
+minimal
+:4'
+}
+
+@test "sloctl --context completion filters config contexts" {
+  run --separate-stderr sloctl __complete --config "$SLOCTL_DEFAULT_CONFIG" --context m
+  assert_success
+  assert_output 'minimal
+:4'
 }
 
 @test "sloctl config use-context" {

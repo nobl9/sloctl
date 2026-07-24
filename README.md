@@ -91,6 +91,7 @@ go install github.com/nobl9/sloctl/cmd/sloctl@latest
 
 ```shell
 brew tap nobl9/sloctl
+brew trust nobl9/sloctl
 brew install sloctl
 ```
 
