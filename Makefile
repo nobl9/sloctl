@@ -4,16 +4,25 @@ MAKEFLAGS += --silent --no-print-directory
 BIN_DIR := ./bin
 TEST_DIR := ./test
 APP_NAME := sloctl
+GO_EXE := $(shell go env GOEXE)
 VERSION_PKG := "$(shell go list -m)/internal"
+NOTIFICATIONS_PKG := "$(shell go list -m)/internal/notifications"
 
 VERSION ?= 1.0.0-test
 BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
 REVISION ?= $(shell git rev-parse --short=8 HEAD)
+NOTIFICATIONS_RELEASE_URL ?=
+NOTIFICATIONS_TEST_RELEASE_PORT ?= 38080
+NOTIFICATIONS_TEST_RELEASE_URL := http://127.0.0.1:$(NOTIFICATIONS_TEST_RELEASE_PORT)/repos/nobl9/sloctl/releases/latest
 
 LDFLAGS := -s -w \
 	-X $(VERSION_PKG).BuildVersion=$(VERSION) \
 	-X $(VERSION_PKG).BuildGitBranch=$(BRANCH) \
 	-X $(VERSION_PKG).BuildGitRevision=$(REVISION)
+
+ifneq ($(strip $(NOTIFICATIONS_RELEASE_URL)),)
+LDFLAGS += -X $(NOTIFICATIONS_PKG).latestReleaseURL=$(NOTIFICATIONS_RELEASE_URL)
+endif
 
 # renovate datasource=github-releases depName=golangci/golangci-lint
 GOLANGCI_LINT_VERSION := v2.12.2
@@ -53,9 +62,10 @@ endef
 # ${2} - version
 # ${3} - git branch
 # ${4} - git revision
+# ${5} - notifications release URL
 define _build_docker
 	docker build \
-		--build-arg LDFLAGS="-X $(VERSION_PKG).BuildVersion=$(2) -X $(VERSION_PKG).BuildGitBranch=$(3) -X $(VERSION_PKG).BuildGitRevision=$(4)" \
+		--build-arg LDFLAGS="-X $(VERSION_PKG).BuildVersion=$(2) -X $(VERSION_PKG).BuildGitBranch=$(3) -X $(VERSION_PKG).BuildGitRevision=$(4) $(if $(strip $(5)),-X $(NOTIFICATIONS_PKG).latestReleaseURL=$(5))" \
 		-t "$(1)" .
 endef
 
@@ -63,7 +73,7 @@ endef
 ## Build sloctl binary.
 build:
 	$(call _print_step,Building sloctl binary)
-	go build -ldflags="$(LDFLAGS)" -o $(BIN_DIR)/$(APP_NAME) ./cmd/$(APP_NAME)/
+	go build -ldflags="$(LDFLAGS)" -o $(BIN_DIR)/$(APP_NAME)$(GO_EXE) ./cmd/$(APP_NAME)/
 
 .PHONY: install
 ## Install sloctl binary.
@@ -75,17 +85,17 @@ install:
 ## Build sloctl Docker image.
 docker:
 	$(call _print_step,Building sloctl Docker image)
-	$(call _build_docker,sloctl,$(VERSION),$(BRANCH),$(REVISION))
+	$(call _build_docker,sloctl,$(VERSION),$(BRANCH),$(REVISION),$(NOTIFICATIONS_RELEASE_URL))
 
 .PHONY: test
-## Run all tests.
+## Run the standard unit and end-to-end suites (excludes native platform tests).
 test: test/unit test/e2e
 
 .PHONY: test/unit test/go/unit test/bats/%
-## Run all unit tests.
+## Run Go and containerized Bats unit tests (excludes native platform tests).
 test/unit: test/go/unit test/bats/unit
 
-.PHONY: test/e2e test/bats/unit test/bats/e2e test/go/e2e-docker
+.PHONY: test/e2e test/bats/unit test/bats/platform test/bats/e2e test/go/e2e-docker
 ## Run all e2e tests.
 test/e2e: test/bats/e2e test/go/e2e-docker
 
@@ -102,15 +112,28 @@ test/go/e2e-docker:
 ## Run bats unit tests.
 test/bats/unit:
 	$(call _print_step,Running bats unit tests)
-	$(call _build_docker,sloctl-unit-test-bin,v1.0.0,PC-123-test,e2602ddc)
+	$(call _build_docker,sloctl-unit-test-bin,v1.0.0,PC-123-test,e2602ddc,$(NOTIFICATIONS_TEST_RELEASE_URL))
 	docker build -t sloctl-bats-unit -f $(TEST_DIR)/docker/Dockerfile.unit .
-	docker run -e TERM=linux --rm \
-		sloctl-bats-unit -F pretty --filter-tags unit $(TEST_DIR)/*
+	docker run -e RELEASE_SERVER_PORT=$(NOTIFICATIONS_TEST_RELEASE_PORT) -e TERM=linux --rm \
+		sloctl-bats-unit -F pretty --filter-tags unit,!platform $(TEST_DIR)/*
+
+## Run native platform notification tests.
+test/bats/platform:
+	$(MAKE) VERSION=v1.0.0 NOTIFICATIONS_RELEASE_URL=$(NOTIFICATIONS_TEST_RELEASE_URL) build
+	$(call _print_step,Running native platform notification tests)
+	@set -- --filter-tags platform:unix; \
+	case "$$(uname -s)" in \
+		CYGWIN*|MINGW*|MSYS*) set -- --filter-tags platform:windows ;; \
+		Darwin*) set -- "$$@" --filter-tags platform:macos ;; \
+	esac; \
+	RELEASE_SERVER_PORT=$(NOTIFICATIONS_TEST_RELEASE_PORT) bats -F pretty \
+		--setup-suite-file $(TEST_DIR)/setup_platform_suite.bash \
+		"$$@" $(TEST_DIR)/notifications.bats
 
 ## Run bats e2e tests.
 test/bats/e2e:
 	$(call _print_step,Running bats e2e tests)
-	$(call _build_docker,sloctl-e2e-test-bin,$(VERSION),$(BRANCH),$(REVISION))
+	$(call _build_docker,sloctl-e2e-test-bin,$(VERSION),$(BRANCH),$(REVISION),$(NOTIFICATIONS_RELEASE_URL))
 	docker build -t sloctl-bats-e2e -f $(TEST_DIR)/docker/Dockerfile.e2e .
 	./scripts/run-e2e-tests.sh sloctl-bats-e2e $(REVISION)
 
