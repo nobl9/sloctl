@@ -22,7 +22,6 @@ import (
 
 const (
 	programName                    = "sloctl"
-	clientTimeoutErrorMarker       = "Client.Timeout exceeded"
 	clientTimeoutConfigurationHint = "Hint: The request exceeded sloctl's client-side timeout. " +
 		`Increase the active context's "timeout" setting or set SLOCTL_TIMEOUT ` +
 		"(for example, SLOCTL_TIMEOUT=50s)."
@@ -37,20 +36,18 @@ func Execute() {
 
 func executeRootCommand(cmd *cobra.Command) error {
 	err := cmd.Execute()
-	if isClientTimeout(err) {
+	if isClientTimeout(cmd.Context(), err) {
 		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), clientTimeoutConfigurationHint)
 	}
 	return err
 }
 
-func isClientTimeout(err error) bool {
-	if !errors.Is(err, context.DeadlineExceeded) {
+func isClientTimeout(ctx context.Context, err error) bool {
+	if ctx == nil || ctx.Err() != nil {
 		return false
 	}
 	urlError, ok := errors.AsType[*url.Error](err)
-	return ok &&
-		urlError.Err != nil &&
-		strings.Contains(urlError.Err.Error(), clientTimeoutErrorMarker)
+	return ok && errors.Is(urlError, context.DeadlineExceeded)
 }
 
 type globalFlags struct {
