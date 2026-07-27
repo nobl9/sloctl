@@ -340,8 +340,7 @@ setup() {
   SLOCTL_TIMEOUT=10ns run_sloctl get project
 
   assert_failure
-  output="$stderr"
-  assert_line "$(cat "$TEST_OUTPUTS/client-timeout-hint.txt")"
+  assert_stderr --partial - < "$TEST_OUTPUTS/client-timeout-hint.txt"
 }
 
 test_get() {
