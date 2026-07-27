@@ -76,6 +76,7 @@ More detailed help is available for each command.`,
 	rootCmd.AddCommand(root.NewMoveCmd())
 	rootCmd.AddCommand(root.NewMCPCmd())
 	rootCmd.AddCommand(root.NewReviewCmd())
+	rootCmd.AddCommand(root.NewValidateCmd())
 
 	return rootCmd
 }
