@@ -1,9 +1,10 @@
-// Package notifications checks for new sloctl releases and prompts for updates.
+// Package notifications shows release notifications and prompts for updates on supported terminals.
 package notifications
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,7 +15,9 @@ import (
 	"strings"
 	"time"
 
+	huh "charm.land/huh/v2"
 	"github.com/mattn/go-isatty"
+	"golang.org/x/mod/semver"
 )
 
 // latestReleaseURL can be replaced at link time for deterministic notification tests.
@@ -28,16 +31,22 @@ const (
 	maxResponseSize = 1 << 20
 )
 
-// Result describes what the caller should do after checking notifications.
+// Result describes what the caller should do after running the notification flow.
 type Result int
 
 const (
+	// ResultContinue allows the requested sloctl command to run.
 	ResultContinue Result = iota
+	// ResultExitSuccess exits after a successful update.
 	ResultExitSuccess
+	// ResultExitFailure exits after a failed update.
 	ResultExitFailure
+	// ResultInterrupted exits after the user cancels the update prompt.
+	ResultInterrupted
 )
 
-// Notify checks and displays an interactive update prompt when configured to do so.
+// Notify checks for a newer release in eligible interactive sessions.
+// It may display an update prompt when the terminal supports one.
 func Notify(currentVersion string) Result {
 	return newNotifier(currentVersion).notify()
 }
@@ -89,7 +98,7 @@ func (n notifier) notify() Result {
 		n.saveState(currentState)
 		return ResultContinue
 	}
-	if isCurrentRelease(n.currentVersion, release.TagName) {
+	if !isReleaseNewer(n.currentVersion, release.TagName) {
 		n.saveState(currentState)
 		return ResultContinue
 	}
@@ -99,16 +108,19 @@ func (n notifier) notify() Result {
 	}
 
 	releaseNotesMarkdown := extractReleaseNotesMarkdown(release.Body)
-	updateCommand := n.updateCommand()
+	updateCommand := detectUpdateCommand()
 	action, err := n.promptUpdate(
 		release,
 		releaseNotesMarkdown,
-		updateCommand,
+		updateCommand.display,
 		isUpdateFormSupported(runtime.GOOS, systemName),
 	)
 	if err != nil {
-		n.saveState(currentState)
-		return ResultContinue
+		result := n.handlePromptError(err)
+		if result != ResultInterrupted {
+			n.saveState(currentState)
+		}
+		return result
 	}
 	if action == updateActionSkipUntilNextVersion {
 		currentState.LastShownReleaseTag = release.TagName
@@ -117,7 +129,7 @@ func (n notifier) notify() Result {
 	if action != updateActionRunUpgrade {
 		return ResultContinue
 	}
-	if updateCommand == "" {
+	if !updateCommand.available() {
 		return ResultContinue
 	}
 	if err := n.runCommand(updateCommand); err != nil {
@@ -147,6 +159,18 @@ func isTerminal(file *os.File) bool {
 	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }
 
+func (n notifier) handlePromptError(err error) Result {
+	if errors.Is(err, huh.ErrUserAborted) {
+		return ResultInterrupted
+	}
+	_, _ = fmt.Fprintf(
+		n.stderr,
+		"failed to read update choice: %v; continuing with the requested command\n",
+		err,
+	)
+	return ResultContinue
+}
+
 func isUpdateFormSupported(goOS string, readSystemName func() (string, error)) bool {
 	if goOS != "windows" {
 		return true
@@ -162,15 +186,6 @@ func isUpdateFormSupported(goOS string, readSystemName func() (string, error)) b
 func systemName() (string, error) {
 	output, err := exec.Command("uname").Output()
 	return string(output), err
-}
-
-func (n notifier) runCommand(command string) error {
-	//nolint:gosec // The command is assembled from fixed sloctl update templates.
-	cmd := exec.Command("sh", "-c", command)
-	cmd.Stdin = n.stdin
-	cmd.Stdout = n.stdout
-	cmd.Stderr = n.stderr
-	return cmd.Run()
 }
 
 func (n notifier) fetchLatestRelease(ctx context.Context) (githubRelease, error) {
@@ -239,10 +254,18 @@ func isDevelopmentVersion(version string) bool {
 		strings.Contains(version, "devel")
 }
 
-func isCurrentRelease(currentVersion, releaseTag string) bool {
-	return normalizeVersion(currentVersion) == normalizeVersion(releaseTag)
+func isReleaseNewer(currentVersion, releaseTag string) bool {
+	currentVersion = semanticVersion(currentVersion)
+	releaseTag = semanticVersion(releaseTag)
+	return semver.IsValid(currentVersion) &&
+		semver.IsValid(releaseTag) &&
+		semver.Compare(releaseTag, currentVersion) > 0
 }
 
-func normalizeVersion(version string) string {
-	return strings.TrimPrefix(strings.TrimSpace(version), "v")
+func semanticVersion(version string) string {
+	version = strings.TrimSpace(version)
+	if strings.HasPrefix(version, "v") {
+		return version
+	}
+	return "v" + version
 }

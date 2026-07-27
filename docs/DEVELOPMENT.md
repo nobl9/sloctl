@@ -59,10 +59,12 @@ Each test file ends with `.bats` suffix.
 In addition to helper test utilities which are part of the framework we also
 provide custom helpers which are located in `test/test_helper` directory.
 
-Bats tests are currently divided into 2 categories, end-to-end and unit tests.
-The categorization is done through Bats tags. In order to categorize a whole
-file as a unit test, add this comment: `# bats file_tags=unit` anywhere in the
-file, preferably just below shebang.
+Bats tests are primarily divided into two categories: end-to-end and unit tests.
+The categorization is done through Bats tags.
+Platform compatibility tags are orthogonal to those categories and select tests
+for the native `make test/bats/platform` target.
+To categorize a whole file as a unit test, add
+`# bats file_tags=unit` anywhere in the file, preferably just below the shebang.
 
 The end-to-end tests are only run automatically for releases, be it official
 version or pre-release (release candidate).
@@ -78,8 +80,9 @@ SLOCTL_OKTA_AUTH_SERVER=<dev_auth_server> \ # Runs against dev Okta.
 make test/e2e
 ```
 
-Bats tests are fully containerized, refer to Makefile for more details on
-how they're executed.
+Bats unit and end-to-end tests run in containers.
+Platform compatibility tests run natively with `make test/bats/platform`.
+Refer to the Makefile for the exact commands.
 
 ### Bats output assertions
 

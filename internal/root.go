@@ -20,7 +20,7 @@ import (
 
 const programName = "sloctl"
 
-// Execute checks for updates and then runs the requested command.
+// Execute may check for updates before running the requested command.
 // When the user chooses to update sloctl, it runs the update command and exits
 // without running the requested command.
 func Execute() {
@@ -29,6 +29,8 @@ func Execute() {
 		return
 	case notifications.ResultExitFailure:
 		os.Exit(1)
+	case notifications.ResultInterrupted:
+		os.Exit(130)
 	case notifications.ResultContinue:
 	}
 

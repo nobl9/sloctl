@@ -5,6 +5,9 @@ setup_file() {
   load "test_helper/load"
 
   ensure_installed python3
+  if [ -f "/.dockerenv" ] || [ -f "/run/.containerenv" ]; then
+    cp /usr/bin/sloctl /usr/local/bin/sloctl
+  fi
 
   export TEST_INPUTS="$BATS_TEST_DIRNAME/inputs/notifications"
   export TEST_OUTPUTS="$BATS_TEST_DIRNAME/outputs/notifications"
@@ -28,7 +31,7 @@ setup() {
   unset SLOCTL_NO_NOTIFICATIONS
   unset SLOCTL_TEST_TTY_COLUMNS
   unset SLOCTL_TEST_TTY_INPUT
-  unset SLOCTL_TEST_TTY_JOIN_OUTPUT
+  unset SLOCTL_TEST_TTY_INPUT_WHEN_RAW
   unset RELEASE_SERVER_BODY_FILE
   unset RELEASE_SERVER_HTML_URL
   unset RELEASE_SERVER_RAW_RESPONSE
@@ -95,6 +98,18 @@ teardown() {
   assert_success_joined_output
   assert_stderr ""
   assert_release_requests 2
+
+  expire_notification_cache
+  stop_release_server
+  unset RELEASE_SERVER_BODY_FILE
+  export RELEASE_SERVER_TAG=v1.2.0
+  export RELEASE_SERVER_HTML_URL=https://github.com/nobl9/sloctl/releases/tag/v1.2.0
+  start_release_server
+
+  run_sloctl_with_tty_stderr version
+  assert_success_joined_output
+  assert_notification_stderr next-version-prompt-skip-until-next-version
+  assert_release_requests 3
 }
 
 @test "sloctl defaults to update action and exits without running the command" {
@@ -110,12 +125,53 @@ teardown() {
   chmod +x "$tools_dir/curl"
   start_release_server
 
-  run_sloctl_binary_with_prefixed_path /usr/bin/sloctl "$tools_dir" version
+  run_sloctl_binary_with_prefixed_path /usr/local/bin/sloctl "$tools_dir" version
   assert_success_joined_output
   assert_output ""
   assert_notification_stderr version-prompt-run-upgrade
   assert [ -f "$SLOCTL_TEST_UPGRADE_MARKER" ]
   assert_release_requests 1
+}
+
+@test "sloctl reports a failed script update and exits without running the command" {
+  use_release_body maintenance
+  select_default_update_action
+  local tools_dir="$BATS_TEST_TMPDIR/tools"
+  mkdir -p "$tools_dir"
+  printf '%s\n' \
+    '#!/usr/bin/env bash' \
+    'exit 22' \
+    > "$tools_dir/curl"
+  chmod +x "$tools_dir/curl"
+  start_release_server
+
+  run_sloctl_binary_with_prefixed_path /usr/local/bin/sloctl "$tools_dir" version
+  assert_failure 1
+  assert_output ""
+  assert_notification_stderr version-prompt-failed-upgrade
+  assert_release_requests 1
+}
+
+@test "sloctl exits without running the command when the update prompt is interrupted" {
+  use_release_body maintenance
+  unset SLOCTL_ACCESSIBLE_MODE
+  export SLOCTL_TEST_TTY_INPUT=$'\x03'
+  export SLOCTL_TEST_TTY_INPUT_WHEN_RAW=1
+  start_release_server
+
+  run_sloctl_with_tty_stderr version
+  assert_failure 130
+  assert_output ""
+  assert_stderr --partial "New sloctl version v1.1.0 is available!"
+  assert_release_requests 1
+
+  unset SLOCTL_TEST_TTY_INPUT_WHEN_RAW
+  export SLOCTL_ACCESSIBLE_MODE=1
+  select_update_action skip
+  run_sloctl_with_tty_stderr version
+  assert_success_joined_output
+  assert_notification_stderr version-prompt-skip
+  assert_release_requests 2
 }
 
 @test "sloctl does not show feature notification when opted out" {
@@ -208,6 +264,16 @@ teardown() {
   assert_release_requests 1
 }
 
+@test "sloctl shows fixed vulnerability notification" {
+  use_release_body fixed-vulnerabilities
+  start_release_server
+
+  run_sloctl_with_tty_stderr version
+  assert_success_joined_output
+  assert_notification_stderr fixed-vulnerabilities-prompt-skip
+  assert_release_requests 1
+}
+
 @test "sloctl keeps nested details and additional release-note sections" {
   use_release_body features-with-details
   start_release_server
@@ -231,6 +297,17 @@ teardown() {
 @test "sloctl does not show notification for current release" {
   export RELEASE_SERVER_TAG=v1.0.0
   export RELEASE_SERVER_HTML_URL=https://github.com/nobl9/sloctl/releases/tag/v1.0.0
+  start_release_server
+
+  run_sloctl_with_tty_stderr version
+  assert_success_joined_output
+  assert_stderr ""
+  assert_release_requests 1
+}
+
+@test "sloctl does not show notification for an older release" {
+  export RELEASE_SERVER_TAG=v0.9.0
+  export RELEASE_SERVER_HTML_URL=https://github.com/nobl9/sloctl/releases/tag/v0.9.0
   start_release_server
 
   run_sloctl_with_tty_stderr version
@@ -284,7 +361,7 @@ teardown() {
   chmod +x "$tools_dir/curl"
   start_release_server
 
-  run_sloctl_binary_with_path /usr/bin/sloctl "$tools_dir" version
+  run_sloctl_binary_with_path /usr/local/bin/sloctl "$tools_dir" version
   assert_success_joined_output
   assert_notification_stderr install-curl-wide-prompt
 }
@@ -320,6 +397,18 @@ teardown() {
   assert_notification_stderr install-go-prompt
 }
 
+@test "sloctl omits update command for unrecognized installs" {
+  use_release_body maintenance
+  select_update_action_without_update skip
+  local manual_binary="$BATS_TEST_TMPDIR/manual/sloctl"
+  copy_sloctl_binary "$manual_binary"
+  start_release_server
+
+  run_sloctl_binary_with_tty_stderr "$manual_binary" version
+  assert_success_joined_output
+  assert_notification_stderr no-install-command-prompt
+}
+
 @test "sloctl falls back to wget when curl is unavailable" {
   use_release_body maintenance
   local tools_dir="$BATS_TEST_TMPDIR/tools"
@@ -328,7 +417,7 @@ teardown() {
   chmod +x "$tools_dir/wget"
   start_release_server
 
-  run_sloctl_binary_with_path /usr/bin/sloctl "$tools_dir" version
+  run_sloctl_binary_with_path /usr/local/bin/sloctl "$tools_dir" version
   assert_success_joined_output
   assert_notification_stderr install-wget-prompt
 }
@@ -340,7 +429,7 @@ teardown() {
   mkdir -p "$tools_dir"
   start_release_server
 
-  run_sloctl_binary_with_path /usr/bin/sloctl "$tools_dir" version
+  run_sloctl_binary_with_path /usr/local/bin/sloctl "$tools_dir" version
   assert_success_joined_output
   assert_notification_stderr no-install-command-prompt
 }
@@ -446,7 +535,7 @@ run_sloctl_binary_with_prefixed_path() {
 
 copy_sloctl_binary() {
   local target="$1"
-  local source="/usr/bin/sloctl"
+  local source="/usr/local/bin/sloctl"
   if has_bats_tag platform; then
     source="$(native_sloctl_binary)"
   fi
@@ -503,6 +592,7 @@ stop_release_server() {
 expire_notification_cache() {
   local cache_file="$XDG_CACHE_HOME/nobl9/sloctl/notifications.json"
   sed -i 's/"lastCheckedAt": "[^"]*"/"lastCheckedAt": "2000-01-01T00:00:00Z"/' "$cache_file"
+  assert_equal "$(jq -r '.lastCheckedAt' "$cache_file")" "2000-01-01T00:00:00Z"
 }
 
 assert_release_requests() {

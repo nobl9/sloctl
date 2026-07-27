@@ -96,10 +96,23 @@ func displayReleaseNotesMarkdown(markdown string, highlightTitles bool) string {
 }
 
 func isReleaseNotesHeading(line string) bool {
-	heading := strings.ToLower(line)
-	return strings.Contains(heading, "features") ||
-		strings.Contains(heading, "fixes") ||
-		strings.Contains(heading, "breaking")
+	level := markdownHeadingLevel(line)
+	if level != 2 {
+		return false
+	}
+	heading := strings.ToLower(strings.TrimSpace(line[level:]))
+	for _, suffix := range [...]string{
+		"features",
+		"fixes",
+		"breaking",
+		"breaking changes",
+		"vulnerabilities",
+	} {
+		if heading == suffix || strings.HasSuffix(heading, " "+suffix) {
+			return true
+		}
+	}
+	return false
 }
 
 func parseReleaseNote(raw string) string {
@@ -114,6 +127,7 @@ func trimReleaseNotePrefix(title string) string {
 		"feat:",
 		"fix:",
 		"breaking:",
+		"sec:",
 	} {
 		if strings.HasPrefix(lowerTitle, prefix) {
 			return strings.TrimSpace(title[len(prefix):])

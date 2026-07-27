@@ -88,11 +88,11 @@ docker:
 	$(call _build_docker,sloctl,$(VERSION),$(BRANCH),$(REVISION),$(NOTIFICATIONS_RELEASE_URL))
 
 .PHONY: test
-## Run all tests.
+## Run the standard unit and end-to-end suites (excludes native platform tests).
 test: test/unit test/e2e
 
 .PHONY: test/unit test/go/unit test/bats/%
-## Run all unit tests.
+## Run Go and containerized Bats unit tests (excludes native platform tests).
 test/unit: test/go/unit test/bats/unit
 
 .PHONY: test/e2e test/bats/unit test/bats/platform test/bats/e2e test/go/e2e-docker
