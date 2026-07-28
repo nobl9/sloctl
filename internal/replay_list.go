@@ -24,6 +24,7 @@ func (r *ReplayCmd) AddListCommand() *cobra.Command {
 type ReplayListItem struct {
 	Slo            string `json:"slo,omitempty"`
 	Project        string `json:"project"`
+	CreatedAt      string `json:"createdAt,omitempty"`
 	ElapsedTime    string `json:"elapsedTime,omitempty"`
 	RetrievedScope string `json:"retrievedScope,omitempty"`
 	RetrievedFrom  string `json:"retrievedFrom,omitempty"`
