@@ -1,0 +1,14 @@
+- slo: replay-slo-a
+  project: replay-project-a
+  from: 2023-03-02T16:00:00Z
+  sourceSLO:
+    slo: replay-source-slo
+    project: replay-source-project
+    objectivesMap:
+      - source: acceptable
+        target: objective-1
+      - source: alarming
+        target: objective-2
+- slo: replay-slo-b
+  project: replay-project-b
+  from: 2023-03-02T16:00:00Z

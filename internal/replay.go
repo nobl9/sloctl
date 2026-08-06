@@ -471,9 +471,9 @@ func (r *ReplayCmd) runReplayWithStatusCheck(ctx context.Context, config ReplayC
 				return errors.Wrap(err, "failed to get for Replay status")
 			}
 			switch status {
-			case replayV1.ReplayListStatusFailed.String():
+			case replayV1.ReplayListStatusFailed:
 				return errors.New("Replay has failed")
-			case replayV1.ReplayListStatusCompleted.String():
+			case replayV1.ReplayListStatusCompleted:
 				return nil
 			default:
 				continue
@@ -522,7 +522,7 @@ func (r *ReplayCmd) getReplayAvailability(
 func (r *ReplayCmd) getReplayStatus(
 	ctx context.Context,
 	config ReplayConfig,
-) (string, error) {
+) (replayV1.ReplayListStatus, error) {
 	response, err := r.client.Replay().V1().GetStatus(ctx, replayV1.GetStatusRequest{
 		Project: config.Project,
 		SLO:     config.SLO,

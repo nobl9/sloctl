@@ -12,7 +12,7 @@ require (
 	github.com/itchyny/gojq v0.12.19
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/nobl9/go-yaml v1.0.1
-	github.com/nobl9/nobl9-go v0.133.1
+	github.com/nobl9/nobl9-go v0.135.0-rc1.0.20260806161942-7ae94c0f26c6
 	github.com/nobl9/nobl9-openslo v0.1.6
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.19.1
@@ -22,8 +22,6 @@ require (
 	github.com/tidwall/sjson v1.2.5
 	golang.org/x/sync v0.22.0
 )
-
-replace github.com/nobl9/nobl9-go => github.com/nobl9/nobl9-go v0.134.0-rc1.0.20260724121508-d73140ee750e
 
 require (
 	charm.land/bubbles/v2 v2.1.0 // indirect
