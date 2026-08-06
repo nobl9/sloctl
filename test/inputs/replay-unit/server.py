@@ -24,6 +24,18 @@ class ReplayHandler(BaseHTTPRequestHandler):
         if target.path == "/api/internal/plan-info":
             self.write_json({"enabledPlaylists": True})
             return
+        if target.path == "/api/timetravel/list":
+            self.write_json(
+                [
+                    {
+                        "slo": "replay-slo-a",
+                        "project": "replay-project-a",
+                        "createdAt": "2026-08-06T12:34:56Z",
+                        "status": "in progress",
+                    }
+                ]
+            )
+            return
         if target.path == "/api/get/slo":
             query = parse_qs(target.query)
             project = self.headers.get("Project", "")

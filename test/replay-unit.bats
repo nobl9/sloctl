@@ -51,3 +51,12 @@ teardown_file() {
     "$(jq -sc 'map({project, slo, sourceSlo})' "$REPLAY_REQUEST_LOG")" \
     '[{"project":"replay-project-a","slo":"replay-slo-a","sourceSlo":{"slo":"replay-source-slo","project":"replay-source-project","objectivesMap":[{"source":"acceptable","target":"objective-1"},{"source":"alarming","target":"objective-2"}]}},{"project":"replay-project-b","slo":"replay-slo-b","sourceSlo":null}]'
 }
+
+@test "replay list preserves createdAt and coarse status" {
+  run_sloctl --no-config-file replay list -o json
+
+  assert_success
+  assert_equal \
+    "$(jq -c . <<< "$output")" \
+    '[{"slo":"replay-slo-a","project":"replay-project-a","createdAt":"2026-08-06T12:34:56Z","status":"in progress"}]'
+}
