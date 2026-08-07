@@ -504,14 +504,11 @@ func (r *ReplayCmd) getReplayAvailability(
 	durationValue int,
 ) (availability replayV1.ReplayAvailability, err error) {
 	response, err := r.client.Replay().V1().GetAvailability(ctx, replayV1.GetAvailabilityRequest{
-		Project:           config.Project,
-		DataSource:        config.metricSource.Name,
-		DataSourceKind:    config.metricSource.Kind,
-		DataSourceProject: config.metricSource.Project,
-		SLOName:           config.SLO,
-		Type:              replayV1.ReplayTypeReimportAndRecalculation,
-		DurationUnit:      durationUnit,
-		DurationValue:     durationValue,
+		Project:       config.Project,
+		SLOName:       config.SLO,
+		Type:          replayV1.ReplayTypeReimportAndRecalculation,
+		DurationUnit:  durationUnit,
+		DurationValue: durationValue,
 	})
 	if err != nil {
 		return availability, err
