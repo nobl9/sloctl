@@ -1,4 +1,5 @@
-// Package notifications shows release notifications and prompts for updates on supported terminals.
+// Package notifications displays release notices in eligible interactive sessions.
+// It offers update actions for recognized Homebrew and Go installations.
 package notifications
 
 import (
@@ -9,7 +10,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -45,8 +45,9 @@ const (
 	ResultInterrupted
 )
 
-// Notify checks for a newer release in eligible interactive sessions.
-// It may display an update prompt when the terminal supports one.
+// Notify checks for a newer release in eligible interactive sessions and reports
+// whether the caller should continue or exit. Checks are best-effort and cached;
+// recognized Homebrew and Go installations may offer an interactive update action.
 func Notify(currentVersion string) Result {
 	return newNotifier(currentVersion).notify()
 }
@@ -61,8 +62,7 @@ type notifier struct {
 }
 
 type state struct {
-	LastCheckedAt       time.Time `json:"lastCheckedAt"`
-	LastShownReleaseTag string    `json:"lastShownReleaseTag"`
+	LastCheckedAt time.Time `json:"lastCheckedAt"`
 }
 
 type githubRelease struct {
@@ -88,22 +88,23 @@ func (n notifier) notify() Result {
 	}
 	currentState := n.readState()
 	now := time.Now()
-	if !currentState.LastCheckedAt.IsZero() && now.Sub(currentState.LastCheckedAt) < checkInterval {
+	lastCheckAge := now.Sub(currentState.LastCheckedAt)
+	if !currentState.LastCheckedAt.IsZero() && lastCheckAge >= 0 && lastCheckAge < checkInterval {
 		return ResultContinue
 	}
 
 	release, err := n.fetchLatestReleaseWithTimeout()
 	currentState.LastCheckedAt = now
 	if err != nil {
-		n.saveState(currentState)
+		_ = n.saveState(currentState)
 		return ResultContinue
 	}
 	if !isReleaseNewer(n.currentVersion, release.TagName) {
-		n.saveState(currentState)
+		_ = n.saveState(currentState)
 		return ResultContinue
 	}
-	if currentState.LastShownReleaseTag == release.TagName {
-		n.saveState(currentState)
+	if n.hasSkippedRelease(release.TagName) {
+		_ = n.saveState(currentState)
 		return ResultContinue
 	}
 
@@ -112,20 +113,30 @@ func (n notifier) notify() Result {
 	action, err := n.promptUpdate(
 		release,
 		releaseNotesMarkdown,
-		updateCommand.display,
-		isUpdateFormSupported(runtime.GOOS, systemName),
+		updateCommand,
+		isUpdateFormSupported(
+			runtime.GOOS,
+			os.Getenv("MSYSTEM"),
+			isatty.IsCygwinTerminal(n.stderr.Fd()),
+		),
 	)
 	if err != nil {
 		result := n.handlePromptError(err)
 		if result != ResultInterrupted {
-			n.saveState(currentState)
+			_ = n.saveState(currentState)
 		}
 		return result
 	}
+	_ = n.saveState(currentState)
 	if action == updateActionSkipUntilNextVersion {
-		currentState.LastShownReleaseTag = release.TagName
+		if err := n.saveSkippedRelease(release.TagName); err != nil {
+			_, _ = fmt.Fprintf(
+				n.stderr,
+				"failed to save update preference; the notification may be shown again: %v\n",
+				err,
+			)
+		}
 	}
-	n.saveState(currentState)
 	if action != updateActionRunUpgrade {
 		return ResultContinue
 	}
@@ -171,21 +182,14 @@ func (n notifier) handlePromptError(err error) Result {
 	return ResultContinue
 }
 
-func isUpdateFormSupported(goOS string, readSystemName func() (string, error)) bool {
+func isUpdateFormSupported(goOS, msysEnvironment string, isCygwinTerminal bool) bool {
 	if goOS != "windows" {
 		return true
 	}
-	systemName, err := readSystemName()
-	if err != nil {
+	if !isCygwinTerminal {
 		return false
 	}
-	systemName = strings.ToLower(strings.TrimSpace(systemName))
-	return strings.HasPrefix(systemName, "mingw") || strings.HasPrefix(systemName, "cygwin")
-}
-
-func systemName() (string, error) {
-	output, err := exec.Command("uname").Output()
-	return string(output), err
+	return !strings.EqualFold(strings.TrimSpace(msysEnvironment), "MSYS")
 }
 
 func (n notifier) fetchLatestRelease(ctx context.Context) (githubRelease, error) {
@@ -227,15 +231,55 @@ func (n notifier) readState() state {
 	return currentState
 }
 
-func (n notifier) saveState(currentState state) {
+func (n notifier) saveState(currentState state) error {
 	if err := os.MkdirAll(filepath.Dir(n.cachePath), 0o700); err != nil {
-		return
+		return fmt.Errorf("create notification cache directory: %w", err)
 	}
 	data, err := json.MarshalIndent(currentState, "", "  ")
 	if err != nil {
-		return
+		return fmt.Errorf("encode notification cache: %w", err)
 	}
-	_ = os.WriteFile(n.cachePath, data, 0o600)
+	if err := writeFileAtomically(n.cachePath, data); err != nil {
+		return fmt.Errorf("write notification cache: %w", err)
+	}
+	return nil
+}
+
+func (n notifier) hasSkippedRelease(releaseTag string) bool {
+	_, err := os.Stat(n.skippedReleasePath(releaseTag))
+	return err == nil
+}
+
+func (n notifier) saveSkippedRelease(releaseTag string) error {
+	if err := os.MkdirAll(filepath.Dir(n.cachePath), 0o700); err != nil {
+		return fmt.Errorf("create notification cache directory: %w", err)
+	}
+	if err := os.WriteFile(n.skippedReleasePath(releaseTag), nil, 0o600); err != nil {
+		return fmt.Errorf("write update preference: %w", err)
+	}
+	return nil
+}
+
+func (n notifier) skippedReleasePath(releaseTag string) string {
+	return filepath.Join(filepath.Dir(n.cachePath), "skip-"+releaseTag)
+}
+
+func writeFileAtomically(path string, data []byte) error {
+	temporaryFile, err := os.CreateTemp(filepath.Dir(path), ".notifications-*")
+	if err != nil {
+		return err
+	}
+	temporaryPath := temporaryFile.Name()
+	defer func() { _ = os.Remove(temporaryPath) }()
+
+	if _, err = temporaryFile.Write(data); err != nil {
+		_ = temporaryFile.Close()
+		return err
+	}
+	if err = temporaryFile.Close(); err != nil {
+		return err
+	}
+	return os.Rename(temporaryPath, path)
 }
 
 func defaultCachePath() string {

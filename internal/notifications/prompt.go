@@ -16,8 +16,9 @@ import (
 )
 
 const (
-	defaultPromptWidth = 92
-	minPromptWidth     = 48
+	defaultPromptWidth   = 92
+	minPromptWidth       = 48
+	installationGuideURL = "https://github.com/nobl9/sloctl#install"
 )
 
 type updateAction string
@@ -36,16 +37,17 @@ type terminalInfo struct {
 func (n notifier) promptUpdate(
 	release githubRelease,
 	releaseNotesMarkdown string,
-	updateCommand string,
+	command updateCommand,
 	showUpdateForm bool,
 ) (updateAction, error) {
 	terminal := n.terminalInfo()
-	n.printNotification(release, releaseNotesMarkdown, terminal)
+	showUpdateForm = showUpdateForm && command.available()
+	n.printNotification(release, releaseNotesMarkdown, command, showUpdateForm, terminal)
 	if !showUpdateForm {
 		return updateActionSkip, nil
 	}
 
-	action := defaultUpdateAction(updateCommand)
+	action := updateActionRunUpgrade
 	form := huhform.NewWithTheme(
 		huh.ThemeFunc(func(bool) *huh.Styles {
 			return style.HuhTheme(terminal.dark)
@@ -53,7 +55,7 @@ func (n notifier) promptUpdate(
 		huh.NewGroup(
 			huh.NewSelect[updateAction]().
 				Title("Choose update action").
-				Options(updateActionOptions(updateCommand)...).
+				Options(updateActionOptions(command.display)...).
 				Value(&action),
 		),
 	).
@@ -65,9 +67,20 @@ func (n notifier) promptUpdate(
 func (n notifier) printNotification(
 	release githubRelease,
 	releaseNotesMarkdown string,
+	command updateCommand,
+	showUpdateForm bool,
 	terminal terminalInfo,
 ) {
 	_, _ = fmt.Fprintln(n.stderr, renderNotification(release, releaseNotesMarkdown, terminal.width, terminal.dark))
+	switch {
+	case !command.available():
+		label := style.NotificationLabel(terminal.dark).Render("Installation options:")
+		link := style.NotificationLink(terminal.dark).Render(installationGuideURL)
+		_, _ = fmt.Fprintf(n.stderr, "\n%s %s\n", label, link)
+	case !showUpdateForm:
+		label := style.NotificationLabel(terminal.dark).Render("Update with:")
+		_, _ = fmt.Fprintf(n.stderr, "\n%s %s\n", label, command.display)
+	}
 	_, _ = fmt.Fprintln(n.stderr)
 	separator := style.NotificationSeparator(terminal.dark).Render(strings.Repeat("─", terminal.width))
 	_, _ = fmt.Fprintln(n.stderr, separator)
@@ -96,24 +109,11 @@ func (n notifier) terminalWidth() int {
 }
 
 func updateActionOptions(updateCommand string) []huh.Option[updateAction] {
-	if updateCommand == "" {
-		return []huh.Option[updateAction]{
-			huh.NewOption("Skip", updateActionSkip),
-			huh.NewOption("Skip until next version", updateActionSkipUntilNextVersion),
-		}
-	}
 	return []huh.Option[updateAction]{
 		huh.NewOption(fmt.Sprintf("Update (runs %s)", updateCommand), updateActionRunUpgrade),
 		huh.NewOption("Skip", updateActionSkip),
 		huh.NewOption("Skip until next version", updateActionSkipUntilNextVersion),
 	}
-}
-
-func defaultUpdateAction(updateCommand string) updateAction {
-	if updateCommand == "" {
-		return updateActionSkip
-	}
-	return updateActionRunUpgrade
 }
 
 func notificationWidth(terminalWidth int) int {

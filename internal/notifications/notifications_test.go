@@ -4,7 +4,12 @@ import (
 	"errors"
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
+	"time"
 
 	huh "charm.land/huh/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -13,83 +18,171 @@ import (
 )
 
 func TestNotifier_promptUpdate_WithoutForm(t *testing.T) {
-	t.Parallel()
-	stdin, err := os.CreateTemp(t.TempDir(), "stdin")
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stdin.Close()) })
-	stderr, err := os.CreateTemp(t.TempDir(), "stderr")
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stderr.Close()) })
-
-	n := notifier{stdin: stdin, stderr: stderr}
-	action, err := n.promptUpdate(
-		githubRelease{
-			TagName: "v1.2.3",
-			HTMLURL: "https://github.com/nobl9/sloctl/releases/tag/v1.2.3",
+	t.Setenv("SLOCTL_ACCESSIBLE_MODE", "1")
+	const goUpdateCommand = "go install github.com/nobl9/sloctl/cmd/sloctl@latest"
+	tests := map[string]struct {
+		updateCommand    updateCommand
+		showUpdateForm   bool
+		expectedGuidance string
+	}{
+		"detected updater": {
+			updateCommand: updateCommand{
+				display:    goUpdateCommand,
+				executable: "go",
+			},
+			expectedGuidance: "Update with: " + goUpdateCommand,
 		},
-		"",
-		"sloctl update",
-		false,
-	)
-	require.NoError(t, err)
-	assert.Equal(t, updateActionSkip, action)
+		"installation guide": {
+			showUpdateForm:   true,
+			expectedGuidance: "Installation options: " + installationGuideURL,
+		},
+		"incomplete updater": {
+			updateCommand:    updateCommand{display: goUpdateCommand},
+			showUpdateForm:   true,
+			expectedGuidance: "Installation options: " + installationGuideURL,
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			stdin, err := os.CreateTemp(t.TempDir(), "stdin")
+			require.NoError(t, err)
+			t.Cleanup(func() { require.NoError(t, stdin.Close()) })
+			stderr, err := os.CreateTemp(t.TempDir(), "stderr")
+			require.NoError(t, err)
+			t.Cleanup(func() { require.NoError(t, stderr.Close()) })
 
-	_, err = stderr.Seek(0, io.SeekStart)
+			n := notifier{stdin: stdin, stderr: stderr}
+			action, err := n.promptUpdate(
+				githubRelease{
+					TagName: "v1.2.3",
+					HTMLURL: "https://github.com/nobl9/sloctl/releases/tag/v1.2.3",
+				},
+				"",
+				tt.updateCommand,
+				tt.showUpdateForm,
+			)
+			require.NoError(t, err)
+			assert.Equal(t, updateActionSkip, action)
+
+			_, err = stderr.Seek(0, io.SeekStart)
+			require.NoError(t, err)
+			output, err := io.ReadAll(stderr)
+			require.NoError(t, err)
+			plainOutput := ansi.Strip(string(output))
+			assert.Contains(t, plainOutput, "New sloctl version v1.2.3 is available!")
+			assert.Contains(t, plainOutput, "https://github.com/nobl9/sloctl/releases/tag/v1.2.3")
+			assert.Contains(t, plainOutput, tt.expectedGuidance)
+			assert.NotContains(t, plainOutput, "Choose update action")
+		})
+	}
+}
+
+func Test_isGoInstallExecutable_ConfiguredGoEnvironment(t *testing.T) {
+	goExecutable, err := exec.LookPath("go")
 	require.NoError(t, err)
-	output, err := io.ReadAll(stderr)
+	t.Setenv("GOENV", "off")
+
+	t.Run("GOBIN", func(t *testing.T) {
+		goBin := t.TempDir()
+		t.Setenv("GOBIN", goBin)
+		t.Setenv("GOPATH", t.TempDir())
+
+		executablePath := writeTestSloctlExecutable(t, goBin)
+		assert.True(t, isGoInstallExecutable(executablePath, goExecutable))
+	})
+
+	t.Run("GOPATH", func(t *testing.T) {
+		goPath := t.TempDir()
+		t.Setenv("GOBIN", "")
+		t.Setenv("GOPATH", goPath)
+
+		executablePath := writeTestSloctlExecutable(t, filepath.Join(goPath, "bin"))
+		assert.True(t, isGoInstallExecutable(executablePath, goExecutable))
+	})
+}
+
+func Test_isGoInstallExecutable_UsesFirstGOPATHEntry(t *testing.T) {
+	goExecutable, err := exec.LookPath("go")
 	require.NoError(t, err)
-	plainOutput := ansi.Strip(string(output))
-	assert.Contains(t, plainOutput, "New sloctl version v1.2.3 is available!")
-	assert.Contains(t, plainOutput, "https://github.com/nobl9/sloctl/releases/tag/v1.2.3")
-	assert.NotContains(t, plainOutput, "Choose update action")
+	t.Setenv("GOENV", "off")
+	t.Setenv("GOBIN", "")
+	firstGoPath := t.TempDir()
+	secondGoPath := t.TempDir()
+	t.Setenv("GOPATH", strings.Join([]string{firstGoPath, secondGoPath}, string(os.PathListSeparator)))
+
+	secondExecutable := writeTestSloctlExecutable(t, filepath.Join(secondGoPath, "bin"))
+	assert.False(t, isGoInstallExecutable(secondExecutable, goExecutable))
+
+	firstExecutable := writeTestSloctlExecutable(t, filepath.Join(firstGoPath, "bin"))
+	assert.True(t, isGoInstallExecutable(firstExecutable, goExecutable))
+}
+
+func Test_isGoInstallExecutable_UsesFileIdentity(t *testing.T) {
+	goExecutable, err := exec.LookPath("go")
+	require.NoError(t, err)
+	t.Setenv("GOENV", "off")
+	t.Setenv("GOPATH", t.TempDir())
+
+	if runtime.GOOS == "windows" {
+		goBin := t.TempDir()
+		t.Setenv("GOBIN", goBin)
+		executablePath := writeTestSloctlExecutable(t, goBin)
+		assert.True(t, isGoInstallExecutable(strings.ToUpper(executablePath), goExecutable))
+		return
+	}
+
+	realGoBin := t.TempDir()
+	goBin := filepath.Join(t.TempDir(), "bin")
+	require.NoError(t, os.Symlink(realGoBin, goBin))
+	t.Setenv("GOBIN", goBin)
+	executablePath := writeTestSloctlExecutable(t, realGoBin)
+	assert.True(t, isGoInstallExecutable(executablePath, goExecutable))
 }
 
 func Test_isUpdateFormSupported(t *testing.T) {
 	t.Parallel()
 	tests := map[string]struct {
 		goOS                string
-		systemName          string
-		systemNameErr       error
+		msysEnvironment     string
+		isCygwinTerminal    bool
 		expectedIsSupported bool
 	}{
 		"Linux": {
 			goOS:                "linux",
-			systemNameErr:       errors.New("uname unavailable"),
 			expectedIsSupported: true,
 		},
 		"Windows MinGW": {
 			goOS:                "windows",
-			systemName:          "MINGW64_NT-10.0-26100\n",
+			msysEnvironment:     "MINGW64",
+			isCygwinTerminal:    true,
 			expectedIsSupported: true,
 		},
 		"Windows Cygwin": {
 			goOS:                "windows",
-			systemName:          "CYGWIN_NT-10.0-26100\n",
+			isCygwinTerminal:    true,
 			expectedIsSupported: true,
 		},
 		"Windows MSYS": {
-			goOS:                "windows",
-			systemName:          "MSYS_NT-10.0-26100\n",
-			expectedIsSupported: false,
+			goOS:             "windows",
+			msysEnvironment:  "MSYS",
+			isCygwinTerminal: true,
 		},
 		"Windows native shell": {
-			goOS:                "windows",
-			systemName:          "Windows_NT\n",
-			expectedIsSupported: false,
+			goOS: "windows",
 		},
-		"Windows without uname": {
-			goOS:                "windows",
-			systemNameErr:       errors.New("uname unavailable"),
-			expectedIsSupported: false,
+		"Windows native shell launched from MinGW": {
+			goOS:            "windows",
+			msysEnvironment: "MINGW64",
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			readSystemName := func() (string, error) {
-				return tt.systemName, tt.systemNameErr
-			}
-			assert.Equal(t, tt.expectedIsSupported, isUpdateFormSupported(tt.goOS, readSystemName))
+			assert.Equal(
+				t,
+				tt.expectedIsSupported,
+				isUpdateFormSupported(tt.goOS, tt.msysEnvironment, tt.isCygwinTerminal),
+			)
 		})
 	}
 }
@@ -159,38 +252,6 @@ func Test_isReleaseNotesHeading(t *testing.T) {
 	}
 }
 
-func Test_isInstallScriptExecutable(t *testing.T) {
-	t.Parallel()
-	tests := map[string]struct {
-		path     string
-		expected bool
-	}{
-		"default Unix install": {
-			path:     "/usr/local/bin/sloctl",
-			expected: true,
-		},
-		"default MinGW install": {
-			path:     `C:\msys64\usr\local\bin\sloctl.exe`,
-			expected: true,
-		},
-		"manual Unix install": {
-			path: "/opt/bin/sloctl",
-		},
-		"system package install": {
-			path: "/usr/bin/sloctl",
-		},
-		"similar suffix outside MinGW": {
-			path: "/opt/usr/local/bin/sloctl",
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			assert.Equal(t, tt.expected, isInstallScriptExecutable(tt.path))
-		})
-	}
-}
-
 func Test_notifier_handlePromptError(t *testing.T) {
 	tests := map[string]struct {
 		promptErr      error
@@ -230,4 +291,28 @@ func Test_notifier_handlePromptError(t *testing.T) {
 			assert.Equal(t, tt.expectedOutput, string(output))
 		})
 	}
+}
+
+func TestNotifier_StateWritesDoNotEraseSkippedRelease(t *testing.T) {
+	n := notifier{cachePath: filepath.Join(t.TempDir(), "notifications.json")}
+
+	require.NoError(t, n.saveSkippedRelease("v1.2.3"))
+	require.NoError(t, n.saveState(state{LastCheckedAt: time.Now()}))
+	require.NoError(t, n.saveState(state{LastCheckedAt: time.Now().Add(time.Minute)}))
+
+	assert.True(t, n.hasSkippedRelease("v1.2.3"))
+	assert.False(t, n.hasSkippedRelease("v1.2.4"))
+	assert.False(t, n.readState().LastCheckedAt.IsZero())
+}
+
+func writeTestSloctlExecutable(t *testing.T, directory string) string {
+	t.Helper()
+	require.NoError(t, os.MkdirAll(directory, 0o700))
+	name := "sloctl"
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
+	path := filepath.Join(directory, name)
+	require.NoError(t, os.WriteFile(path, []byte("test"), 0o600))
+	return path
 }

@@ -5,7 +5,7 @@ New sloctl version v1.1.0 is available!
 ────────────────────────────────────────────────────────────────────────────────────────────
 
 Choose update action
-1. Update (runs curl -fsSL https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash | bash)
+1. Update (runs go install github.com/nobl9/sloctl/cmd/sloctl@latest)
 2. Skip
 3. Skip until next version
 Enter a number between 1 and 3:

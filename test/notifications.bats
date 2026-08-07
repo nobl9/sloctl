@@ -18,25 +18,29 @@ setup() {
   load_lib "bats-support"
   load_lib "bats-assert"
 
-  unset CI
-  unset ALL_PROXY
-  unset HTTPS_PROXY
-  unset HTTP_PROXY
-  unset NO_PROXY
-  unset SSL_CERT_FILE
-  unset all_proxy
-  unset https_proxy
-  unset http_proxy
-  unset no_proxy
-  unset SLOCTL_NO_NOTIFICATIONS
-  unset SLOCTL_TEST_TTY_COLUMNS
-  unset SLOCTL_TEST_TTY_INPUT
-  unset SLOCTL_TEST_TTY_INPUT_WHEN_RAW
-  unset RELEASE_SERVER_BODY_FILE
-  unset RELEASE_SERVER_HTML_URL
-  unset RELEASE_SERVER_RAW_RESPONSE
-  unset RELEASE_SERVER_STATUS
-  unset RELEASE_SERVER_TAG
+  unset \
+    CI \
+    ALL_PROXY \
+    HTTPS_PROXY \
+    HTTP_PROXY \
+    NO_PROXY \
+    SSL_CERT_FILE \
+    all_proxy \
+    https_proxy \
+    http_proxy \
+    no_proxy \
+    GOBIN \
+    GOPATH \
+    SLOCTL_NO_NOTIFICATIONS \
+    SLOCTL_TEST_TTY_INPUT \
+    SLOCTL_TEST_TTY_INPUT_WHEN_RAW \
+    SLOCTL_TEST_UPGRADE_EXIT_CODE \
+    SLOCTL_TEST_UPGRADE_MARKER \
+    RELEASE_SERVER_BODY_FILE \
+    RELEASE_SERVER_HTML_URL \
+    RELEASE_SERVER_RAW_RESPONSE \
+    RELEASE_SERVER_STATUS \
+    RELEASE_SERVER_TAG
 
   export NO_COLOR=1
   export SLOCTL_ACCESSIBLE_MODE=1
@@ -44,8 +48,23 @@ setup() {
   export XDG_CACHE_HOME="$BATS_TMPDIR/cache-$BATS_TEST_NUMBER"
   export LocalAppData="$BATS_TMPDIR/cache-$BATS_TEST_NUMBER"
   export RELEASE_SERVER_LOG="$BATS_TMPDIR/release-server-$BATS_TEST_NUMBER.log"
+  export SLOCTL_TEST_TTY_INPUT=$'1\n'
+  local tools_dir="$BATS_TEST_TMPDIR/tools"
+  mkdir -p "$tools_dir"
+  printf '%s\n' \
+    '#!/usr/bin/env bash' \
+    'if [[ "${1:-}" == "env" ]]; then' \
+    '  printf "{\"GOBIN\":\"%s\",\"GOPATH\":\"%s\"}\n" "${GOBIN:-}" "${GOPATH:-${HOME}/go}"' \
+    '  exit 0' \
+    'fi' \
+    'if [[ -n "${SLOCTL_TEST_UPGRADE_MARKER:-}" ]]; then' \
+    '  printf "%s\n" "$*" > "${SLOCTL_TEST_UPGRADE_MARKER}"' \
+    'fi' \
+    'exit "${SLOCTL_TEST_UPGRADE_EXIT_CODE:-0}"' \
+    > "$tools_dir/go"
+  chmod +x "$tools_dir/go"
+  export PATH="$tools_dir:$PATH"
   RELEASE_SERVER_START_COUNT=0
-  select_update_action skip
 }
 
 teardown() {
@@ -66,7 +85,7 @@ teardown() {
   assert_release_requests 1
 }
 
-@test "sloctl prompts before command validation and then runs the command after skip" {
+@test "sloctl shows installation guidance before command validation" {
   start_release_server
 
   run_sloctl_with_tty_stderr config rename-context old
@@ -76,15 +95,18 @@ teardown() {
 }
 
 @test "sloctl skips the notification until the next version" {
+  local go_binary="$HOME/go/bin/sloctl"
+  copy_sloctl_binary "$go_binary"
   select_update_action skip-until-next-version
   start_release_server
 
-  run_sloctl_with_tty_stderr version
+  run_sloctl_binary_with_tty_stderr "$go_binary" version
   assert_success_joined_output
+  assert_sloctl_version_output
   assert_notification_stderr feature-prompt-skip-until-next-version
   assert_release_requests 1
 
-  run_sloctl_with_tty_stderr version
+  run_sloctl_binary_with_tty_stderr "$go_binary" version
   assert_success_joined_output
   assert_stderr ""
   assert_release_requests 1
@@ -94,7 +116,7 @@ teardown() {
   use_release_body feature-without-author
   start_release_server
 
-  run_sloctl_with_tty_stderr version
+  run_sloctl_binary_with_tty_stderr "$go_binary" version
   assert_success_joined_output
   assert_stderr ""
   assert_release_requests 2
@@ -106,46 +128,40 @@ teardown() {
   export RELEASE_SERVER_HTML_URL=https://github.com/nobl9/sloctl/releases/tag/v1.2.0
   start_release_server
 
-  run_sloctl_with_tty_stderr version
+  run_sloctl_binary_with_tty_stderr "$go_binary" version
   assert_success_joined_output
   assert_notification_stderr next-version-prompt-skip-until-next-version
   assert_release_requests 3
 }
 
-@test "sloctl defaults to update action and exits without running the command" {
+@test "sloctl defaults to Go update action and exits without running the command" {
   use_release_body maintenance
   select_default_update_action
   export SLOCTL_TEST_UPGRADE_MARKER="$BATS_TEST_TMPDIR/upgrade-ran"
-  local tools_dir="$BATS_TEST_TMPDIR/tools"
-  mkdir -p "$tools_dir"
-  printf '%s\n' \
-    '#!/usr/bin/env bash' \
-    'printf "%s\n" "touch \"$SLOCTL_TEST_UPGRADE_MARKER\""' \
-    > "$tools_dir/curl"
-  chmod +x "$tools_dir/curl"
+  local go_binary="$HOME/go/bin/sloctl"
+  copy_sloctl_binary "$go_binary"
   start_release_server
 
-  run_sloctl_binary_with_prefixed_path /usr/local/bin/sloctl "$tools_dir" version
+  run_sloctl_binary_with_tty_stderr "$go_binary" version
   assert_success_joined_output
   assert_output ""
   assert_notification_stderr version-prompt-run-upgrade
   assert [ -f "$SLOCTL_TEST_UPGRADE_MARKER" ]
+  assert_equal \
+    "$(< "$SLOCTL_TEST_UPGRADE_MARKER")" \
+    "install github.com/nobl9/sloctl/cmd/sloctl@latest"
   assert_release_requests 1
 }
 
-@test "sloctl reports a failed script update and exits without running the command" {
+@test "sloctl reports a failed Go update and exits without running the command" {
   use_release_body maintenance
   select_default_update_action
-  local tools_dir="$BATS_TEST_TMPDIR/tools"
-  mkdir -p "$tools_dir"
-  printf '%s\n' \
-    '#!/usr/bin/env bash' \
-    'exit 22' \
-    > "$tools_dir/curl"
-  chmod +x "$tools_dir/curl"
+  export SLOCTL_TEST_UPGRADE_EXIT_CODE=22
+  local go_binary="$HOME/go/bin/sloctl"
+  copy_sloctl_binary "$go_binary"
   start_release_server
 
-  run_sloctl_binary_with_prefixed_path /usr/local/bin/sloctl "$tools_dir" version
+  run_sloctl_binary_with_tty_stderr "$go_binary" version
   assert_failure 1
   assert_output ""
   assert_notification_stderr version-prompt-failed-upgrade
@@ -154,12 +170,14 @@ teardown() {
 
 @test "sloctl exits without running the command when the update prompt is interrupted" {
   use_release_body maintenance
+  local go_binary="$HOME/go/bin/sloctl"
+  copy_sloctl_binary "$go_binary"
   unset SLOCTL_ACCESSIBLE_MODE
   export SLOCTL_TEST_TTY_INPUT=$'\x03'
   export SLOCTL_TEST_TTY_INPUT_WHEN_RAW=1
   start_release_server
 
-  run_sloctl_with_tty_stderr version
+  run_sloctl_binary_with_tty_stderr "$go_binary" version
   assert_failure 130
   assert_output ""
   assert_stderr --partial "New sloctl version v1.1.0 is available!"
@@ -168,9 +186,10 @@ teardown() {
   unset SLOCTL_TEST_TTY_INPUT_WHEN_RAW
   export SLOCTL_ACCESSIBLE_MODE=1
   select_update_action skip
-  run_sloctl_with_tty_stderr version
+  run_sloctl_binary_with_tty_stderr "$go_binary" version
   assert_success_joined_output
-  assert_notification_stderr version-prompt-skip
+  assert_sloctl_version_output
+  assert_notification_stderr version-prompt-run-upgrade
   assert_release_requests 2
 }
 
@@ -216,10 +235,14 @@ teardown() {
 # bats test_tags=platform,platform:unix
 @test "sloctl shows the new version notification and update form on supported terminals" {
   use_release_body maintenance
+  local go_binary="$HOME/go/bin/sloctl"
+  copy_sloctl_binary "$go_binary"
+  select_update_action skip
   start_release_server
 
-  run_sloctl_with_tty_stderr version
+  run_sloctl_binary_with_tty_stderr "$go_binary" version
   assert_success_joined_output
+  assert_sloctl_version_output
   # Exact prompt rendering is covered by unit cases; this test isolates platform form support.
   assert_stderr --partial "New sloctl version v1.1.0 is available!"
   assert_stderr --partial "Choose update action"
@@ -233,13 +256,16 @@ teardown() {
   fi
 
   use_release_body maintenance
-  local tools_dir="$BATS_TEST_TMPDIR/tools-without-uname"
-  mkdir -p "$tools_dir"
+  local go_binary="$HOME/go/bin/sloctl.exe"
+  local native_path="${PATH#*:}"
+  copy_sloctl_binary "$go_binary"
+  export GOBIN="$(cygpath -w "$(dirname "$go_binary")")"
   start_release_server
 
-  run_sloctl_binary_in_windows_console_with_path "$(native_sloctl_binary)" "$tools_dir" version
+  run_sloctl_binary_in_windows_console_with_path "$go_binary" "$native_path" version
   assert_success_joined_output
   assert_output --partial "New sloctl version v1.1.0 is available!"
+  assert_output --partial "Update with: go install github.com/nobl9/sloctl/cmd/sloctl@latest"
   refute_output --partial "Choose update action"
   assert_release_requests 1
 }
@@ -352,22 +378,45 @@ teardown() {
   assert_release_requests 1
 }
 
-@test "sloctl keeps install command on one line when terminal is wide" {
+@test "sloctl warns when skip until next version cannot be saved" {
   use_release_body maintenance
-  export SLOCTL_TEST_TTY_COLUMNS=140
-  local tools_dir="$BATS_TEST_TMPDIR/tools"
-  mkdir -p "$tools_dir"
-  touch "$tools_dir/curl"
-  chmod +x "$tools_dir/curl"
+  local go_binary="$HOME/go/bin/sloctl"
+  copy_sloctl_binary "$go_binary"
+  select_update_action skip-until-next-version
+  export XDG_CACHE_HOME="$BATS_TEST_TMPDIR/cache-file"
+  touch "$XDG_CACHE_HOME"
   start_release_server
 
-  run_sloctl_binary_with_path /usr/local/bin/sloctl "$tools_dir" version
+  run_sloctl_binary_with_tty_stderr "$go_binary" version
   assert_success_joined_output
-  assert_notification_stderr install-curl-wide-prompt
+  assert_sloctl_version_output
+  assert_notification_stderr version-prompt-skip-until-cache-error
+  assert_release_requests 1
+
+  run_sloctl_binary_with_tty_stderr "$go_binary" version
+  assert_success_joined_output
+  assert_sloctl_version_output
+  assert_notification_stderr version-prompt-skip-until-cache-error
+  assert_release_requests 2
+}
+
+@test "sloctl checks again when the cached timestamp is in the future" {
+  start_release_server
+
+  run_sloctl_with_tty_stderr version
+  assert_success_joined_output
+  assert_notification_stderr feature-prompt-skip
+  assert_release_requests 1
+
+  set_notification_cache_timestamp "2099-01-01T00:00:00Z"
+  run_sloctl_with_tty_stderr version
+  assert_success_joined_output
+  assert_notification_stderr feature-prompt-skip
+  assert_release_requests 2
 }
 
 # bats test_tags=platform,platform:macos
-@test "sloctl suggests Homebrew upgrade for Homebrew installs" {
+@test "sloctl runs Homebrew upgrade with the matching Homebrew executable" {
   if [ "$(uname -s)" != "Darwin" ]; then
     skip "native Homebrew compatibility is tested on macOS"
   fi
@@ -375,14 +424,25 @@ teardown() {
   use_release_body maintenance
   local cellar_binary="$BATS_TEST_TMPDIR/opt/homebrew/Cellar/sloctl/1.2.0/bin/sloctl"
   local linked_binary="$BATS_TEST_TMPDIR/opt/homebrew/bin/sloctl"
+  local brew_binary="$BATS_TEST_TMPDIR/opt/homebrew/bin/brew"
   copy_sloctl_binary "$cellar_binary"
   mkdir -p "$(dirname "$linked_binary")"
   ln -s "$cellar_binary" "$linked_binary"
+  export SLOCTL_TEST_UPGRADE_MARKER="$BATS_TEST_TMPDIR/upgrade-ran"
+  printf '%s\n' \
+    '#!/usr/bin/env bash' \
+    'printf "%s\n" "$*" > "${SLOCTL_TEST_UPGRADE_MARKER}"' \
+    > "$brew_binary"
+  chmod +x "$brew_binary"
+  select_default_update_action
   start_release_server
 
   run_sloctl_binary_with_tty_stderr "$linked_binary" version
   assert_success_joined_output
+  assert_output ""
   assert_notification_stderr install-homebrew-prompt
+  assert_equal "$(< "$SLOCTL_TEST_UPGRADE_MARKER")" "upgrade sloctl"
+  assert_release_requests 1
 }
 
 @test "sloctl suggests go install for Go bin installs" {
@@ -390,48 +450,54 @@ teardown() {
   export HOME="$BATS_TEST_TMPDIR/home"
   local go_binary="$HOME/go/bin/sloctl"
   copy_sloctl_binary "$go_binary"
+  select_update_action skip
   start_release_server
 
   run_sloctl_binary_with_tty_stderr "$go_binary" version
   assert_success_joined_output
+  assert_sloctl_version_output
   assert_notification_stderr install-go-prompt
 }
 
-@test "sloctl omits update command for unrecognized installs" {
+@test "sloctl shows the installation guide when Go is unavailable" {
   use_release_body maintenance
-  select_update_action_without_update skip
+  local go_binary="$HOME/go/bin/sloctl"
+  local empty_path="$BATS_TEST_TMPDIR/empty-path"
+  copy_sloctl_binary "$go_binary"
+  mkdir -p "$empty_path"
+  unset SLOCTL_TEST_TTY_INPUT
+  start_release_server
+
+  run_sloctl_binary_with_path "$go_binary" "$empty_path" version
+  assert_success_joined_output
+  assert_sloctl_version_output
+  assert_notification_stderr version-prompt-skip
+}
+
+@test "sloctl shows the installation guide when the matching Homebrew is unavailable" {
+  use_release_body maintenance
+  local cellar_binary="$BATS_TEST_TMPDIR/opt/homebrew/Cellar/sloctl/1.2.0/bin/sloctl"
+  copy_sloctl_binary "$cellar_binary"
+  unset SLOCTL_TEST_TTY_INPUT
+  start_release_server
+
+  run_sloctl_binary_with_tty_stderr "$cellar_binary" version
+  assert_success_joined_output
+  assert_sloctl_version_output
+  assert_notification_stderr version-prompt-skip
+}
+
+@test "sloctl shows installation guide for unrecognized installs" {
+  use_release_body maintenance
   local manual_binary="$BATS_TEST_TMPDIR/manual/sloctl"
   copy_sloctl_binary "$manual_binary"
+  unset SLOCTL_TEST_TTY_INPUT
   start_release_server
 
   run_sloctl_binary_with_tty_stderr "$manual_binary" version
   assert_success_joined_output
-  assert_notification_stderr no-install-command-prompt
-}
-
-@test "sloctl falls back to wget when curl is unavailable" {
-  use_release_body maintenance
-  local tools_dir="$BATS_TEST_TMPDIR/tools"
-  mkdir -p "$tools_dir"
-  touch "$tools_dir/wget"
-  chmod +x "$tools_dir/wget"
-  start_release_server
-
-  run_sloctl_binary_with_path /usr/local/bin/sloctl "$tools_dir" version
-  assert_success_joined_output
-  assert_notification_stderr install-wget-prompt
-}
-
-@test "sloctl omits update command when no downloader is available" {
-  use_release_body maintenance
-  select_update_action_without_update skip
-  local tools_dir="$BATS_TEST_TMPDIR/tools"
-  mkdir -p "$tools_dir"
-  start_release_server
-
-  run_sloctl_binary_with_path /usr/local/bin/sloctl "$tools_dir" version
-  assert_success_joined_output
-  assert_notification_stderr no-install-command-prompt
+  assert_sloctl_version_output
+  assert_notification_stderr version-prompt-skip
 }
 
 assert_notification_stderr() {
@@ -443,7 +509,15 @@ assert_notification_stderr() {
 }
 
 normalize_tty_output() {
-  sed -e 's/\r//g' -e 's/[[:blank:]]$//'
+  sed \
+    -e 's/\r//g' \
+    -e 's/[[:blank:]]$//' \
+    -e "s#${BATS_TEST_TMPDIR}#<BATS_TEST_TMPDIR>#g"
+}
+
+assert_sloctl_version_output() {
+  # The version prefix is fixed by the test target; suffix and build metadata vary by runner.
+  assert_output --partial "sloctl/v1.0.0"
 }
 
 use_release_body() {
@@ -468,20 +542,6 @@ select_update_action() {
   esac
 }
 
-select_update_action_without_update() {
-  case "$1" in
-    skip)
-      export SLOCTL_TEST_TTY_INPUT=$'1\n'
-      ;;
-    skip-until-next-version)
-      export SLOCTL_TEST_TTY_INPUT=$'2\n'
-      ;;
-    *)
-      fail "unknown update action without update command: $1"
-      ;;
-  esac
-}
-
 select_default_update_action() {
   export SLOCTL_TEST_TTY_INPUT=$'\n'
 }
@@ -501,14 +561,6 @@ run_sloctl_binary_with_tty_stderr() {
   run --separate-stderr python3 "$TEST_INPUTS/run_with_stderr_pty.py" "$binary" "$@"
 }
 
-run_sloctl_binary_with_path() {
-  local binary="$1"
-  local path="$2"
-  shift 2
-  bats_require_minimum_version 1.5.0
-  run --separate-stderr env PATH="$path" /usr/bin/python3 "$TEST_INPUTS/run_with_stderr_pty.py" "$binary" "$@"
-}
-
 run_sloctl_binary_in_windows_console_with_path() {
   local binary="$1"
   local path="$2"
@@ -525,12 +577,12 @@ run_sloctl_binary_in_windows_console_with_path() {
     "$python" "$helper" "$binary" "$@"
 }
 
-run_sloctl_binary_with_prefixed_path() {
+run_sloctl_binary_with_path() {
   local binary="$1"
   local path="$2"
   shift 2
   bats_require_minimum_version 1.5.0
-  run --separate-stderr env PATH="$path:$PATH" /usr/bin/python3 "$TEST_INPUTS/run_with_stderr_pty.py" "$binary" "$@"
+  run --separate-stderr env PATH="$path" /usr/bin/python3 "$TEST_INPUTS/run_with_stderr_pty.py" "$binary" "$@"
 }
 
 copy_sloctl_binary() {
@@ -590,9 +642,14 @@ stop_release_server() {
 }
 
 expire_notification_cache() {
+  set_notification_cache_timestamp "2000-01-01T00:00:00Z"
+}
+
+set_notification_cache_timestamp() {
+  local timestamp="$1"
   local cache_file="$XDG_CACHE_HOME/nobl9/sloctl/notifications.json"
-  sed -i 's/"lastCheckedAt": "[^"]*"/"lastCheckedAt": "2000-01-01T00:00:00Z"/' "$cache_file"
-  assert_equal "$(jq -r '.lastCheckedAt' "$cache_file")" "2000-01-01T00:00:00Z"
+  sed -i 's/"lastCheckedAt": "[^"]*"/"lastCheckedAt": "'"$timestamp"'"/' "$cache_file"
+  assert_equal "$(jq -r '.lastCheckedAt' "$cache_file")" "$timestamp"
 }
 
 assert_release_requests() {

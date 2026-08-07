@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 
 import errno
-import fcntl
 import os
 import pty
 import selectors
-import struct
+import signal
 import subprocess
 import sys
 import termios
+import time
 from contextlib import suppress
+
+
+COMMAND_TIMEOUT_SECONDS = 10
 
 
 def main():
@@ -20,26 +23,19 @@ def main():
     controller_fd = None
     terminal_fd = None
     process = None
+    process_completed = False
     selector = selectors.DefaultSelector()
     try:
         controller_fd, terminal_fd = pty.openpty()
-        columns = os.environ.get("SLOCTL_TEST_TTY_COLUMNS")
-        if columns:
-            fcntl.ioctl(
-                terminal_fd,
-                termios.TIOCSWINSZ,
-                struct.pack("HHHH", 24, int(columns), 0, 0),
-            )
         input_text = os.environ.get("SLOCTL_TEST_TTY_INPUT")
         wait_for_raw_mode = (
             os.environ.get("SLOCTL_TEST_TTY_INPUT_WHEN_RAW") == "1"
         )
-        stdin = subprocess.DEVNULL
+        stdin = terminal_fd
         if input_text is not None:
             attrs = termios.tcgetattr(terminal_fd)
             attrs[3] &= ~termios.ECHO
             termios.tcsetattr(terminal_fd, termios.TCSANOW, attrs)
-            stdin = terminal_fd
 
         process = subprocess.Popen(
             sys.argv[1:],
@@ -47,7 +43,9 @@ def main():
             stdout=subprocess.PIPE,
             stderr=terminal_fd,
             close_fds=True,
+            start_new_session=True,
         )
+        deadline = time.monotonic() + COMMAND_TIMEOUT_SECONDS
         if input_text is not None and not wait_for_raw_mode:
             os.write(controller_fd, input_text.encode())
         if not wait_for_raw_mode:
@@ -61,7 +59,15 @@ def main():
             sys.stderr.buffer,
         )
         while selector.get_map():
-            timeout = 0.1 if terminal_fd is not None else None
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                print(
+                    f"command timed out after {COMMAND_TIMEOUT_SECONDS} seconds",
+                    file=sys.stderr,
+                )
+                return 124
+
+            timeout = min(0.1, remaining) if terminal_fd is not None else remaining
             for key, _ in selector.select(timeout):
                 try:
                     data = os.read(key.fd, 4096)
@@ -92,16 +98,29 @@ def main():
                 os.close(terminal_fd)
                 terminal_fd = None
 
-        return process.wait()
+        try:
+            status = process.wait(timeout=max(deadline - time.monotonic(), 0))
+        except subprocess.TimeoutExpired:
+            print(
+                f"command timed out after {COMMAND_TIMEOUT_SECONDS} seconds",
+                file=sys.stderr,
+            )
+            return 124
+        process_completed = True
+        return status
     finally:
         selector.close()
-        if process is not None and process.poll() is None:
-            process.terminate()
+        if process is not None and not process_completed:
+            with suppress(ProcessLookupError):
+                os.killpg(process.pid, signal.SIGTERM)
             try:
                 process.wait(timeout=5)
             except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait()
+                pass
+            with suppress(ProcessLookupError):
+                os.killpg(process.pid, signal.SIGKILL)
+            with suppress(subprocess.TimeoutExpired):
+                process.wait(timeout=5)
         if process is not None and process.stdout is not None:
             process.stdout.close()
         for fd in (controller_fd, terminal_fd):

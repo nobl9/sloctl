@@ -1,20 +1,17 @@
 package notifications
 
 import (
+	"context"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"time"
 )
 
-type installChannel string
-
-const (
-	installChannelUnknown  installChannel = ""
-	installChannelScript   installChannel = "script"
-	installChannelHomebrew installChannel = "homebrew"
-	installChannelGo       installChannel = "go-install"
-)
+const goEnvTimeout = 2 * time.Second
 
 type updateCommand struct {
 	display    string
@@ -23,68 +20,23 @@ type updateCommand struct {
 }
 
 func (c updateCommand) available() bool {
-	return c.executable != ""
+	return c.display != "" && c.executable != ""
 }
 
 func detectUpdateCommand() updateCommand {
-	switch detectInstallChannel() {
-	case installChannelHomebrew:
-		return updateCommand{
-			display:    "brew upgrade sloctl",
-			executable: "brew",
-			args:       []string{"upgrade", "sloctl"},
-		}
-	case installChannelGo:
-		return updateCommand{
-			display:    "go install github.com/nobl9/sloctl/cmd/sloctl@latest",
-			executable: "go",
-			args:       []string{"install", "github.com/nobl9/sloctl/cmd/sloctl@latest"},
-		}
-	case installChannelScript:
-		return scriptUpdateCommand()
-	default:
-		return updateCommand{}
-	}
-}
-
-func detectInstallChannel() installChannel {
 	executablePath, err := os.Executable()
 	if err != nil {
-		return installChannelUnknown
+		return updateCommand{}
 	}
 	resolvedPath, err := filepath.EvalSymlinks(executablePath)
 	if err != nil {
 		resolvedPath = executablePath
 	}
-	if isHomebrewExecutable(resolvedPath) {
-		return installChannelHomebrew
-	}
-	if isGoInstallExecutable(resolvedPath) {
-		return installChannelGo
-	}
-	if isInstallScriptExecutable(resolvedPath) {
-		return installChannelScript
-	}
-	return installChannelUnknown
-}
 
-func scriptUpdateCommand() updateCommand {
-	const scriptURL = "https://raw.githubusercontent.com/nobl9/sloctl/main/install.bash"
-	if _, err := exec.LookPath("curl"); err == nil {
-		return bashPipelineUpdateCommand("curl -fsSL " + scriptURL + " | bash")
+	if command := homebrewUpdateCommand(resolvedPath); command.available() {
+		return command
 	}
-	if _, err := exec.LookPath("wget"); err == nil {
-		return bashPipelineUpdateCommand("wget -O - -q " + scriptURL + " | bash")
-	}
-	return updateCommand{}
-}
-
-func bashPipelineUpdateCommand(display string) updateCommand {
-	return updateCommand{
-		display:    display,
-		executable: "bash",
-		args:       []string{"-o", "pipefail", "-c", display},
-	}
+	return goInstallUpdateCommand(resolvedPath)
 }
 
 func (n notifier) runCommand(command updateCommand) error {
@@ -96,48 +48,84 @@ func (n notifier) runCommand(command updateCommand) error {
 	return cmd.Run()
 }
 
-func isHomebrewExecutable(path string) bool {
-	return strings.Contains(filepath.ToSlash(path), "/Cellar/sloctl/")
+func homebrewUpdateCommand(sloctlPath string) updateCommand {
+	prefix, _, found := strings.Cut(filepath.ToSlash(sloctlPath), "/Cellar/sloctl/")
+	if !found || prefix == "" {
+		return updateCommand{}
+	}
+	brewExecutable, err := exec.LookPath(filepath.Join(filepath.FromSlash(prefix), "bin", "brew"))
+	if err != nil {
+		return updateCommand{}
+	}
+	return updateCommand{
+		display:    "brew upgrade sloctl",
+		executable: brewExecutable,
+		args:       []string{"upgrade", "sloctl"},
+	}
 }
 
-func isInstallScriptExecutable(path string) bool {
-	path = strings.ReplaceAll(filepath.Clean(path), `\`, "/")
-	return path == "/usr/local/bin/sloctl" ||
-		strings.HasSuffix(path, "/usr/local/bin/sloctl.exe")
+func goInstallUpdateCommand(sloctlPath string) updateCommand {
+	goExecutable, err := exec.LookPath("go")
+	if err != nil || !isGoInstallExecutable(sloctlPath, goExecutable) {
+		return updateCommand{}
+	}
+	return updateCommand{
+		display:    "go install github.com/nobl9/sloctl/cmd/sloctl@latest",
+		executable: goExecutable,
+		args:       []string{"install", "github.com/nobl9/sloctl/cmd/sloctl@latest"},
+	}
 }
 
-func isGoInstallExecutable(path string) bool {
-	path = filepath.Clean(path)
-	for _, binDir := range goBinDirs() {
-		if path == filepath.Clean(filepath.Join(binDir, "sloctl")) ||
-			path == filepath.Clean(filepath.Join(binDir, "sloctl.exe")) {
-			return true
-		}
+func isGoInstallExecutable(sloctlPath, goExecutable string) bool {
+	binDir := goBinDir(goExecutable)
+	if binDir == "" {
+		return false
 	}
-	return false
+	executableName := "sloctl"
+	if runtime.GOOS == "windows" {
+		executableName += ".exe"
+	}
+	return isSameFile(sloctlPath, filepath.Join(binDir, executableName))
 }
 
-func goBinDirs() []string {
-	if goBin := strings.TrimSpace(os.Getenv("GOBIN")); goBin != "" {
-		return []string{goBin}
+func goBinDir(goExecutable string) string {
+	ctx, cancel := context.WithTimeout(context.Background(), goEnvTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, goExecutable, "env", "-json", "GOBIN", "GOPATH")
+	cmd.WaitDelay = goEnvTimeout
+	output, err := cmd.Output()
+	if err != nil {
+		return ""
 	}
-	goPath := strings.TrimSpace(os.Getenv("GOPATH"))
-	if goPath == "" {
-		homeDir := strings.TrimSpace(os.Getenv("HOME"))
-		if homeDir == "" {
-			homeDir = strings.TrimSpace(os.Getenv("USERPROFILE"))
-		}
-		if homeDir == "" {
-			return nil
-		}
-		goPath = filepath.Join(homeDir, "go")
+	var goEnv struct {
+		GOBIN  string `json:"GOBIN"`
+		GOPATH string `json:"GOPATH"`
 	}
-	goPaths := filepath.SplitList(goPath)
-	binDirs := make([]string, 0, len(goPaths))
-	for _, path := range goPaths {
-		if path != "" {
-			binDirs = append(binDirs, filepath.Join(path, "bin"))
-		}
+	if err := json.Unmarshal(output, &goEnv); err != nil {
+		return ""
 	}
-	return binDirs
+	binDir := goEnv.GOBIN
+	if binDir == "" {
+		goPaths := filepath.SplitList(goEnv.GOPATH)
+		if len(goPaths) == 0 || goPaths[0] == "" {
+			return ""
+		}
+		binDir = filepath.Join(goPaths[0], "bin")
+	}
+	if !filepath.IsAbs(binDir) {
+		return ""
+	}
+	return binDir
+}
+
+func isSameFile(firstPath, secondPath string) bool {
+	first, err := os.Stat(firstPath)
+	if err != nil {
+		return false
+	}
+	second, err := os.Stat(secondPath)
+	if err != nil {
+		return false
+	}
+	return os.SameFile(first, second)
 }

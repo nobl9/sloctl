@@ -95,6 +95,28 @@ brew trust nobl9/sloctl
 brew install sloctl
 ```
 
+### Update notifications
+
+In an interactive terminal,
+sloctl checks for a newer GitHub release before running the requested command
+and caches completed checks for 24 hours.
+It does not check in CI, for development builds,
+when standard input or standard error is not a terminal,
+or when `SLOCTL_NO_NOTIFICATIONS` is set.
+
+On supported terminals,
+Homebrew and `go install` installations offer to run
+their corresponding update command.
+Choosing **Update** exits after the update
+instead of running the originally requested sloctl command.
+Other installation methods show the [installation options](#install)
+and continue without an interactive prompt.
+
+Choosing **Skip until next version** stores the release tag
+in the operating system's user cache.
+If the preference cannot be saved,
+sloctl reports the error and may show the notification again.
+
 ### Docker
 
 Sloctl official images are hosted on [hub.docker.com](https://hub.docker.com/r/nobl9/sloctl).

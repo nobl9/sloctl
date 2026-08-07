@@ -48,6 +48,7 @@
     "govulncheck",
     "ldflags",
     "msys",
+    "msystem",
     "nobl",
     "openslo",
     "openslosdk",
