@@ -9,7 +9,11 @@ from urllib.parse import parse_qs, urlparse
 
 port_file = Path(sys.argv[1])
 request_log = Path(sys.argv[2])
+availability_log = Path(sys.argv[3])
+control_log = Path(sys.argv[4])
 request_log.write_text("", encoding="utf-8")
+availability_log.write_text("", encoding="utf-8")
+control_log.write_text("", encoding="utf-8")
 slos_by_project = {
     "replay-project-a": ["replay-slo-a"],
     "replay-project-b": ["replay-slo-b"],
@@ -46,20 +50,59 @@ class ReplayHandler(BaseHTTPRequestHandler):
             self.write_json([self.slo(name) for name in names])
             return
         if target.path == "/api/internal/timemachine/availability":
+            query = {
+                key: values[0] if len(values) == 1 else values
+                for key, values in parse_qs(target.query).items()
+            }
+            self.write_log(
+                availability_log,
+                {
+                    "project": self.headers.get("Project", ""),
+                    "query": query,
+                },
+            )
             self.write_json({"available": True})
             return
         self.write_not_found(target.path)
 
     def do_POST(self):
+        body = self.read_json_body()
+        if self.path == "/api/timetravel":
+            self.write_log(request_log, body)
+            self.write_json({})
+            return
+        if self.path == "/api/timetravel/cancel":
+            self.write_control_log(body)
+            self.write_json({})
+            return
+        self.write_not_found(self.path)
+
+    def do_DELETE(self):
         if self.path != "/api/timetravel":
             self.write_not_found(self.path)
             return
-
-        length = int(self.headers["Content-Length"])
-        body = json.loads(self.rfile.read(length))
-        with request_log.open("a", encoding="utf-8") as stream:
-            stream.write(json.dumps(body, separators=(",", ":")) + "\n")
+        self.write_control_log(self.read_json_body())
         self.write_json({})
+
+    def read_json_body(self):
+        length = int(self.headers["Content-Length"])
+        return json.loads(self.rfile.read(length))
+
+    def write_control_log(self, body):
+        self.write_log(
+            control_log,
+            {
+                "method": self.command,
+                "path": self.path,
+                "project": self.headers.get("Project", ""),
+                "body": body,
+            },
+        )
+
+    @staticmethod
+    def write_log(path, value):
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps(value, separators=(",", ":")) + "\n")
 
     def write_json(self, value, status=200):
         payload = json.dumps(value).encode()
