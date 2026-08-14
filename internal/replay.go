@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/nobl9/nobl9-go/manifest"
+	v1alphaSLO "github.com/nobl9/nobl9-go/manifest/v1alpha/slo"
 	"github.com/nobl9/nobl9-go/sdk"
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
 	replayV1 "github.com/nobl9/nobl9-go/sdk/endpoints/replay/v1"
@@ -99,7 +99,8 @@ func (r *ReplayCmd) Run(cmd *cobra.Command) error {
 }
 
 func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (failedReplays int, err error) {
-	if err = r.verifySLOs(cmd.Context(), replays); err != nil {
+	ctx := cmd.Context()
+	if err = r.verifySLOs(ctx, replays); err != nil {
 		return 0, err
 	}
 
@@ -114,11 +115,12 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 		cmd.Println(colorstring.Color(fmt.Sprintf(
 			"[cyan][%d/%d][reset] SLO: %s, Project: %s, From: %s, To: %s",
 			i+1, len(replays), replay.SLO, replay.Project,
-			replay.From.Format(flags.TimeLayout), time.Now().In(replay.From.Location()).Format(flags.TimeLayout))))
+			replay.From.Format(flags.TimeLayout), time.Now().In(replay.From.Location()).Format(flags.TimeLayout),
+		)))
 
 		if r.playlistsAvailable {
 			cmd.Println("Replay is added to the queue...")
-			err = r.runReplay(cmd.Context(), replay)
+			err = r.runReplay(ctx, replay)
 			if err != nil {
 				cmd.Println(colorstring.Color("[red]Failed to add Replay to the queue:[reset] " + err.Error()))
 				failedIndexes = append(failedIndexes, i)
@@ -128,7 +130,7 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 		} else {
 			spinner := NewSpinner("Importing data...")
 			spinner.Go()
-			err = r.runReplayWithStatusCheck(cmd.Context(), replay)
+			err = r.runReplayWithStatusCheck(ctx, replay)
 			spinner.Stop()
 
 			if err != nil {
@@ -157,7 +159,8 @@ func (r *ReplayCmd) arePlaylistEnabled(ctx context.Context) {
 		endpointPlanInfo,
 		"*",
 		nil,
-		nil)
+		nil,
+	)
 	if err != nil {
 		fmt.Printf("error checking playlist availability: %v\n", err)
 	}
@@ -174,20 +177,8 @@ type ReplayConfig struct {
 	From      time.Time           `json:"from" validate:"required"`
 	SourceSLO *replayV1.SourceSLO `json:"sourceSLO,omitempty"`
 
-	metricSource replayMetricSource
-}
-
-type replayMetricSource struct {
-	Name    string `json:"name"`
-	Project string `json:"project"`
-	Kind    string `json:"kind"`
-}
-
-type replaySLO struct {
-	name                   string
-	project                string
-	metricSource           replayMetricSource
-	hasCompositeObjectives bool
+	// metricSource is only used during verification.
+	metricSource v1alphaSLO.MetricSourceSpec
 }
 
 // We can only give an estimate here, since there's no 'to' for Replay.
@@ -235,7 +226,8 @@ func (r *ReplayCmd) prepareConfigs() ([]ReplayConfig, error) {
 			if _, exists := unique[k]; exists {
 				return nil, errors.Errorf(
 					"duplicated Replay definition detected for '%s' SLO in '%s' Project",
-					c[i].SLO, c[i].Project)
+					c[i].SLO, c[i].Project,
+				)
 			}
 			unique[k] = struct{}{}
 		}
@@ -287,7 +279,8 @@ func (r *ReplayCmd) readConfigFile(path string) ([]ReplayConfig, error) {
 // averageReplayDuration is used to calculate when running bulk Replay to calculate time offset for each SLO.
 const averageReplayDuration = 20 * time.Minute
 
-func (r *ReplayCmd) getReplaySLOs(ctx context.Context, replays []ReplayConfig) ([]replaySLO, error) {
+// getSLOs fetches full manifest definitions of the SLOs defined by [ReplayConfig].
+func (r *ReplayCmd) getSLOs(ctx context.Context, replays []ReplayConfig) ([]v1alphaSLO.SLO, error) {
 	sloNamesByProject := make(map[string][]string)
 	for _, replay := range replays {
 		sloNamesByProject[replay.Project] = append(sloNamesByProject[replay.Project], replay.SLO)
@@ -299,96 +292,49 @@ func (r *ReplayCmd) getReplaySLOs(ctx context.Context, replays []ReplayConfig) (
 		}
 	}
 
-	slos := make([]replaySLO, 0, len(replays))
+	allSLOs := make([]v1alphaSLO.SLO, 0, len(replays))
 	for project, names := range sloNamesByProject {
-		objects, err := r.client.Objects().V1().Get(
-			ctx,
-			manifest.KindSLO,
-			http.Header{sdk.HeaderProject: []string{project}},
-			url.Values{objectsV1.QueryKeyName: names},
-		)
+		slos, err := r.client.Objects().V1().GetV1alphaSLOs(ctx, objectsV1.GetSLOsRequest{
+			Project: project,
+			Names:   names,
+		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to get SLOs in '%s' Project: %w", project, err)
 		}
-		for _, object := range objects {
-			slo, err := decodeReplaySLO(object)
-			if err != nil {
-				return nil, err
-			}
-			if slo.project == "" {
-				slo.project = project
-			}
-			slos = append(slos, slo)
-		}
+		allSLOs = append(allSLOs, slos...)
 	}
-	return slos, nil
+	return allSLOs, nil
 }
 
-func decodeReplaySLO(object manifest.Object) (replaySLO, error) {
-	var data struct {
-		Metadata struct {
-			Name    string `json:"name"`
-			Project string `json:"project"`
-		} `json:"metadata"`
-		Spec struct {
-			Indicator struct {
-				MetricSource replayMetricSource `json:"metricSource"`
-			} `json:"indicator"`
-			Objectives []struct {
-				Composite any `json:"composite"`
-			} `json:"objectives"`
-		} `json:"spec"`
-	}
-	raw, err := json.Marshal(object)
-	if err != nil {
-		return replaySLO{}, fmt.Errorf("failed to encode '%s' SLO: %w", object.GetName(), err)
-	}
-	if err = json.Unmarshal(raw, &data); err != nil {
-		return replaySLO{}, fmt.Errorf("failed to decode '%s' SLO: %w", object.GetName(), err)
-	}
-	slo := replaySLO{
-		name:         data.Metadata.Name,
-		project:      data.Metadata.Project,
-		metricSource: data.Spec.Indicator.MetricSource,
-	}
-	for _, objective := range data.Spec.Objectives {
-		if objective.Composite != nil {
-			slo.hasCompositeObjectives = true
-			break
-		}
-	}
-	return slo, nil
-}
-
+// verifySLOs finds non-existent or RBAC protected SLOs.
 func (r *ReplayCmd) verifySLOs(ctx context.Context, replays []ReplayConfig) error {
-	// Find non-existent or RBAC protected SLOs.
-	// We're also filling the Data Source spec here for ReplayConfig.
-	slos, err := r.getReplaySLOs(ctx, replays)
+	slos, err := r.getSLOs(ctx, replays)
 	if err != nil {
 		return err
 	}
 	missingSLOs := make([]string, 0)
 	compositeSLOs := make([]string, 0)
-	replaysWithMetricSources := make([]ReplayConfig, 0, len(replays))
+	filtered := make([]ReplayConfig, 0, len(replays))
 outer:
 	for _, replay := range replays {
 		for _, slo := range slos {
-			if replay.SLO == slo.name && replay.Project == slo.project {
-				if slo.hasCompositeObjectives {
+			if replay.SLO == slo.GetName() && replay.Project == slo.GetProject() {
+				if slo.Spec.HasCompositeObjectives() {
 					compositeSLOs = append(compositeSLOs,
 						fmt.Sprintf("Replay is unavailable for composite SLOs: '%s' SLO in '%s' Project",
-							slo.name,
-							slo.project))
+							slo.GetName(),
+							slo.GetProject()))
 					continue outer
 				}
-				replay.metricSource = slo.metricSource
-				replaysWithMetricSources = append(replaysWithMetricSources, replay)
+				replay.metricSource = slo.Spec.Indicator.MetricSource
+				filtered = append(filtered, replay)
 				continue outer
 			}
 		}
 		missingSLOs = append(
 			missingSLOs,
-			fmt.Sprintf("'%s' SLO in '%s' Project", replay.SLO, replay.Project))
+			fmt.Sprintf("'%s' SLO in '%s' Project", replay.SLO, replay.Project),
+		)
 	}
 	if len(missingSLOs) > 0 {
 		return errors.Errorf("Some of the SLOs marked for Replay were not found or"+
@@ -399,12 +345,7 @@ outer:
 			strings.Join(compositeSLOs, "\n - "))
 	}
 
-	// Check Replay availability.
-	if err := r.checkReplayAvailability(ctx, replaysWithMetricSources); err != nil {
-		return err
-	}
-
-	return nil
+	return r.checkReplayAvailability(ctx, filtered)
 }
 
 func (r *ReplayCmd) checkReplayAvailability(ctx context.Context, replays []ReplayConfig) error {
@@ -427,18 +368,20 @@ func (r *ReplayCmd) checkReplayAvailability(ctx context.Context, replays []Repla
 				return errors.Wrapf(err,
 					"failed to check Replay availability for '%s' SLO in '%s' Project", replay.SLO, replay.Project)
 			}
-			if !av.Available {
-				mu.Lock()
-				defer mu.Unlock()
-				notAvailable = append(notAvailable,
-					fmt.Sprintf("['%s' SLO in '%s' Project] %s",
-						replay.SLO, replay.Project, r.replayUnavailabilityReasonExplanation(
-							av.Reason,
-							replay,
-							time.Duration(expectedDuration)*time.Minute,
-							time.Duration(offset)*time.Minute,
-							timeNow)))
+			if av.Available {
+				return nil
 			}
+
+			mu.Lock()
+			defer mu.Unlock()
+			notAvailable = append(notAvailable, fmt.Sprintf("['%s' SLO in '%s' Project] %s",
+				replay.SLO, replay.Project, r.replayUnavailabilityReasonExplanation(
+					av.Reason,
+					replay,
+					time.Duration(expectedDuration)*time.Minute,
+					time.Duration(offset)*time.Minute,
+					timeNow,
+				)))
 			return nil
 		})
 	}
@@ -581,7 +524,8 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 		if replayOffset > 0 {
 			offsetNotice = fmt.Sprintf(
 				" + %s (offset for each next replay run in bulk is increased by an average of %s)",
-				replayOffset, averageReplayDuration)
+				replayOffset, averageReplayDuration,
+			)
 		}
 		return fmt.Sprintf(
 			"Value configured for spec.historicalDataRetrieval.maxDuration.value"+
@@ -590,7 +534,8 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 				" + %dm (start offset to ensure Replay covers the desired time window) %s."+
 				" Edit the Data Source and run Replay once again.",
 			replay.metricSource.Name, replay.metricSource.Project, expectedDuration.String(),
-			timeNow.Format(flags.TimeLayout), replay.From.Format(flags.TimeLayout), startOffsetMinutes, offsetNotice)
+			timeNow.Format(flags.TimeLayout), replay.From.Format(flags.TimeLayout), startOffsetMinutes, offsetNotice,
+		)
 	case replayV1.ReplayAvailabilityReasonConcurrentReplayRunsLimitExhausted:
 		return "You've exceeded the limit of concurrent Replay runs. Wait until the current Replay(s) are done."
 	case replayV1.ReplayAvailabilityReasonUnknownAgentVersion:

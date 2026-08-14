@@ -1,0 +1,18 @@
+- apiVersion: n9/v1alpha
+  kind: Project
+  metadata:
+    name: <PROJECT>
+  spec:
+    description: Project for Replay e2e tests
+- apiVersion: n9/v1alpha
+  kind: Project
+  metadata:
+    name: <PROJECT>-b
+  spec:
+    description: Secondary Project for Replay e2e tests
+- apiVersion: n9/v1alpha
+  kind: Project
+  metadata:
+    name: <PROJECT>-source
+  spec:
+    description: Source Project for Replay e2e tests
