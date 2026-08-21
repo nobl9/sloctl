@@ -1,6 +1,6 @@
 module github.com/nobl9/sloctl
 
-go 1.26.5
+go 1.26.6
 
 require (
 	charm.land/huh/v2 v2.0.3
@@ -12,7 +12,7 @@ require (
 	github.com/itchyny/gojq v0.12.19
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/nobl9/go-yaml v1.0.1
-	github.com/nobl9/nobl9-go v0.133.1
+	github.com/nobl9/nobl9-go v0.135.0-rc1.0.20260813210234-1ab7747b42f5
 	github.com/nobl9/nobl9-openslo v0.1.6
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.19.1
@@ -51,6 +51,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/itchyny/timefmt-go v0.1.8 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
@@ -62,9 +63,9 @@ require (
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/nobl9/govy v0.26.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/prometheus/client_golang v1.23.2 // indirect
+	github.com/prometheus/client_golang v1.24.1 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.67.5 // indirect
+	github.com/prometheus/common v0.70.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/teambition/rrule-go v1.8.2 // indirect
 	github.com/tidwall/gjson v1.19.0 // indirect
@@ -73,11 +74,11 @@ require (
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	golang.org/x/crypto v0.52.0 // indirect
-	golang.org/x/mod v0.36.0 // indirect
+	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/term v0.44.0 // indirect
-	golang.org/x/text v0.37.0 // indirect
-	golang.org/x/tools v0.45.0 // indirect
+	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/tools v0.48.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
