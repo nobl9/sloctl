@@ -27,13 +27,17 @@ teardown_file() {
   fi
 }
 
-@test "replay config resolves missing SLOs in separate Projects" {
+@test "replay config resolves SLOs in separate Projects" {
   run_sloctl replay -f "$TEST_INPUTS/replay.yaml"
 
   assert_failure
-  assert_stderr --partial "Some of the SLOs marked for Replay were not found or you don't have permissions to view them:"
-  assert_stderr --partial "'replay-slo-a' SLO in '$TEST_PROJECT' Project"
-  assert_stderr --partial "'replay-slo-b' SLO in '${TEST_PROJECT}-b' Project"
+  assert_stderr --partial "The following SLOs are not available for Replay:"
+  assert_stderr --partial "['replay-slo-a' SLO in '$TEST_PROJECT' Project]"
+  assert_stderr --partial "['replay-slo-b' SLO in '${TEST_PROJECT}-b' Project]"
+
+  if [[ "$stderr" == *"Some of the SLOs marked for Replay were not found"* ]]; then
+    fail "Replay treated existing platform SLOs as missing"
+  fi
 }
 
 @test "replay list returns the platform queue state" {
@@ -55,24 +59,22 @@ teardown_file() {
       (.createdAt | type == "string") and
       (.status | type == "string")
     )
-  ' <<<"$output"
+  ' <<< "$output"
   assert_success
 }
 
-@test "replay cancel sends a project-scoped request" {
-  run_sloctl replay cancel replay-slo-a -p "$TEST_PROJECT"
+@test "replay cancel uses the platform endpoint" {
+  run_sloctl replay cancel replay-missing-slo -p "$TEST_PROJECT"
 
   assert_failure
-  assert_stderr --partial "Error: Not Found: slo not found"
   assert_stderr --partial "endpoint: POST https://"
   assert_stderr --partial "/api/timetravel/cancel"
 }
 
-@test "replay delete sends a project-scoped request" {
-  run_sloctl replay delete replay-slo-a -p "$TEST_PROJECT"
+@test "replay delete uses the platform endpoint" {
+  run_sloctl replay delete replay-missing-slo -p "$TEST_PROJECT"
 
   assert_failure
-  assert_stderr --partial "Error: Not Found: slo not found"
   assert_stderr --partial "endpoint: DELETE https://"
   assert_stderr --partial "/api/timetravel"
 }

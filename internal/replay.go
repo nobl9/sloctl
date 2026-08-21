@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/nobl9/nobl9-go/manifest"
 	v1alphaSLO "github.com/nobl9/nobl9-go/manifest/v1alpha/slo"
 	"github.com/nobl9/nobl9-go/sdk"
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
@@ -177,8 +178,14 @@ type ReplayConfig struct {
 	From      time.Time           `json:"from" validate:"required"`
 	SourceSLO *replayV1.SourceSLO `json:"sourceSLO,omitempty"`
 
-	// metricSource is only used during verification.
 	metricSource v1alphaSLO.MetricSourceSpec
+}
+
+type replaySLO struct {
+	name                   string
+	project                string
+	metricSource           v1alphaSLO.MetricSourceSpec
+	hasCompositeObjectives bool
 }
 
 // We can only give an estimate here, since there's no 'to' for Replay.
@@ -279,8 +286,7 @@ func (r *ReplayCmd) readConfigFile(path string) ([]ReplayConfig, error) {
 // averageReplayDuration is used to calculate when running bulk Replay to calculate time offset for each SLO.
 const averageReplayDuration = 20 * time.Minute
 
-// getSLOs fetches full manifest definitions of the SLOs defined by [ReplayConfig].
-func (r *ReplayCmd) getSLOs(ctx context.Context, replays []ReplayConfig) ([]v1alphaSLO.SLO, error) {
+func (r *ReplayCmd) getReplaySLOs(ctx context.Context, replays []ReplayConfig) ([]replaySLO, error) {
 	sloNamesByProject := make(map[string][]string)
 	for _, replay := range replays {
 		sloNamesByProject[replay.Project] = append(sloNamesByProject[replay.Project], replay.SLO)
@@ -292,23 +298,51 @@ func (r *ReplayCmd) getSLOs(ctx context.Context, replays []ReplayConfig) ([]v1al
 		}
 	}
 
-	allSLOs := make([]v1alphaSLO.SLO, 0, len(replays))
+	slos := make([]replaySLO, 0, len(replays))
 	for project, names := range sloNamesByProject {
-		slos, err := r.client.Objects().V1().GetV1alphaSLOs(ctx, objectsV1.GetSLOsRequest{
-			Project: project,
-			Names:   names,
-		})
+		objects, err := r.client.Objects().V1().Get(
+			ctx,
+			manifest.KindSLO,
+			http.Header{sdk.HeaderProject: []string{project}},
+			url.Values{objectsV1.QueryKeyName: names},
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get SLOs in '%s' Project: %w", project, err)
 		}
-		allSLOs = append(allSLOs, slos...)
+		for _, object := range objects {
+			slo, err := decodeReplaySLO(object)
+			if err != nil {
+				return nil, err
+			}
+			slos = append(slos, slo)
+		}
 	}
-	return allSLOs, nil
+	return slos, nil
+}
+
+func decodeReplaySLO(object manifest.Object) (replaySLO, error) {
+	raw, err := json.Marshal(object)
+	if err != nil {
+		return replaySLO{}, fmt.Errorf("failed to encode '%s' SLO: %w", object.GetName(), err)
+	}
+	var sdkSLO v1alphaSLO.SLO
+	if err = json.Unmarshal(raw, &sdkSLO); err != nil {
+		return replaySLO{}, fmt.Errorf("failed to decode '%s' SLO: %w", object.GetName(), err)
+	}
+	slo := replaySLO{
+		name:                   sdkSLO.GetName(),
+		project:                sdkSLO.GetProject(),
+		hasCompositeObjectives: sdkSLO.Spec.HasCompositeObjectives(),
+	}
+	if sdkSLO.Spec.Indicator != nil {
+		slo.metricSource = sdkSLO.Spec.Indicator.MetricSource
+	}
+	return slo, nil
 }
 
 // verifySLOs finds non-existent or RBAC protected SLOs.
 func (r *ReplayCmd) verifySLOs(ctx context.Context, replays []ReplayConfig) error {
-	slos, err := r.getSLOs(ctx, replays)
+	slos, err := r.getReplaySLOs(ctx, replays)
 	if err != nil {
 		return err
 	}
@@ -318,15 +352,15 @@ func (r *ReplayCmd) verifySLOs(ctx context.Context, replays []ReplayConfig) erro
 outer:
 	for _, replay := range replays {
 		for _, slo := range slos {
-			if replay.SLO == slo.GetName() && replay.Project == slo.GetProject() {
-				if slo.Spec.HasCompositeObjectives() {
+			if replay.SLO == slo.name && replay.Project == slo.project {
+				if slo.hasCompositeObjectives {
 					compositeSLOs = append(compositeSLOs,
 						fmt.Sprintf("Replay is unavailable for composite SLOs: '%s' SLO in '%s' Project",
-							slo.GetName(),
-							slo.GetProject()))
+							slo.name,
+							slo.project))
 					continue outer
 				}
-				replay.metricSource = slo.Spec.Indicator.MetricSource
+				replay.metricSource = slo.metricSource
 				filtered = append(filtered, replay)
 				continue outer
 			}
