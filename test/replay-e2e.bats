@@ -44,6 +44,7 @@ teardown_file() {
   run_sloctl replay list -o json
 
   assert_success
+  assert_stderr --partial "Listing all Replays"
 
   # The shared queue can be empty when the release tests run.
   if [[ -z "$output" ]]; then
@@ -56,8 +57,10 @@ teardown_file() {
     all(.[];
       (.slo | type == "string") and
       (.project | type == "string") and
-      (.createdAt | type == "string") and
-      (.status | type == "string")
+      (.createdAt | type == "string" and ((try fromdateiso8601 catch null) != null)) and
+      (.status as $status |
+        ["unknown", "queued", "in progress", "completed", "failed", "canceled"] |
+        index($status) != null)
     )
   ' <<< "$output"
   assert_success

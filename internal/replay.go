@@ -440,6 +440,7 @@ func (r *ReplayCmd) runReplayWithStatusCheck(ctx context.Context, config ReplayC
 		return err
 	}
 	ticker := time.NewTicker(replayStatusCheckInterval)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
