@@ -2,9 +2,9 @@ package internal
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/mitchellh/colorstring"
+	replayV1 "github.com/nobl9/nobl9-go/sdk/endpoints/replay/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -43,11 +43,6 @@ func (r *ReplayCmd) cancelArguments(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-type cancelReplayRequest struct {
-	Project string `json:"project,omitempty"`
-	Slo     string `json:"slo,omitempty"`
-}
-
 func (r *ReplayCmd) cancelReplaysForSLO(cmd *cobra.Command, sloName string) error {
 	cmd.Println(
 		colorstring.Color(
@@ -59,17 +54,12 @@ func (r *ReplayCmd) cancelReplaysForSLO(cmd *cobra.Command, sloName string) erro
 		),
 	)
 
-	_, _, err := r.doRequest(
+	err := r.client.Replay().V1().Cancel(
 		cmd.Context(),
-		http.MethodPost,
-		endpointReplayCancel,
-		r.client.Config.Project,
-		nil,
-		cancelReplayRequest{
+		replayV1.CancelRequest{
 			Project: r.client.Config.Project,
-			Slo:     sloName,
-		},
-	)
+			SLO:     sloName,
+		})
 	if err != nil {
 		return err
 	}
