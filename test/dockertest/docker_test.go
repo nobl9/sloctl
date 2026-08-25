@@ -29,7 +29,8 @@ var (
 	moduleRoot  = findModuleRoot()
 	tpl         = template.Must(
 		template.New("project.tmpl.yaml").
-			ParseFiles(filepath.Join(moduleRoot, "test", "inputs", "dockertest", "project.tmpl.yaml")))
+			ParseFiles(filepath.Join(moduleRoot, "test", "inputs", "dockertest", "project.tmpl.yaml")),
+	)
 )
 
 func TestDocker(t *testing.T) {

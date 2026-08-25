@@ -34,7 +34,8 @@ func (r *RootCmd) NewDeleteCmd() *cobra.Command {
 		Use:   "delete",
 		Short: "Delete object definition by name or definition file",
 		Long: getApplyOrDeleteDescription(
-			"One or more definitions can be specified by name or provide a path to file with definitions to remove."),
+			"One or more definitions can be specified by name or provide a path to file with definitions to remove.",
+		),
 		Example: deleteExample,
 		Args:    noPositionalArgsCondition,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -86,7 +87,8 @@ func (r *RootCmd) NewDeleteCmd() *cobra.Command {
 			def.kind,
 			fmt.Sprintf("Delete the %s.", def.plural),
 			strings.ToLower(def.plural),
-			append(def.aliases, def.kind.ToLower(), def.kind.String())...))
+			append(def.aliases, def.kind.ToLower(), def.kind.String())...,
+		))
 	}
 
 	return cmd
@@ -102,7 +104,8 @@ func (d DeleteCmd) Run(cmd *cobra.Command) error {
 		cmd,
 		d.definitionPaths,
 		newFilesPrompt(d.client.Config.FilesPromptEnabled, d.autoConfirm, d.client.Config.FilesPromptThreshold),
-		d.projectFlagWasSet)
+		d.projectFlagWasSet,
+	)
 	if err != nil {
 		return err
 	}
