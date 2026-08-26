@@ -422,7 +422,8 @@ sloctl config rename-context old-ctx new-ctx`,
 			default:
 				return errors.Errorf(
 					"either provide new and old context names or no arguments at all, received %d arguments",
-					len(args))
+					len(args),
+				)
 			}
 
 			if err := validateStringNotEmpty(newContext); err != nil {

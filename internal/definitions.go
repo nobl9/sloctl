@@ -66,7 +66,8 @@ func readObjectsDefinitions(
 				"The %[1]s project from the provided object %[2]s.%[1]s does not match "+
 					"the project '%[3]s'. You must pass '--project=%[1]s' to perform this operation or"+
 					" allow the Project to be inferred from the object definition.",
-				obj.GetProject(), obj.GetName(), config.Project)
+				obj.GetProject(), obj.GetName(), config.Project,
+			)
 		}
 	}
 	return defs, nil

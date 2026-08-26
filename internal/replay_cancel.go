@@ -59,7 +59,8 @@ func (r *ReplayCmd) cancelReplaysForSLO(cmd *cobra.Command, sloName string) erro
 		replayV1.CancelRequest{
 			Project: r.client.Config.Project,
 			SLO:     sloName,
-		})
+		},
+	)
 	if err != nil {
 		return err
 	}

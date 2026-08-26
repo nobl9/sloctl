@@ -54,7 +54,8 @@ func (r *ReplayCmd) deleteAllReplays(cmd *cobra.Command) error {
 		cmd.Context(),
 		replayV1.DeleteRequest{
 			All: true,
-		})
+		},
+	)
 	if err != nil {
 		return err
 	}
@@ -80,7 +81,8 @@ func (r *ReplayCmd) deleteReplaysForSLO(cmd *cobra.Command, sloName string) erro
 		replayV1.DeleteRequest{
 			Project: r.client.Config.Project,
 			SLO:     sloName,
-		})
+		},
+	)
 	if err != nil {
 		return err
 	}
