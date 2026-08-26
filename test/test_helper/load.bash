@@ -290,7 +290,7 @@ $stderr" assert_success
 # NOTE: This was copied from bats-assert,
 # once a new version is avilable in the official Docker image, we can abandond this.
 assert_stderr() {
-  output="$stderr"
+  local output="$stderr"
   assert_output "$@"
 }
 
