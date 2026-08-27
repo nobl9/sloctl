@@ -1,5 +1,9 @@
 FROM bats/bats:1.14.0
 
+# Pin bats-assert separately because the Bats image lacks assert_stderr.
+ARG BATS_ASSERT_VERSION=2.2.4
+RUN /tmp/docker/install_libs.sh assert "${BATS_ASSERT_VERSION}"
+
 RUN apk --no-cache --update add \
   gettext jq git python3 py3-pip openssl tzdata npm
 RUN pip install yq==v3.2.3 --break-system-packages
