@@ -9,8 +9,8 @@
       - defensive
       - offensive
       team:
-      - vader
       - sidious
+      - vader
   spec:
     description: Dummy Project for 'sloctl get' e2e tests
 - apiVersion: n9/v1alpha
