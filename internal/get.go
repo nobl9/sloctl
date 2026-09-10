@@ -462,6 +462,9 @@ func annotationResponseToGenericObject(annotation v1alpha.GenericObject) v1alpha
 	if category, ok := annotation["category"]; ok {
 		spec["category"] = category
 	}
+	if replay, ok := annotation["replay"]; ok {
+		spec["replay"] = replay
+	}
 	if author, ok := annotation["author"]; ok {
 		spec["createdBy"] = author
 	}
