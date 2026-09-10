@@ -128,3 +128,58 @@ type replayRoundTripper func(*http.Request) (*http.Response, error)
 func (f replayRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
 	return f(request)
 }
+
+func TestReplayConfigSetsRecalculationOnlyForComposites(t *testing.T) {
+	from := time.Date(2026, time.August, 24, 8, 45, 11, 0, time.UTC)
+	timeNow := time.Date(2026, time.August, 24, 9, 0, 11, 0, time.UTC)
+	for _, test := range []struct {
+		name         string
+		isComposite  bool
+		expectedType replayV1.ReplayType
+	}{
+		{
+			name:         "composite SLO is replayed in recalculation mode",
+			isComposite:  true,
+			expectedType: replayV1.ReplayTypeRecalculation,
+		},
+		{
+			name:         "regular SLO leaves the type unset so the server applies its default",
+			isComposite:  false,
+			expectedType: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			config := ReplayConfig{
+				Project:     "project",
+				SLO:         "slo",
+				From:        from,
+				isComposite: test.isComposite,
+			}
+			assert.Equal(t, test.expectedType, config.ToReplay(timeNow).ReplayType)
+		})
+	}
+}
+
+func TestVerifySLOsNoLongerRejectsComposites(t *testing.T) {
+	replays := []ReplayConfig{{Project: "project", SLO: "composite-slo"}}
+	slos := []replaySLO{{
+		name:                   "composite-slo",
+		project:                "project",
+		hasCompositeObjectives: true,
+	}}
+
+	filtered, missing := matchReplaysToSLOs(replays, slos)
+
+	require.Empty(t, missing)
+	require.Len(t, filtered, 1)
+	assert.True(t, filtered[0].isComposite)
+}
+
+func TestVerifySLOsReportsUnmatchedSLOs(t *testing.T) {
+	replays := []ReplayConfig{{Project: "project", SLO: "missing-slo"}}
+
+	filtered, missing := matchReplaysToSLOs(replays, nil)
+
+	assert.Empty(t, filtered)
+	assert.Equal(t, []string{"'missing-slo' SLO in 'project' Project"}, missing)
+}

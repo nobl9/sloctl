@@ -101,7 +101,10 @@ func (r *ReplayCmd) Run(cmd *cobra.Command) error {
 
 func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (failedReplays int, err error) {
 	ctx := cmd.Context()
-	if err = r.verifySLOs(ctx, replays); err != nil {
+	// verifySLOs returns the same replays enriched with details read from each
+	// SLO, so the run requests below must use its result rather than the input.
+	replays, err = r.verifySLOs(ctx, replays)
+	if err != nil {
 		return 0, err
 	}
 
@@ -179,6 +182,10 @@ type ReplayConfig struct {
 	SourceSLO *replayV1.SourceSLO `json:"sourceSLO,omitempty"`
 
 	metricSource v1alphaSLO.MetricSourceSpec
+	// Composite SLOs aggregate other SLOs instead of reading a data source,
+	// so they are replayed in recalculation mode and have no data source to
+	// check an Agent version or historical data retrieval against.
+	isComposite bool
 }
 
 type replaySLO struct {
@@ -204,8 +211,19 @@ func (r ReplayConfig) ToReplay(timeNow time.Time) replayV1.RunRequest {
 			Unit:  replayV1.DurationUnitMinute,
 			Value: startOffsetMinutes + int(windowDuration.Minutes()),
 		},
-		SourceSLO: r.SourceSLO,
+		SourceSLO:  r.SourceSLO,
+		ReplayType: r.replayType(),
 	}
+}
+
+// replayType returns an empty value for regular SLOs so that the request stays
+// exactly as it was before composite support was added, and the server keeps
+// applying its own default.
+func (r ReplayConfig) replayType() replayV1.ReplayType {
+	if r.isComposite {
+		return replayV1.ReplayTypeRecalculation
+	}
+	return ""
 }
 
 func (r *ReplayCmd) prepareConfigs() ([]ReplayConfig, error) {
@@ -341,45 +359,42 @@ func decodeReplaySLO(object manifest.Object) (replaySLO, error) {
 }
 
 // verifySLOs finds non-existent or RBAC protected SLOs.
-func (r *ReplayCmd) verifySLOs(ctx context.Context, replays []ReplayConfig) error {
+func (r *ReplayCmd) verifySLOs(ctx context.Context, replays []ReplayConfig) ([]ReplayConfig, error) {
 	slos, err := r.getReplaySLOs(ctx, replays)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	missingSLOs := make([]string, 0)
-	compositeSLOs := make([]string, 0)
-	filtered := make([]ReplayConfig, 0, len(replays))
+	verified, missingSLOs := matchReplaysToSLOs(replays, slos)
+	if len(missingSLOs) > 0 {
+		return nil, errors.Errorf("Some of the SLOs marked for Replay were not found or"+
+			" you don't have permissions to view them: \n - %s", strings.Join(missingSLOs, "\n - "))
+	}
+
+	if err := r.checkReplayAvailability(ctx, verified); err != nil {
+		return nil, err
+	}
+	return verified, nil
+}
+
+// matchReplaysToSLOs pairs each requested replay with the SLO it names and
+// copies over the details the availability check and the run request need.
+// Requests with no matching SLO are returned as human-readable descriptions.
+func matchReplaysToSLOs(replays []ReplayConfig, slos []replaySLO) (filtered []ReplayConfig, missing []string) {
+	missing = make([]string, 0)
+	filtered = make([]ReplayConfig, 0, len(replays))
 outer:
 	for _, replay := range replays {
 		for _, slo := range slos {
 			if replay.SLO == slo.name && replay.Project == slo.project {
-				if slo.hasCompositeObjectives {
-					compositeSLOs = append(compositeSLOs,
-						fmt.Sprintf("Replay is unavailable for composite SLOs: '%s' SLO in '%s' Project",
-							slo.name,
-							slo.project))
-					continue outer
-				}
 				replay.metricSource = slo.metricSource
+				replay.isComposite = slo.hasCompositeObjectives
 				filtered = append(filtered, replay)
 				continue outer
 			}
 		}
-		missingSLOs = append(
-			missingSLOs,
-			fmt.Sprintf("'%s' SLO in '%s' Project", replay.SLO, replay.Project),
-		)
+		missing = append(missing, fmt.Sprintf("'%s' SLO in '%s' Project", replay.SLO, replay.Project))
 	}
-	if len(missingSLOs) > 0 {
-		return errors.Errorf("Some of the SLOs marked for Replay were not found or"+
-			" you don't have permissions to view them: \n - %s", strings.Join(missingSLOs, "\n - "))
-	}
-	if len(compositeSLOs) > 0 {
-		return errors.Errorf("The following SLOs are composite and not eligible for Replay: \n - %s",
-			strings.Join(compositeSLOs, "\n - "))
-	}
-
-	return r.checkReplayAvailability(ctx, filtered)
+	return filtered, missing
 }
 
 func (r *ReplayCmd) checkReplayAvailability(ctx context.Context, replays []ReplayConfig) error {
@@ -393,7 +408,11 @@ func (r *ReplayCmd) checkReplayAvailability(ctx context.Context, replays []Repla
 			timeNow := time.Now()
 			tt := replay.ToReplay(timeNow)
 			offset := 0
-			if !r.playlistsAvailable {
+			// The offset pads the window to account for earlier replays in a bulk
+			// run still occupying the data source. A composite reads no data
+			// source, and padding it here would test the composite replay duration
+			// limit against a window the user never asked for.
+			if !r.playlistsAvailable && !replay.isComposite {
 				offset = i * int(averageReplayDuration.Minutes())
 			}
 			expectedDuration := offset + tt.Duration.Value
@@ -481,10 +500,14 @@ func (r *ReplayCmd) getReplayAvailability(
 	durationUnit replayV1.DurationUnit,
 	durationValue int,
 ) (availability replayV1.ReplayAvailability, err error) {
+	replayType := replayV1.ReplayTypeReimportAndRecalculation
+	if config.isComposite {
+		replayType = replayV1.ReplayTypeRecalculation
+	}
 	response, err := r.client.Replay().V1().GetAvailability(ctx, replayV1.GetAvailabilityRequest{
 		Project:       config.Project,
 		SLOName:       config.SLO,
-		Type:          replayV1.ReplayTypeReimportAndRecalculation,
+		Type:          replayType,
 		DurationUnit:  durationUnit,
 		DurationValue: durationValue,
 	})
@@ -575,6 +598,8 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 		return "You've exceeded the limit of concurrent Replay runs. Wait until the current Replay(s) are done."
 	case replayV1.ReplayAvailabilityReasonUnknownAgentVersion:
 		return "Your Agent isn't connected to the Data Source. Deploy the Agent and run Replay once again."
+	case replayV1.ReplayAvailabilityReasonCompositeSloNotSupported:
+		return "Replay for composite SLOs is not enabled for your organization. Contact Nobl9 support to enable it."
 	default:
 		return reason.String()
 	}
