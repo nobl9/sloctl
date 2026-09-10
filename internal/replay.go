@@ -2,6 +2,7 @@ package internal
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	_ "embed"
 	"encoding/json"
@@ -182,9 +183,8 @@ type ReplayConfig struct {
 	SourceSLO *replayV1.SourceSLO `json:"sourceSLO,omitempty"`
 
 	metricSource v1alphaSLO.MetricSourceSpec
-	// Composite SLOs aggregate other SLOs instead of reading a data source,
-	// so they are replayed in recalculation mode and have no data source to
-	// check an Agent version or historical data retrieval against.
+	// A composite SLO aggregates other SLOs and reads no data source, so it is
+	// replayed in recalculation mode.
 	isComposite bool
 }
 
@@ -216,14 +216,19 @@ func (r ReplayConfig) ToReplay(timeNow time.Time) replayV1.RunRequest {
 	}
 }
 
-// replayType returns an empty value for regular SLOs so that the request stays
-// exactly as it was before composite support was added, and the server keeps
-// applying its own default.
+// replayType leaves regular SLOs unset so their request is unchanged and the
+// server keeps applying its own default.
 func (r ReplayConfig) replayType() replayV1.ReplayType {
 	if r.isComposite {
 		return replayV1.ReplayTypeRecalculation
 	}
 	return ""
+}
+
+// availabilityReplayType names the type explicitly, because the availability
+// check has no request of its own for the server to apply a default to.
+func (r ReplayConfig) availabilityReplayType() replayV1.ReplayType {
+	return cmp.Or(r.replayType(), replayV1.ReplayTypeReimportAndRecalculation)
 }
 
 func (r *ReplayCmd) prepareConfigs() ([]ReplayConfig, error) {
@@ -376,9 +381,8 @@ func (r *ReplayCmd) verifySLOs(ctx context.Context, replays []ReplayConfig) ([]R
 	return verified, nil
 }
 
-// matchReplaysToSLOs pairs each requested replay with the SLO it names and
-// copies over the details the availability check and the run request need.
-// Requests with no matching SLO are returned as human-readable descriptions.
+// matchReplaysToSLOs copies into each replay the SLO details that the
+// availability check and the run request need.
 func matchReplaysToSLOs(replays []ReplayConfig, slos []replaySLO) (filtered []ReplayConfig, missing []string) {
 	missing = make([]string, 0)
 	filtered = make([]ReplayConfig, 0, len(replays))
@@ -403,18 +407,19 @@ func (r *ReplayCmd) checkReplayAvailability(ctx context.Context, replays []Repla
 	eg, ctx := errgroup.WithContext(ctx)
 	eg.SetLimit(10)
 
-	for i, replay := range replays {
+	// The offset pads the window for the replays queued earlier that are still
+	// occupying the data source. Composites read no data source, so they neither
+	// need the padding nor delay the replays that follow them.
+	dataSourceReplays := 0
+	for _, replay := range replays {
+		offset := 0
+		if !r.playlistsAvailable && !replay.isComposite {
+			offset = dataSourceReplays * int(averageReplayDuration.Minutes())
+			dataSourceReplays++
+		}
 		eg.Go(func() error {
 			timeNow := time.Now()
 			tt := replay.ToReplay(timeNow)
-			offset := 0
-			// The offset pads the window to account for earlier replays in a bulk
-			// run still occupying the data source. A composite reads no data
-			// source, and padding it here would test the composite replay duration
-			// limit against a window the user never asked for.
-			if !r.playlistsAvailable && !replay.isComposite {
-				offset = i * int(averageReplayDuration.Minutes())
-			}
 			expectedDuration := offset + tt.Duration.Value
 			av, err := r.getReplayAvailability(ctx, replay, tt.Duration.Unit, expectedDuration)
 			if err != nil {
@@ -500,14 +505,10 @@ func (r *ReplayCmd) getReplayAvailability(
 	durationUnit replayV1.DurationUnit,
 	durationValue int,
 ) (availability replayV1.ReplayAvailability, err error) {
-	replayType := replayV1.ReplayTypeReimportAndRecalculation
-	if config.isComposite {
-		replayType = replayV1.ReplayTypeRecalculation
-	}
 	response, err := r.client.Replay().V1().GetAvailability(ctx, replayV1.GetAvailabilityRequest{
 		Project:       config.Project,
 		SLOName:       config.SLO,
-		Type:          replayType,
+		Type:          config.availabilityReplayType(),
 		DurationUnit:  durationUnit,
 		DurationValue: durationValue,
 	})
