@@ -231,16 +231,38 @@ setup() {
   done
 }
 
-@test "slo pagination preserves name and service filters" {
+@test "slo pagination preserves name filters" {
   local want
   want=$(read_files "${TEST_OUTPUTS}/slo-by-service-name.yaml")
 
-  run_sloctl get slo -p "$TEST_PROJECT" -s deputy-office \
+  run_sloctl get slo -p "$TEST_PROJECT" \
     newrelic-rolling-timeslices-threshold-deputy-office --limit 1
   verify_get_success "$output" "$want"
 
-  run_sloctl get slo -p "$TEST_PROJECT" -s deputy-office \
+  run_sloctl get slo -p "$TEST_PROJECT" \
     newrelic-rolling-timeslices-threshold-deputy-office --limit 1 --offset 1
+  assert_success_joined_output
+  assert_output "No resources found in '$TEST_PROJECT' project."
+
+  run_sloctl get slo -p "$TEST_PROJECT" -s deputy-office \
+    nonexistent-slo --limit 1
+  assert_success_joined_output
+  assert_output "No resources found in '$TEST_PROJECT' project."
+}
+
+@test "slo pagination preserves service filters" {
+  local want
+  want=$(read_files "${TEST_OUTPUTS}/slo-by-service-name.yaml")
+
+  run_sloctl get slo -p "$TEST_PROJECT" -s deputy-office --limit 1
+  verify_get_success "$output" "$want"
+
+  run_sloctl get slo -p "$TEST_PROJECT" -s deputy-office --limit 1 --offset 1
+  assert_success_joined_output
+  assert_output "No resources found in '$TEST_PROJECT' project."
+
+  run_sloctl get slo -p "$TEST_PROJECT" -s destroyer \
+    newrelic-rolling-timeslices-threshold-deputy-office --limit 1
   assert_success_joined_output
   assert_output "No resources found in '$TEST_PROJECT' project."
 }
