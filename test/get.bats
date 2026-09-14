@@ -7,6 +7,9 @@ setup_file() {
   load_lib "bats-assert"
 
   generate_inputs "$BATS_FILE_TMPDIR"
+  TEST_SUITE_OUTPUTS="$BATS_FILE_TMPDIR/outputs"
+  mkdir "$TEST_SUITE_OUTPUTS"
+  cp -R "$BATS_TEST_DIRNAME/outputs/get" "$TEST_SUITE_OUTPUTS"
   generate_outputs
 
   run_sloctl apply -f "'$TEST_INPUTS/**'"
@@ -48,77 +51,77 @@ setup() {
 @test "annotations filtered by slo-name" {
   want=$(read_files "${TEST_OUTPUTS}/annotations-for-slo.yaml")
 
-  run_sloctl get annotation -p "death-star" --slo=splunk-raw-rolling
+  run_sloctl get annotation -p "$TEST_PROJECT" --slo=splunk-raw-rolling
   verify_get_success "$output" "$want"
 }
 
 @test "annotations filtered by category Comment" {
   want=$(read_files "${TEST_OUTPUTS}/annotations-by-category-comment.yaml")
 
-  run_sloctl get annotation -p "death-star" --category=Comment
+  run_sloctl get annotation -p "$TEST_PROJECT" --category=Comment
   verify_get_success "$output" "$want"
 }
 
 @test "annotations filtered by category ReviewNote" {
   want=$(read_files "${TEST_OUTPUTS}/annotations-by-category-reviewnote.yaml")
 
-  run_sloctl get annotation -p "death-star" --category=ReviewNote
+  run_sloctl get annotation -p "$TEST_PROJECT" --category=ReviewNote
   verify_get_success "$output" "$want"
 }
 
 @test "annotations filtered by multiple categories" {
   want=$(read_files "${TEST_OUTPUTS}/annotations-death-star.yaml")
 
-  run_sloctl get annotation -p "death-star" --category=Comment --category=ReviewNote
+  run_sloctl get annotation -p "$TEST_PROJECT" --category=Comment --category=ReviewNote
   verify_get_success "$output" "$want"
 }
 
 @test "annotations filtered by --user flag" {
   want=$(read_files "${TEST_OUTPUTS}/annotations-death-star.yaml")
 
-  run_sloctl get annotation -p "death-star" --user
+  run_sloctl get annotation -p "$TEST_PROJECT" --user
   verify_get_success "$output" "$want"
 }
 
 @test "annotations filtered by --system flag" {
-  run_sloctl get annotation -p "$TEST_PROJECT" --system
+  run_sloctl get annotation -p "${TEST_PROJECT}-custom" --system
   assert_success_joined_output
-  assert_output "No resources found in '$TEST_PROJECT' project."
+  assert_output "No resources found in '${TEST_PROJECT}-custom' project."
 }
 
 @test "annotations filtered by --from flag" {
   want=$(read_files "${TEST_OUTPUTS}/annotations-death-star.yaml")
-  run_sloctl get annotation -p "death-star" --from=2023-01-01T00:00:00Z
+  run_sloctl get annotation -p "$TEST_PROJECT" --from=2023-01-01T00:00:00Z
   verify_get_success "$output" "$want"
 }
 
 @test "annotations filtered by --to flag" {
   want=$(read_files "${TEST_OUTPUTS}/annotations-by-time-january.yaml")
-  run_sloctl get annotation -p "death-star" --to=2023-01-31T23:59:59Z
+  run_sloctl get annotation -p "$TEST_PROJECT" --to=2023-01-31T23:59:59Z
   verify_get_success "$output" "$want"
 }
 
 @test "annotations filtered by --from and --to combined" {
   want=$(read_files "${TEST_OUTPUTS}/annotations-by-time-january.yaml")
-  run_sloctl get annotation -p "death-star" --from=2023-01-01T00:00:00Z --to=2023-01-31T23:59:59Z
+  run_sloctl get annotation -p "$TEST_PROJECT" --from=2023-01-01T00:00:00Z --to=2023-01-31T23:59:59Z
   verify_get_success "$output" "$want"
 }
 
 @test "annotations with no results in time range" {
-  run_sloctl get annotation -p "death-star" --from=2020-01-01T00:00:00Z --to=2020-12-31T23:59:59Z
+  run_sloctl get annotation -p "$TEST_PROJECT" --from=2020-01-01T00:00:00Z --to=2020-12-31T23:59:59Z
   assert_success_joined_output
-  assert_output "No resources found in 'death-star' project."
+  assert_output "No resources found in '$TEST_PROJECT' project."
 }
 
 @test "annotations filtered by --slo and --category" {
   want=$(read_files "${TEST_OUTPUTS}/annotations-by-category-reviewnote.yaml")
-  run_sloctl get annotation -p "death-star" --slo=splunk-raw-rolling --category=ReviewNote
+  run_sloctl get annotation -p "$TEST_PROJECT" --slo=splunk-raw-rolling --category=ReviewNote
   verify_get_success "$output" "$want"
 }
 
 @test "annotations filtered by --slo and --from" {
   want=$(read_files "${TEST_OUTPUTS}/annotations-for-slo.yaml")
-  run_sloctl get annotation -p "death-star" --slo=splunk-raw-rolling --from=2023-01-01T00:00:00Z
+  run_sloctl get annotation -p "$TEST_PROJECT" --slo=splunk-raw-rolling --from=2023-01-01T00:00:00Z
   verify_get_success "$output" "$want"
 }
 
@@ -163,6 +166,85 @@ setup() {
   test_get "SLO" "$aliases" "${TEST_OUTPUTS}/slos-death-star.yaml" "$output"
 }
 
+@test "slos with limit and offset" {
+  local pages=()
+  local offset have want
+  for offset in 0 1 2; do
+    run_sloctl get slo -p "$TEST_PROJECT" --limit 1 --offset "$offset" -o json
+    assert_success_joined_output
+    assert_equal "$(jq length <<< "$output")" 1
+    pages+=("$output")
+  done
+
+  have=$(printf '%s\n' "${pages[@]}" | jq -s add)
+  want=$(read_files "${TEST_OUTPUTS}/slos-death-star.yaml")
+  verify_get_success "$have" "$want"
+
+  run_sloctl get slo -p "$TEST_PROJECT" --limit 1 --offset 3
+  assert_success_joined_output
+  assert_output "No resources found in '$TEST_PROJECT' project."
+}
+
+@test "slo pagination accepts the maximum limit and zero offset" {
+  local alias want
+  want=$(read_files "${TEST_OUTPUTS}/slos-death-star.yaml")
+  for alias in slo slos SLO SLOs; do
+    run_sloctl get "$alias" -p "$TEST_PROJECT" --limit 1000 --offset 0
+    verify_get_success "$output" "$want"
+  done
+}
+
+@test "slo pagination rejects invalid limits" {
+  local limit
+  for limit in -1 0 1001; do
+    run_sloctl get slo --limit "$limit"
+    assert_failure
+    assert_output ""
+    assert_stderr "Error: --limit must be between 1 and 1000"
+  done
+}
+
+@test "slo pagination rejects negative offsets" {
+  run_sloctl get slo --limit 50 --offset -1
+  assert_failure
+  assert_output ""
+  assert_stderr "Error: --offset must be nonnegative"
+}
+
+@test "slo pagination requires a limit with an offset" {
+  local offset
+  for offset in 0 1; do
+    run_sloctl get slo --offset "$offset"
+    assert_failure
+    assert_output ""
+    assert_stderr "Error: --offset requires --limit"
+  done
+}
+
+@test "slo pagination flags are unavailable for services" {
+  local flag
+  for flag in --limit --offset; do
+    run_sloctl get service "$flag" 1
+    assert_failure
+    assert_output ""
+    assert_stderr "Error: unknown flag: $flag"
+  done
+}
+
+@test "slo pagination preserves name and service filters" {
+  local want
+  want=$(read_files "${TEST_OUTPUTS}/slo-by-service-name.yaml")
+
+  run_sloctl get slo -p "$TEST_PROJECT" -s deputy-office \
+    newrelic-rolling-timeslices-threshold-deputy-office --limit 1
+  verify_get_success "$output" "$want"
+
+  run_sloctl get slo -p "$TEST_PROJECT" -s deputy-office \
+    newrelic-rolling-timeslices-threshold-deputy-office --limit 1 --offset 1
+  assert_success_joined_output
+  assert_output "No resources found in '$TEST_PROJECT' project."
+}
+
 @test "slos filtered by service name" {
   # Default project, no matches.
   run_sloctl get slo -s deputy-office
@@ -170,23 +252,23 @@ setup() {
   assert_output "No resources found in 'default' project."
 
   # Wrong name, no matches.
-  run_sloctl get slo -s deputy-office -p death-star newrelic-rolling-timeslices-threshold-deputy-home
+  run_sloctl get slo -s deputy-office -p "$TEST_PROJECT" newrelic-rolling-timeslices-threshold-deputy-home
   assert_success_joined_output
-  assert_output "No resources found in 'death-star' project."
+  assert_output "No resources found in '$TEST_PROJECT' project."
 
   want=$(read_files "${TEST_OUTPUTS}/slo-by-service-name.yaml")
   for flag_alias in "-s" "--service"; do
-    run_sloctl get slo "$flag_alias" deputy-office -p death-star
+    run_sloctl get slo "$flag_alias" deputy-office -p "$TEST_PROJECT"
     verify_get_success "$output" "$want"
   done
 
   # Combine all filters.
-  run_sloctl get slo -s deputy-office -p death-star newrelic-rolling-timeslices-threshold-deputy-office
+  run_sloctl get slo -s deputy-office -p "$TEST_PROJECT" newrelic-rolling-timeslices-threshold-deputy-office
   verify_get_success "$output" "$want"
 
   # Multiple services.
   want=$(read_files "${TEST_OUTPUTS}/slos-death-star.yaml")
-  run_sloctl get slo -s deputy-office -s destroyer -p death-star
+  run_sloctl get slo -s deputy-office -s destroyer -p "$TEST_PROJECT"
   verify_get_success "$output" "$want"
 }
 
@@ -207,7 +289,7 @@ setup() {
 
 @test "agent with keys" {
   for flag in -k --with-keys; do
-    run_sloctl get agent -p "death-star" "$flag"
+    run_sloctl get agent -p "$TEST_PROJECT" "$flag"
     assert_success_joined_output
     # Assert length of client_id and regex of client_secret, as the latter may vary.
     client_id="$(yq -r .[].metadata.client_id <<< "$output")"
@@ -245,17 +327,19 @@ setup() {
 }
 
 @test "projects, multiple names" {
-  run_sloctl get project death-star hoth-base
+  run_sloctl get project "$TEST_PROJECT" "${TEST_PROJECT}-hoth"
   verify_get_success "$output" "$(read_files "${TEST_INPUTS}/projects.yaml")"
 }
 
 @test "projects, names from stdin and positional args" {
-  run --separate-stderr bash -c "set -eo pipefail; printf '%s\n' death-star | sloctl get project hoth-base"
+  run --separate-stderr bash -o pipefail -c \
+    'printf "%s\n" "$1" | sloctl get project "$2"' bash "$TEST_PROJECT" "${TEST_PROJECT}-hoth"
   verify_get_success "$output" "$(read_files "${TEST_INPUTS}/projects.yaml")"
 }
 
 @test "projects, names from stdin only" {
-  run --separate-stderr bash -c "set -eo pipefail; printf '%s\n' death-star hoth-base | sloctl get project"
+  run --separate-stderr bash -o pipefail -c \
+    'printf "%s\n" "$@" | sloctl get project' bash "$TEST_PROJECT" "${TEST_PROJECT}-hoth"
   verify_get_success "$output" "$(read_files "${TEST_INPUTS}/projects.yaml")"
 }
 
@@ -267,13 +351,13 @@ setup() {
     "-l purpose=defensive,purpose=offensive" \
     "-l purpose=defensive -l purpose=offensive" \
     "-l purpose=offensive -l purpose=defensive"; do
-    run_sloctl get project "$label"
+    run_sloctl get project -l "test-run=$TEST_PROJECT" "$label"
     verify_get_success "$output" "$want"
   done
 }
 
 @test "projects, labels filtering, AND conditions" {
-  want=$(read_files "${TEST_INPUTS}/projects.yaml" | yq -r '.[] |= select(.metadata.name == "death-star")')
+  want=$(read_files "${TEST_INPUTS}/projects.yaml" | yq -r --arg project "$TEST_PROJECT" 'map(select(.metadata.name == $project))')
   for label in \
     "-l purpose=offensive" \
     "-l purpose=defensive,team=vader" \
@@ -286,23 +370,23 @@ setup() {
     "-l team=sidious -l purpose=offensive -l purpose=defensive" \
     "-l purpose=defensive -l purpose=offensive -l team=sidious" \
     "-l purpose=offensive -l purpose=defensive -l team=sidious"; do
-    run_sloctl get project "$label"
+    run_sloctl get project -l "test-run=$TEST_PROJECT" "$label"
     verify_get_success "$output" "$want"
   done
 }
 
 @test "projects, labels filtering with name" {
-  run_sloctl get project -l purpose=defensive hoth-base
-  want=$(read_files "${TEST_INPUTS}/projects.yaml" | yq -r '.[] |= select(.metadata.name == "hoth-base")')
+  run_sloctl get project -l purpose=defensive "${TEST_PROJECT}-hoth"
+  want=$(read_files "${TEST_INPUTS}/projects.yaml" | yq -r --arg project "${TEST_PROJECT}-hoth" 'map(select(.metadata.name == $project))')
   verify_get_success "$output" "$want"
 
-  run_sloctl get project -l purpose=offensive hoth-base
+  run_sloctl get project -l purpose=offensive "${TEST_PROJECT}-hoth"
   assert_success_joined_output
   assert_output "No resources found."
 }
 
 @test "check full alert policy output" {
-  run_sloctl get alertpolicy -p death-star trigger-alert-immediately
+  run_sloctl get alertpolicy -p "$TEST_PROJECT" trigger-alert-immediately
   assert_success_joined_output
   assert_equal \
     "$(yq --sort-keys -y -r . <<< "$output")" \
@@ -310,7 +394,7 @@ setup() {
 }
 
 @test "check full direct output" {
-  run_sloctl get direct -p death-star splunk-direct
+  run_sloctl get direct -p "$TEST_PROJECT" splunk-direct
   assert_success_joined_output
   assert_equal \
     "$(yq --sort-keys -y -r . <<< "$output")" \
@@ -330,9 +414,9 @@ setup() {
 
 @test "check jq filter for project" {
   for alias in --jq -q; do
-    run_sloctl get project death-star "$alias" .[].metadata.name
+    run_sloctl get project "$TEST_PROJECT" "$alias" .[].metadata.name
     assert_success_joined_output
-    assert_output "death-star"
+    assert_output "$TEST_PROJECT"
   done
 }
 
@@ -371,7 +455,7 @@ test_get() {
       continue
     fi
 
-    run_sloctl get "$alias" -p "death-star"
+    run_sloctl get "$alias" -p "$TEST_PROJECT"
     # Default RoleBinding is created for each project once created so we
     # need to filter out only the ones we created.
     if [[ "$kind" == "RoleBinding" ]]; then
@@ -384,7 +468,7 @@ test_get() {
 
     # Make sure the name filtering actually works.
     first_obj_name="$(yq -r '.[0].metadata.name' "$input")"
-    run_sloctl get "$alias" -p "death-star" "$first_obj_name"
+    run_sloctl get "$alias" -p "$TEST_PROJECT" "$first_obj_name"
     verify_get_success "$output" "$(yq -Y '[.[0]]' "$input")"
   done
 
