@@ -8,9 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -134,38 +132,7 @@ func (f replayRoundTripper) RoundTrip(request *http.Request) (*http.Response, er
 	return f(request)
 }
 
-func TestReplayConfigSetsRecalculationOnlyForComposites(t *testing.T) {
-	from := time.Date(2026, time.August, 24, 8, 45, 11, 0, time.UTC)
-	timeNow := time.Date(2026, time.August, 24, 9, 0, 11, 0, time.UTC)
-	for _, test := range []struct {
-		name         string
-		isComposite  bool
-		expectedType replayV1.ReplayType
-	}{
-		{
-			name:         "composite SLO is replayed in recalculation mode",
-			isComposite:  true,
-			expectedType: replayV1.ReplayTypeRecalculation,
-		},
-		{
-			name:         "regular SLO leaves the type unset so the server applies its default",
-			isComposite:  false,
-			expectedType: "",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			config := ReplayConfig{
-				Project:     "project",
-				SLO:         "slo",
-				From:        from,
-				isComposite: test.isComposite,
-			}
-			assert.Equal(t, test.expectedType, config.ToReplay(timeNow).ReplayType)
-		})
-	}
-}
-
-func TestVerifySLOsNoLongerRejectsComposites(t *testing.T) {
+func TestMatchReplaysToSLOsMarksComposites(t *testing.T) {
 	replays := []ReplayConfig{{Project: "project", SLO: "composite-slo"}}
 	slos := []replaySLO{{
 		name:                   "composite-slo",
@@ -173,222 +140,92 @@ func TestVerifySLOsNoLongerRejectsComposites(t *testing.T) {
 		hasCompositeObjectives: true,
 	}}
 
-	filtered, missing := matchReplaysToSLOs(replays, slos)
+	matched, missing := matchReplaysToSLOs(replays, slos)
 
 	require.Empty(t, missing)
-	require.Len(t, filtered, 1)
-	assert.True(t, filtered[0].isComposite)
+	require.Len(t, matched, 1)
+	assert.True(t, matched[0].isComposite)
 }
 
-func TestVerifySLOsReportsUnmatchedSLOs(t *testing.T) {
+func TestMatchReplaysToSLOsReportsUnmatchedSLOs(t *testing.T) {
 	replays := []ReplayConfig{{Project: "project", SLO: "missing-slo"}}
 
-	filtered, missing := matchReplaysToSLOs(replays, nil)
+	matched, missing := matchReplaysToSLOs(replays, nil)
 
-	assert.Empty(t, filtered)
+	assert.Empty(t, matched)
 	assert.Equal(t, []string{"'missing-slo' SLO in 'project' Project"}, missing)
 }
 
-func TestReplayConfigAlwaysNamesATypeForTheAvailabilityCheck(t *testing.T) {
-	composite := ReplayConfig{isComposite: true}
-	regular := ReplayConfig{}
+func TestRunReplaysSendsRecalculationOnlyForCompositeSLOs(t *testing.T) {
+	compositeSpec := map[string]any{"objectives": []any{map[string]any{
+		"name": "composite", "target": 0.95, "composite": map[string]any{},
+	}}}
+	regularSpec := map[string]any{"indicator": map[string]any{
+		"metricSource": map[string]any{"name": "ds", "project": "target-project"},
+	}}
+	for name, test := range map[string]struct {
+		spec         map[string]any
+		expectedType string
+	}{
+		"composite SLO": {spec: compositeSpec, expectedType: string(replayV1.ReplayTypeRecalculation)},
+		"regular SLO":   {spec: regularSpec, expectedType: ""},
+	} {
+		t.Run(name, func(t *testing.T) {
+			apiURL, err := url.Parse("https://example.com/api")
+			require.NoError(t, err)
+			client, err := sdk.NewClient(&sdk.Config{
+				DisableOkta:  true,
+				Organization: "test-organization",
+				Project:      "target-project",
+				URL:          apiURL,
+			})
+			require.NoError(t, err)
 
-	assert.Equal(t, replayV1.ReplayTypeRecalculation, composite.availabilityReplayType())
-	assert.Equal(t, replayV1.ReplayTypeReimportAndRecalculation, regular.availabilityReplayType())
-}
-
-// Guards the wiring, not just the pieces: the replay type is decided from the
-// SLO fetched during verification, so a config that loses that detail on its way
-// to the run request sends the mode the server rejects for composites.
-func TestRunReplaysSendsRecalculationForCompositeSLO(t *testing.T) {
-	apiURL, err := url.Parse("https://example.com/api")
-	require.NoError(t, err)
-	client, err := sdk.NewClient(&sdk.Config{
-		DisableOkta:  true,
-		Organization: "test-organization",
-		Project:      "target-project",
-		URL:          apiURL,
-	})
-	require.NoError(t, err)
-
-	var runRequest replayV1.RunRequest
-	var availabilityType string
-	client.HTTP = &http.Client{
-		Transport: replayRoundTripper(func(request *http.Request) (*http.Response, error) {
-			recorder := httptest.NewRecorder()
-			recorder.Header().Set("Content-Type", "application/json")
-			switch {
-			case strings.Contains(request.URL.Path, "timemachine/availability"):
-				availabilityType = request.URL.Query().Get("type")
-				require.NoError(t, json.NewEncoder(recorder).Encode(
-					replayV1.ReplayAvailability{Available: true}))
-			case request.Method == http.MethodPost && strings.HasSuffix(request.URL.Path, "/timetravel"):
-				require.NoError(t, json.NewDecoder(request.Body).Decode(&runRequest))
-				recorder.WriteHeader(http.StatusCreated)
-			default:
-				require.NoError(t, json.NewEncoder(recorder).Encode([]v1alpha.GenericObject{{
-					"apiVersion": manifest.VersionV1alpha,
-					"kind":       manifest.KindSLO,
-					"metadata": map[string]any{
-						"name":    "composite-slo",
-						"project": "target-project",
-					},
-					"spec": map[string]any{
-						"objectives": []any{map[string]any{
-							"name":      "composite",
-							"target":    0.95,
-							"composite": map[string]any{},
-						}},
-					},
-				}}))
+			var runRequest map[string]any
+			var availabilityQuery url.Values
+			client.HTTP = &http.Client{
+				Transport: replayRoundTripper(func(request *http.Request) (*http.Response, error) {
+					recorder := httptest.NewRecorder()
+					recorder.Header().Set("Content-Type", "application/json")
+					switch {
+					case strings.Contains(request.URL.Path, "timemachine/availability"):
+						availabilityQuery = request.URL.Query()
+						assert.NoError(t, json.NewEncoder(recorder).Encode(
+							replayV1.ReplayAvailability{Available: true}))
+					case request.Method == http.MethodPost && strings.HasSuffix(request.URL.Path, "/timetravel"):
+						assert.NoError(t, json.NewDecoder(request.Body).Decode(&runRequest))
+						recorder.WriteHeader(http.StatusCreated)
+					default:
+						assert.NoError(t, json.NewEncoder(recorder).Encode([]v1alpha.GenericObject{{
+							"apiVersion": manifest.VersionV1alpha,
+							"kind":       manifest.KindSLO,
+							"metadata":   map[string]any{"name": "target-slo", "project": "target-project"},
+							"spec":       test.spec,
+						}}))
+					}
+					return recorder.Result(), nil
+				}),
 			}
-			return recorder.Result(), nil
-		}),
+
+			replay := ReplayCmd{client: client, playlistsAvailable: true}
+			cmd := &cobra.Command{}
+			cmd.SetOut(io.Discard)
+			cmd.SetContext(t.Context())
+
+			failed, err := replay.RunReplays(cmd, []ReplayConfig{{
+				Project: "target-project",
+				SLO:     "target-slo",
+				From:    time.Now().Add(-10 * time.Minute),
+			}})
+
+			require.NoError(t, err)
+			assert.Zero(t, failed)
+			replayType, hasReplayType := runRequest["replayType"]
+			assert.Equal(t, test.expectedType != "", hasReplayType)
+			if hasReplayType {
+				assert.Equal(t, test.expectedType, replayType)
+			}
+			assert.Equal(t, test.expectedType, availabilityQuery.Get("type"))
+		})
 	}
-
-	replay := ReplayCmd{client: client, playlistsAvailable: true}
-	cmd := &cobra.Command{}
-	cmd.SetOut(io.Discard)
-	cmd.SetContext(t.Context())
-
-	failed, err := replay.RunReplays(cmd, []ReplayConfig{{
-		Project: "target-project",
-		SLO:     "composite-slo",
-		From:    time.Now().Add(-10 * time.Minute),
-	}})
-
-	require.NoError(t, err)
-	assert.Zero(t, failed)
-	assert.Equal(t, replayV1.ReplayTypeRecalculation, runRequest.ReplayType)
-	assert.Equal(t, string(replayV1.ReplayTypeRecalculation), availabilityType)
-}
-
-// Without queues each next replay in a bulk run asks about a longer window, to
-// account for the earlier ones still occupying the data source. Composites have
-// no data source, so they must all ask about the window the user requested.
-func TestVerifySLOsDoesNotPadTheWindowForComposites(t *testing.T) {
-	apiURL, err := url.Parse("https://example.com/api")
-	require.NoError(t, err)
-	client, err := sdk.NewClient(&sdk.Config{
-		DisableOkta:  true,
-		Organization: "test-organization",
-		Project:      "target-project",
-		URL:          apiURL,
-	})
-	require.NoError(t, err)
-
-	var mu sync.Mutex
-	durations := make(map[string]string)
-	client.HTTP = &http.Client{
-		Transport: replayRoundTripper(func(request *http.Request) (*http.Response, error) {
-			recorder := httptest.NewRecorder()
-			recorder.Header().Set("Content-Type", "application/json")
-			if strings.Contains(request.URL.Path, "timemachine/availability") {
-				mu.Lock()
-				durations[request.URL.Query().Get("sloName")] = request.URL.Query().Get("durationValue")
-				mu.Unlock()
-				require.NoError(t, json.NewEncoder(recorder).Encode(
-					replayV1.ReplayAvailability{Available: true}))
-				return recorder.Result(), nil
-			}
-			objects := make([]v1alpha.GenericObject, 0, 2)
-			for _, name := range []string{"composite-one", "composite-two"} {
-				objects = append(objects, v1alpha.GenericObject{
-					"apiVersion": manifest.VersionV1alpha,
-					"kind":       manifest.KindSLO,
-					"metadata":   map[string]any{"name": name, "project": "target-project"},
-					"spec": map[string]any{
-						"objectives": []any{map[string]any{
-							"name":      "composite",
-							"target":    0.95,
-							"composite": map[string]any{},
-						}},
-					},
-				})
-			}
-			require.NoError(t, json.NewEncoder(recorder).Encode(objects))
-			return recorder.Result(), nil
-		}),
-	}
-
-	replay := ReplayCmd{client: client, playlistsAvailable: false}
-	from := time.Now().Add(-10 * time.Minute)
-
-	_, err = replay.verifySLOs(t.Context(), []ReplayConfig{
-		{Project: "target-project", SLO: "composite-one", From: from},
-		{Project: "target-project", SLO: "composite-two", From: from},
-	})
-
-	require.NoError(t, err)
-	assert.Equal(t, durations["composite-one"], durations["composite-two"],
-		"the second composite must not be asked about a padded window")
-}
-
-// A composite queued ahead of a regular SLO must not push that SLO's window out:
-// the padding exists for replays that occupy the data source, and a composite
-// does not.
-func TestVerifySLOsPadsOnlyForPrecedingDataSourceReplays(t *testing.T) {
-	apiURL, err := url.Parse("https://example.com/api")
-	require.NoError(t, err)
-	client, err := sdk.NewClient(&sdk.Config{
-		DisableOkta:  true,
-		Organization: "test-organization",
-		Project:      "target-project",
-		URL:          apiURL,
-	})
-	require.NoError(t, err)
-
-	composites := map[string]bool{"composite-slo": true, "regular-first": false, "regular-last": false}
-	var mu sync.Mutex
-	durations := make(map[string]string)
-	client.HTTP = &http.Client{
-		Transport: replayRoundTripper(func(request *http.Request) (*http.Response, error) {
-			recorder := httptest.NewRecorder()
-			recorder.Header().Set("Content-Type", "application/json")
-			if strings.Contains(request.URL.Path, "timemachine/availability") {
-				mu.Lock()
-				durations[request.URL.Query().Get("sloName")] = request.URL.Query().Get("durationValue")
-				mu.Unlock()
-				require.NoError(t, json.NewEncoder(recorder).Encode(
-					replayV1.ReplayAvailability{Available: true}))
-				return recorder.Result(), nil
-			}
-			objects := make([]v1alpha.GenericObject, 0, len(composites))
-			for name, composite := range composites {
-				spec := map[string]any{"indicator": map[string]any{
-					"metricSource": map[string]any{"name": "ds", "project": "target-project"},
-				}}
-				if composite {
-					spec = map[string]any{"objectives": []any{map[string]any{
-						"name": "composite", "target": 0.95, "composite": map[string]any{},
-					}}}
-				}
-				objects = append(objects, v1alpha.GenericObject{
-					"apiVersion": manifest.VersionV1alpha,
-					"kind":       manifest.KindSLO,
-					"metadata":   map[string]any{"name": name, "project": "target-project"},
-					"spec":       spec,
-				})
-			}
-			require.NoError(t, json.NewEncoder(recorder).Encode(objects))
-			return recorder.Result(), nil
-		}),
-	}
-
-	replay := ReplayCmd{client: client, playlistsAvailable: false}
-	from := time.Now().Add(-10 * time.Minute)
-
-	_, err = replay.verifySLOs(t.Context(), []ReplayConfig{
-		{Project: "target-project", SLO: "regular-first", From: from},
-		{Project: "target-project", SLO: "composite-slo", From: from},
-		{Project: "target-project", SLO: "regular-last", From: from},
-	})
-	require.NoError(t, err)
-
-	first, err := strconv.Atoi(durations["regular-first"])
-	require.NoError(t, err)
-	last, err := strconv.Atoi(durations["regular-last"])
-	require.NoError(t, err)
-	assert.Equal(t, int(averageReplayDuration.Minutes()), last-first,
-		"the composite between them must not add a slot to the offset")
 }
