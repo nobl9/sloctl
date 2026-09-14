@@ -2,7 +2,7 @@
   kind: AlertSilence
   metadata:
     name: 5661613e-0e3d-11ed-861d-randomx1
-    project: death-star
+    project: <PROJECT>
   spec:
     description: Dummy AlertSilence for 'sloctl get' e2e tests
     slo: splunk-raw-rolling
@@ -14,7 +14,7 @@
   kind: AlertSilence
   metadata:
     name: 5661613e-0e3d-11ed-861d-randomx2
-    project: death-star
+    project: <PROJECT>
   spec:
     description: Dummy AlertSilence for 'sloctl get' e2e tests
     slo: newrelic-rolling-timeslices-threshold

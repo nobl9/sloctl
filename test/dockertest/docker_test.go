@@ -109,22 +109,26 @@ func setup(t *testing.T) {
 	})
 }
 
-var sloctlEnvVars = []string{
-	"SLOCTL_CLIENT_ID",
-	"SLOCTL_CLIENT_SECRET",
-	"SLOCTL_OKTA_ORG_URL",
-	"SLOCTL_OKTA_AUTH_SERVER",
-}
-
 func runSloctl(t *testing.T, input io.Reader, sloctlArgs ...string) *bytes.Buffer {
-	args := make([]string, 0, 3+2*len(sloctlEnvVars)+1+len(sloctlArgs))
+	t.Helper()
+	config, err := sdk.ReadConfig(sdk.ConfigOptionEnvPrefix("SLOCTL_"))
+	require.NoError(t, err)
+	env := []string{
+		"SLOCTL_CLIENT_ID=" + config.ClientID,
+		"SLOCTL_CLIENT_SECRET=" + config.ClientSecret,
+		"SLOCTL_OKTA_ORG_URL=" + config.OktaOrgURL.String(),
+		"SLOCTL_OKTA_AUTH_SERVER=" + config.OktaAuthServer,
+	}
+	args := make([]string, 0, 3+2*len(env)+1+len(sloctlArgs))
 	args = append(args, "run", "-i", "--rm")
-	for _, env := range sloctlEnvVars {
-		args = append(args, "-e", fmt.Sprintf("%s=%s", env, os.Getenv(env)))
+	for _, entry := range env {
+		name, _, _ := strings.Cut(entry, "=")
+		args = append(args, "-e", name)
 	}
 	args = append(args, dockerImage)
 	args = append(args, sloctlArgs...)
 	cmd := exec.Command("docker", args...)
+	cmd.Env = append(os.Environ(), env...)
 	if input != nil {
 		cmd.Stdin = input
 	}
@@ -141,10 +145,13 @@ func mustExecCmd(t *testing.T, cmd *exec.Cmd) *bytes.Buffer {
 		cmd.Stderr = &stderr
 	}
 	if err := cmd.Run(); err != nil {
-		cmdStr := cmd.String()
-		secret := os.Getenv("SLOCTL_CLIENT_SECRET")
-		cmdStr = strings.ReplaceAll(cmdStr, secret, "***")
-		t.Fatalf("Failed to execute '%s' command: %s", cmdStr, stderr.String())
+		message := fmt.Sprintf("Failed to execute '%s' command: %v\n%s", cmd.String(), err, stderr.String())
+		for _, entry := range cmd.Environ() {
+			if secret, ok := strings.CutPrefix(entry, "SLOCTL_CLIENT_SECRET="); ok && secret != "" {
+				message = strings.ReplaceAll(message, secret, "***")
+			}
+		}
+		t.Fatal(message)
 	}
 	return &stdout
 }

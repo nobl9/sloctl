@@ -103,7 +103,7 @@ test_delete_by_name() {
   # Delete the object by name.
   args=(delete "$kind" "$object_name")
   if [[ $kind != "Project" ]] && [[ $kind != "BudgetAdjustment" ]] && [[ $kind != "Report" ]]; then
-    args+=("-p" "death-star")
+    args+=("-p" "$TEST_PROJECT")
   fi
   run_sloctl "${args[@]}"
   assert_success_joined_output

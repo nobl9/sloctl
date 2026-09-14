@@ -1,25 +1,158 @@
 package internal
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/manifest/v1alpha"
+	v1alphaParser "github.com/nobl9/nobl9-go/manifest/v1alpha/parser"
 	"github.com/nobl9/nobl9-go/sdk"
+	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
 	replayV1 "github.com/nobl9/nobl9-go/sdk/endpoints/replay/v1"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestGetReplaySLOsBatchesByProject(t *testing.T) {
+	for _, count := range []int{0, 1, 49, 50, 51, 100, 101} {
+		t.Run(fmt.Sprint(count), func(t *testing.T) {
+			replays := make([]ReplayConfig, 0, count+1)
+			wantNames := make([]string, count)
+			for i := range count {
+				name := fmt.Sprintf("slo-%03d", i)
+				wantNames[i] = name
+				replays = append(replays, ReplayConfig{
+					Project: "target-project", SLO: name,
+					SourceSLO: &replayV1.SourceSLO{Project: "source-project", SLO: name},
+				})
+			}
+			if count > 0 {
+				replays = append(replays, replays[0])
+			}
+			fetched := make(map[string][]string)
+			batchSizes := make(map[string][]int)
+			client := newReplaySLOTestClient(t, func(request *http.Request) (*http.Response, error) {
+				assert.Equal(t, "/get/slo", request.URL.Path)
+				assert.Equal(t, http.MethodGet, request.Method)
+				project := request.Header.Get(sdk.HeaderProject)
+				assert.Contains(t, []string{"target-project", "source-project"}, project)
+				names := request.URL.Query()[objectsV1.QueryKeyName]
+				assert.NotEmpty(t, names)
+				assert.LessOrEqual(t, len(names), 50)
+				fetched[project] = append(fetched[project], names...)
+				batchSizes[project] = append(batchSizes[project], len(names))
+				return replaySLOTestResponse(t, project, names), nil
+			})
+			replay := ReplayCmd{client: client}
+
+			slos, err := replay.getReplaySLOs(t.Context(), replays)
+
+			require.NoError(t, err)
+			assert.Len(t, slos, count*2)
+			if count == 0 {
+				assert.Empty(t, fetched)
+				return
+			}
+			for _, project := range []string{"target-project", "source-project"} {
+				assert.Equal(t, wantNames, fetched[project])
+				assert.Len(t, batchSizes[project], (count+49)/50)
+			}
+			matched, missing := matchReplaysToSLOs(replays, slos)
+			assert.Empty(t, missing)
+			assert.Len(t, matched, len(replays))
+		})
+	}
+}
+
+func TestGetReplaySLOsStopsOnBatchFailure(t *testing.T) {
+	for _, batchErr := range []error{errors.New("fetch failed"), context.Canceled} {
+		t.Run(batchErr.Error(), func(t *testing.T) {
+			replays := make([]ReplayConfig, 101)
+			for i := range replays {
+				replays[i] = ReplayConfig{Project: "project", SLO: fmt.Sprintf("slo-%03d", i)}
+			}
+			requests := 0
+			client := newReplaySLOTestClient(t, func(request *http.Request) (*http.Response, error) {
+				requests++
+				if requests == 2 {
+					return nil, batchErr
+				}
+				return replaySLOTestResponse(t, "project", request.URL.Query()[objectsV1.QueryKeyName]), nil
+			})
+			replay := ReplayCmd{client: client}
+
+			slos, err := replay.getReplaySLOs(t.Context(), replays)
+
+			require.ErrorIs(t, err, batchErr)
+			assert.ErrorContains(t, err, "failed to get SLOs in 'project' Project")
+			assert.Nil(t, slos)
+			assert.Equal(t, 2, requests)
+		})
+	}
+}
+
+func TestVerifySLOsReportsMissingSLOAfterFetchingAllBatches(t *testing.T) {
+	replays := make([]ReplayConfig, 101)
+	for i := range replays {
+		replays[i] = ReplayConfig{Project: "project", SLO: fmt.Sprintf("slo-%03d", i)}
+	}
+	requests := 0
+	client := newReplaySLOTestClient(t, func(request *http.Request) (*http.Response, error) {
+		requests++
+		assert.Equal(t, "/get/slo", request.URL.Path)
+		names := request.URL.Query()[objectsV1.QueryKeyName]
+		names = slices.DeleteFunc(names, func(name string) bool { return name == "slo-000" })
+		return replaySLOTestResponse(t, "project", names), nil
+	})
+	replay := ReplayCmd{client: client}
+
+	verified, err := replay.verifySLOs(t.Context(), replays)
+
+	require.EqualError(t, err, "Some of the SLOs marked for Replay were not found or"+
+		" you don't have permissions to view them: \n - 'slo-000' SLO in 'project' Project")
+	assert.Nil(t, verified)
+	assert.Equal(t, 3, requests)
+}
+
+func newReplaySLOTestClient(t *testing.T, transport func(*http.Request) (*http.Response, error)) *sdk.Client {
+	t.Helper()
+	useGenericObjects := v1alphaParser.UseGenericObjects
+	v1alphaParser.UseGenericObjects = true
+	t.Cleanup(func() { v1alphaParser.UseGenericObjects = useGenericObjects })
+	client, err := sdk.NewClient(&sdk.Config{DisableOkta: true, Project: sdk.ProjectsWildcard})
+	require.NoError(t, err)
+	client.HTTP = &http.Client{Transport: replayRoundTripper(transport)}
+	return client
+}
+
+func replaySLOTestResponse(t *testing.T, project string, names []string) *http.Response {
+	t.Helper()
+	objects := make([]v1alpha.GenericObject, len(names))
+	for i, name := range names {
+		objects[i] = v1alpha.GenericObject{
+			"apiVersion": "n9/v1alpha", "kind": "SLO",
+			"metadata": map[string]any{"name": name, "project": project},
+			"spec":     map[string]any{},
+		}
+	}
+	recorder := httptest.NewRecorder()
+	require.NoError(t, json.NewEncoder(recorder).Encode(objects))
+	return recorder.Result()
+}
 
 func TestReplayConfigDecodesSourceSLOIntoRunRequest(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "replay-20260824T084511Z.yaml")

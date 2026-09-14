@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -34,6 +35,8 @@ type GetCmd struct {
 	client    *sdk.Client
 	printer   *printer.Printer
 	selection objectSelectionFlags
+	sloLimit  int
+	sloOffset int
 }
 
 // NewGetCmd returns cobra command get with all flags for it.
@@ -77,7 +80,7 @@ To get more details in output use one of the available flags.`,
 		{Kind: manifest.KindProject},
 		{Kind: manifest.KindRoleBinding},
 		{Kind: manifest.KindService, Aliases: aliasesForKind(manifest.KindService)},
-		{Kind: manifest.KindSLO},
+		{Kind: manifest.KindSLO, Extender: get.newGetSLOCommand},
 		{Kind: manifest.KindUserGroup},
 		{Kind: manifest.KindBudgetAdjustment},
 		{Kind: manifest.KindReport},
@@ -122,6 +125,25 @@ func (g *GetCmd) newGetObjectsCommand(
 			return g.printObjects(kind, objects)
 		},
 	}
+}
+
+func (g *GetCmd) newGetSLOCommand(cmd *cobra.Command) *cobra.Command {
+	cmd.Long += "\nBy default, all matching SLOs are returned. Use --limit and --offset to request a page."
+	cmd.Flags().IntVar(&g.sloLimit, "limit", 0, "Maximum number of SLOs to return (1-1000).")
+	cmd.Flags().IntVar(&g.sloOffset, "offset", 0, "Number of SLOs to skip (requires --limit).")
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("limit") && (g.sloLimit < 1 || g.sloLimit > 1000) {
+			return fmt.Errorf("--limit must be between 1 and 1000")
+		}
+		if g.sloOffset < 0 {
+			return fmt.Errorf("--offset must be nonnegative")
+		}
+		if cmd.Flags().Changed("offset") && !cmd.Flags().Changed("limit") {
+			return fmt.Errorf("--offset requires --limit")
+		}
+		return nil
+	}
+	return cmd
 }
 
 func (g *GetCmd) newGetUserCommand() *cobra.Command {
@@ -384,6 +406,12 @@ func (g *GetCmd) getObjects(ctx context.Context, kind manifest.Kind, args []stri
 		return g.getAnnotations(ctx, args)
 	}
 	query := buildObjectSelectionQuery(kind, args, g.selection)
+	if kind == manifest.KindSLO && g.sloLimit > 0 {
+		query.Set("pagination.limit", strconv.Itoa(g.sloLimit))
+		if g.sloOffset > 0 {
+			query.Set("pagination.offset", strconv.Itoa(g.sloOffset))
+		}
+	}
 	header := http.Header{sdk.HeaderProject: []string{g.client.Config.Project}}
 	objects, err := g.client.Objects().V1().Get(ctx, kind, header, query)
 	if err != nil {

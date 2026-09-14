@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -28,6 +29,7 @@ import (
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
 	replayV1 "github.com/nobl9/nobl9-go/sdk/endpoints/replay/v1"
 
+	"github.com/nobl9/sloctl/internal/collections"
 	"github.com/nobl9/sloctl/internal/flags"
 	"github.com/nobl9/sloctl/internal/printer"
 )
@@ -297,6 +299,8 @@ func (r *ReplayCmd) readConfigFile(path string) ([]ReplayConfig, error) {
 // averageReplayDuration is used to calculate when running bulk Replay to calculate time offset for each SLO.
 const averageReplayDuration = 20 * time.Minute
 
+const replaySLOBatchSize = 50
+
 func (r *ReplayCmd) getReplaySLOs(ctx context.Context, replays []ReplayConfig) ([]replaySLO, error) {
 	sloNamesByProject := make(map[string][]string)
 	for _, replay := range replays {
@@ -311,21 +315,23 @@ func (r *ReplayCmd) getReplaySLOs(ctx context.Context, replays []ReplayConfig) (
 
 	slos := make([]replaySLO, 0, len(replays))
 	for project, names := range sloNamesByProject {
-		objects, err := r.client.Objects().V1().Get(
-			ctx,
-			manifest.KindSLO,
-			http.Header{sdk.HeaderProject: []string{project}},
-			url.Values{objectsV1.QueryKeyName: names},
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get SLOs in '%s' Project: %w", project, err)
-		}
-		for _, object := range objects {
-			slo, err := decodeReplaySLO(object)
+		for batch := range slices.Chunk(collections.RemoveDuplicates(names), replaySLOBatchSize) {
+			objects, err := r.client.Objects().V1().Get(
+				ctx,
+				manifest.KindSLO,
+				http.Header{sdk.HeaderProject: []string{project}},
+				url.Values{objectsV1.QueryKeyName: batch},
+			)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to get SLOs in '%s' Project: %w", project, err)
 			}
-			slos = append(slos, slo)
+			for _, object := range objects {
+				slo, err := decodeReplaySLO(object)
+				if err != nil {
+					return nil, err
+				}
+				slos = append(slos, slo)
+			}
 		}
 	}
 	return slos, nil
