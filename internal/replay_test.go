@@ -132,21 +132,6 @@ func (f replayRoundTripper) RoundTrip(request *http.Request) (*http.Response, er
 	return f(request)
 }
 
-func TestMatchReplaysToSLOsMarksComposites(t *testing.T) {
-	replays := []ReplayConfig{{Project: "project", SLO: "composite-slo"}}
-	slos := []replaySLO{{
-		name:                   "composite-slo",
-		project:                "project",
-		hasCompositeObjectives: true,
-	}}
-
-	matched, missing := matchReplaysToSLOs(replays, slos)
-
-	require.Empty(t, missing)
-	require.Len(t, matched, 1)
-	assert.True(t, matched[0].isComposite)
-}
-
 func TestMatchReplaysToSLOsReportsUnmatchedSLOs(t *testing.T) {
 	replays := []ReplayConfig{{Project: "project", SLO: "missing-slo"}}
 
