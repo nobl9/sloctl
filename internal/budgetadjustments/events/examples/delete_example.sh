@@ -1,17 +1,16 @@
-# Delete Adjustment Events using a file:
-cat <<EOF > ./events.yaml
-- eventStart: 2024-10-24T04:07:04Z
-  eventEnd: 2024-10-24T05:27:04Z
+# Define one event to delete.
+cat <<'EOF' >./events.yaml
+- eventStart: 2025-04-07T01:00:00Z
+  eventEnd: 2025-04-07T02:00:00Z
   slos:
-  - project: test-project
-    name: sample-slo-1
-- eventStart: 2024-10-25T04:07:04Z
-  eventEnd: 2024-10-25T05:27:04Z
-  slos:
-  - project: test-project
-    name: sample-slo-2
+    - project: my-project
+      name: my-slo
 EOF
-sloctl budgetadjustments events delete --adjustment-name=sample-adjustment-name -f ./events.yaml
+sloctl budgetadjustments events delete \
+  --adjustment-name maintenance \
+  --file ./events.yaml
 
-# Delete Adjustment Events using stdin:
-sloctl budgetadjustments events delete --adjustment-name=sample-adjustment-name -f - <./events.yaml
+# Read the same definition from standard input.
+sloctl budgetadjustments events delete \
+  --adjustment-name maintenance \
+  --file - <./events.yaml

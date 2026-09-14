@@ -36,9 +36,11 @@ func (r *RootCmd) NewApplyCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "apply",
-		Short: "Apply object definition in YAML or JSON format",
+		Short: "Apply Nobl9 resource definitions",
 		Long: getApplyOrDeleteDescription(
-			"The apply command commits the changes by sending the updates to the application."),
+			"Apply Nobl9 resource definitions from one or more YAML or JSON sources.\n\n" +
+				"With `--replay`, Replay runs only for applied SLOs. Replay is skipped during `--dry-run`, " +
+				"and applied changes are not rolled back if Replay fails."),
 		Example: applyExample,
 		Args:    noPositionalArgsCondition,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -58,19 +60,20 @@ func (r *RootCmd) NewApplyCmd() *cobra.Command {
 	registerDryRunFlag(cmd, &apply.dryRun)
 	registerAutoConfirmationFlag(cmd, &apply.autoConfirm)
 	cmd.Flags().StringVarP(&apply.project, "project", "p", "",
-		`Assigns the provided Project to the resources if no Project is defined in the object's definition.`)
+		"Use this project for project-scoped definitions that omit metadata.project; "+
+			"definitions specifying another project are rejected.")
 
 	const (
 		replayFlagName     = "replay"
 		replayFromFlagName = "from"
 	)
 	cmd.Flags().BoolVar(&apply.replay, replayFlagName, false,
-		"Run Replay for the applied SLOs. If Replay fails, the applied changes are not rolled back.")
+		"Run Replay for each applied SLO. Applied changes are not rolled back if Replay fails.")
 	flags.RegisterTimeVar(
 		cmd,
 		&apply.replayFrom,
 		replayFromFlagName,
-		"Sets the start of Replay time window.",
+		"Start Replay at this RFC3339 timestamp. Must be used with --replay.",
 	)
 	cmd.MarkFlagsRequiredTogether(replayFlagName, replayFromFlagName)
 

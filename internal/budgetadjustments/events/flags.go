@@ -19,14 +19,14 @@ const (
 
 func mustRegisterFileFlag(cmd *cobra.Command, storeIn *string) {
 	cmd.Flags().StringVarP(storeIn, FlagFile, "f", "",
-		"File path to events definitions in YAML.")
+		"Path to a YAML event definition file, or - to read from standard input.")
 	if err := cmd.MarkFlagRequired(FlagFile); err != nil {
 		panic(err)
 	}
 }
 
 func mustRegisterAdjustmentFlag(cmd *cobra.Command, storeIn *string) {
-	cmd.Flags().StringVar(storeIn, FlagAdjustment, "", "Name of the Adjustment.")
+	cmd.Flags().StringVar(storeIn, FlagAdjustment, "", "Name of the budget adjustment.")
 	if err := cmd.MarkFlagRequired(FlagAdjustment); err != nil {
 		panic(err)
 	}
@@ -34,12 +34,12 @@ func mustRegisterAdjustmentFlag(cmd *cobra.Command, storeIn *string) {
 
 func registerProjectFlag(cmd *cobra.Command, storeIn *string) {
 	cmd.Flags().StringVarP(storeIn, FlagSloProject, "", "",
-		"Name of the project. Required when sloName is defined.")
+		"Project of the SLO to filter by. Must be used with --slo-name.")
 }
 
 func registerSloNameFlag(cmd *cobra.Command, storeIn *string) {
 	cmd.Flags().StringVarP(storeIn, FlagSloName, "", "",
-		"Name of the SLO. Required when sloName is defined.")
+		"SLO name to filter by. Must be used with --slo-project.")
 }
 
 func mustRegisterFromFlag(cmd *cobra.Command, storeIn *time.Time) {
@@ -47,7 +47,7 @@ func mustRegisterFromFlag(cmd *cobra.Command, storeIn *time.Time) {
 		cmd,
 		storeIn,
 		FlagFrom,
-		"Specifies the start date and time for the data range (in UTC).",
+		"Start of the query range in RFC3339 format.",
 	)
 	if err := cmd.MarkFlagRequired(FlagFrom); err != nil {
 		panic(err)
@@ -59,7 +59,7 @@ func mustRegisterToFlag(cmd *cobra.Command, storeIn *time.Time) {
 		cmd,
 		storeIn,
 		FlagTo,
-		"Specifies the end date and time for the data range (in UTC).",
+		"End of the query range in RFC3339 format.",
 	)
 	if err := cmd.MarkFlagRequired(FlagTo); err != nil {
 		panic(err)

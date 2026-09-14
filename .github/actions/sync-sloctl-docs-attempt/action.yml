@@ -1,0 +1,180 @@
+name: Run sloctl docs synchronization attempt
+description: Dispatch and monitor one documentation update attempt.
+
+inputs:
+  docs-repository:
+    description: Documentation repository name without the owner.
+    required: true
+  expected-run-name:
+    description: Expected downstream workflow run name.
+    required: true
+  sloctl-sha:
+    description: Commit SHA for the official release.
+    required: true
+  sloctl-tag:
+    description: Official release tag.
+    required: true
+  source-run-id:
+    description: Successful sloctl Release workflow run ID.
+    required: true
+  token:
+    description: GitHub App token with Actions write permission.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Dispatch and monitor documentation update
+      shell: bash
+      env:
+        DOCS_REPOSITORY: ${{ inputs.docs-repository }}
+        EXPECTED_RUN_NAME: ${{ inputs.expected-run-name }}
+        GH_TOKEN: ${{ inputs.token }}
+        SLOCTL_SHA: ${{ inputs.sloctl-sha }}
+        SLOCTL_TAG: ${{ inputs.sloctl-tag }}
+        SOURCE_RUN_ID: ${{ inputs.source-run-id }}
+      run: |
+        list_matching_run() {
+          timeout 15s gh run list \
+            --repo "${GITHUB_REPOSITORY_OWNER}/${DOCS_REPOSITORY}" \
+            --workflow update-sloctl-command-reference.yml \
+            --event workflow_dispatch \
+            --limit 100 \
+            --json conclusion,databaseId,displayTitle,status \
+            --jq '
+              [.[] | select(.displayTitle == env.EXPECTED_RUN_NAME)]
+              | sort_by(.databaseId)
+              | last
+              | if . == null then ""
+                else [.databaseId, .status, (.conclusion // "")] | @tsv
+                end
+            '
+        }
+
+        view_run() {
+          local run_id="$1"
+          timeout 15s gh run view "${run_id}" \
+            --repo "${GITHUB_REPOSITORY_OWNER}/${DOCS_REPOSITORY}" \
+            --json conclusion,status \
+            --jq '[.status, (.conclusion // "")] | @tsv'
+        }
+
+        existing_run=""
+        list_exit=1
+        for query_attempt in {1..3}; do
+          list_exit=0
+          existing_run="$(list_matching_run)" || list_exit=$?
+          if (( list_exit == 0 )); then
+            break
+          fi
+          echo "Could not list documentation runs (attempt ${query_attempt}, exit ${list_exit})." >&2
+          sleep 2
+        done
+        if (( list_exit != 0 )); then
+          exit "${list_exit}"
+        fi
+        IFS=$'\t' read -r downstream_run_id run_status run_conclusion <<< "${existing_run}"
+        if [[ -n "${downstream_run_id}" && "${run_status}" == "completed" ]]; then
+          if [[ "${run_conclusion}" == "success" ]]; then
+            echo "Documentation workflow run ${downstream_run_id} already completed successfully."
+            exit 0
+          fi
+          echo "Previous documentation workflow run ${downstream_run_id} completed with ${run_conclusion}; dispatching a new attempt."
+          previous_run_id="${downstream_run_id}"
+          downstream_run_id=""
+        elif [[ -n "${downstream_run_id}" ]]; then
+          echo "Resuming documentation workflow run ${downstream_run_id}, currently ${run_status}."
+        else
+          previous_run_id=""
+        fi
+
+        if [[ -z "${downstream_run_id}" ]]; then
+          if ! timeout 30s gh workflow run update-sloctl-command-reference.yml \
+            --repo "${GITHUB_REPOSITORY_OWNER}/${DOCS_REPOSITORY}" \
+            --ref production \
+            --field tag="${SLOCTL_TAG}" \
+            --field sha="${SLOCTL_SHA}" \
+            --field source_run_id="${SOURCE_RUN_ID}"; then
+            echo "Could not dispatch the documentation workflow." >&2
+            exit 1
+          fi
+
+          discovery_deadline=$((SECONDS + 120))
+          while (( SECONDS < discovery_deadline )); do
+            list_exit=0
+            matching_run="$(list_matching_run)" || list_exit=$?
+            if (( list_exit == 0 )); then
+              IFS=$'\t' read -r downstream_run_id run_status run_conclusion <<< "${matching_run}"
+              if [[ -n "${downstream_run_id}" && "${downstream_run_id}" != "${previous_run_id}" ]]; then
+                break
+              fi
+            else
+              echo "Could not list documentation runs during discovery (exit ${list_exit})." >&2
+            fi
+            sleep 2
+          done
+
+          if [[ -z "${downstream_run_id}" || "${downstream_run_id}" == "${previous_run_id}" ]]; then
+            echo "Could not find the dispatched documentation workflow run." >&2
+            exit 1
+          fi
+        fi
+
+        watch_exit=0
+        timeout 45m gh run watch "${downstream_run_id}" \
+          --repo "${GITHUB_REPOSITORY_OWNER}/${DOCS_REPOSITORY}" \
+          --exit-status \
+          --interval 10 || watch_exit=$?
+        if (( watch_exit == 0 )); then
+          exit 0
+        fi
+
+        if ! run_result="$(view_run "${downstream_run_id}")"; then
+          echo "Could not determine the state of documentation workflow run ${downstream_run_id}; a later attempt will resume it." >&2
+          exit 1
+        fi
+        IFS=$'\t' read -r run_status run_conclusion <<< "${run_result}"
+        if [[ "${run_status}" == "completed" ]]; then
+          if [[ "${run_conclusion}" == "success" ]]; then
+            exit 0
+          fi
+          echo "Documentation workflow run ${downstream_run_id} completed with ${run_conclusion} (watch exit ${watch_exit})." >&2
+          exit 1
+        fi
+
+        if (( watch_exit != 124 )); then
+          echo "Monitoring stopped with exit ${watch_exit} while documentation workflow run ${downstream_run_id} was ${run_status}; a later attempt will resume it." >&2
+          exit 1
+        fi
+
+        echo "Documentation workflow run ${downstream_run_id} exceeded 45 minutes while ${run_status}; cancelling it." >&2
+        cancel_exit=0
+        timeout 30s gh run cancel "${downstream_run_id}" \
+          --repo "${GITHUB_REPOSITORY_OWNER}/${DOCS_REPOSITORY}" || cancel_exit=$?
+        if (( cancel_exit != 0 )); then
+          echo "Could not request cancellation for run ${downstream_run_id} (exit ${cancel_exit})." >&2
+        fi
+
+        cancel_deadline=$((SECONDS + 180))
+        while (( SECONDS < cancel_deadline )); do
+          if ! run_result="$(view_run "${downstream_run_id}")"; then
+            sleep 2
+            continue
+          fi
+          IFS=$'\t' read -r run_status run_conclusion <<< "${run_result}"
+          if [[ "${run_status}" == "completed" ]]; then
+            break
+          fi
+          sleep 2
+        done
+
+        if [[ "${run_conclusion}" == "success" ]]; then
+          echo "Documentation workflow run ${downstream_run_id} completed successfully during cancellation."
+          exit 0
+        fi
+        if [[ "${run_status}" != "completed" ]]; then
+          echo "Documentation workflow run ${downstream_run_id} did not stop after cancellation." >&2
+          exit 1
+        fi
+        echo "Documentation workflow run ${downstream_run_id} stopped with ${run_conclusion}." >&2
+        exit 1

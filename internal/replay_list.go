@@ -13,7 +13,10 @@ import (
 func (r *ReplayCmd) AddListCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List all Replays",
+		Short: "List Replay queue entries",
+		Long: "List Replay queue entries and their current status across Projects. Use\n" +
+			"`--output` or `--jq` to format or filter the result.",
+		Example: "sloctl replay list\nsloctl replay list --output json",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return r.listAllReplays(cmd)
 		},

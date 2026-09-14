@@ -32,9 +32,10 @@ func (r *RootCmd) NewDeleteCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "delete",
-		Short: "Delete object definition by name or definition file",
+		Short: "Delete Nobl9 resources by name or definition file",
 		Long: getApplyOrDeleteDescription(
-			"One or more definitions can be specified by name or provide a path to file with definitions to remove."),
+			"Delete resources described by one or more YAML or JSON sources. To delete resources by name, " +
+				"use a resource subcommand such as `sloctl delete slos <name>`."),
 		Example: deleteExample,
 		Args:    noPositionalArgsCondition,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -54,7 +55,8 @@ func (r *RootCmd) NewDeleteCmd() *cobra.Command {
 	registerDryRunFlag(cmd, &deleteCmd.dryRun)
 	registerAutoConfirmationFlag(cmd, &deleteCmd.autoConfirm)
 	cmd.Flags().StringVarP(&deleteCmd.project, "project", "p", "",
-		`Assigns the provided Project to the resources if no Project is defined in the object's definition.`)
+		"Use this project for project-scoped definitions that omit metadata.project; "+
+			"definitions specifying another project are rejected.")
 
 	// register all subcommands for delete
 	for _, def := range []struct {
@@ -84,7 +86,6 @@ func (r *RootCmd) NewDeleteCmd() *cobra.Command {
 		cmd.AddCommand(newSubcommand(
 			deleteCmd,
 			def.kind,
-			fmt.Sprintf("Delete the %s.", def.plural),
 			strings.ToLower(def.plural),
 			append(def.aliases, def.kind.ToLower(), def.kind.String())...))
 	}
@@ -120,13 +121,22 @@ func (d DeleteCmd) Run(cmd *cobra.Command) error {
 func newSubcommand(
 	deleteCmd *DeleteCmd,
 	kind manifest.Kind,
-	shortDesc, useCmd string,
+	useCmd string,
 	aliases ...string,
 ) *cobra.Command {
+	resourceName := humanReadablePluralForKind(kind)
+	longDesc := fmt.Sprintf(
+		"Delete one or more %s by positional name. At least one name is required.",
+		resourceName,
+	)
+	if objectKindSupportsProjectFlag(kind) {
+		longDesc += " Use `--project` to override the configured default project."
+	}
 	sc := &cobra.Command{
-		Use:     useCmd,
+		Use:     useCmd + " <name> [name...]",
 		Aliases: aliases,
-		Short:   shortDesc,
+		Short:   fmt.Sprintf("Delete %s by name", resourceName),
+		Long:    longDesc,
 		Args:    cobra.MinimumNArgs(1), //nolint: gomnd
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runSubcommand(cmd.Context(), deleteCmd, kind, args)
@@ -134,7 +144,7 @@ func newSubcommand(
 	}
 	if objectKindSupportsProjectFlag(kind) {
 		sc.Flags().StringVarP(&deleteCmd.project, "project", "p", "",
-			`Specifies the Project from which to delete the resources. If not provided, the default Project will be used.`)
+			"Delete resources from this project instead of the configured default project.")
 	}
 	registerDryRunFlag(sc, &deleteCmd.dryRun)
 	return sc

@@ -37,8 +37,8 @@ func (r *RootCmd) NewConvertCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "convert",
-		Short: "Convert SLO definitions to Nobl9 configuration",
-		Long:  `Converts external SLO (and more!) definitions to Nobl9 YAML configuration.`,
+		Short: "Convert external definitions to Nobl9 resources",
+		Long:  "Convert supported external resource definitions with a format-specific subcommand.",
 	}
 
 	cmd.AddCommand(convert.newConvertOpenSLOCommand())
@@ -48,9 +48,13 @@ func (r *RootCmd) NewConvertCmd() *cobra.Command {
 
 func (c ConvertCmd) newConvertOpenSLOCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "openslo",
-		Short:   "Convert OpenSLO specification to Nobl9 configuration",
-		Long:    "To learn more about how the conversion works, visit https://github.com/nobl9/nobl9-openslo.",
+		Use:   "openslo",
+		Short: "Convert OpenSLO resources to Nobl9 configuration",
+		Long: "Convert OpenSLO YAML or JSON from files, directories, URLs,\n" +
+			"glob patterns, or standard input.\n" +
+			"Repeat `--file` to combine sources. Quote glob patterns to prevent shell expansion.\n" +
+			"Converted Nobl9 resources are written to standard output and can be piped to `sloctl apply`.\n\n" +
+			"See [nobl9-openslo](https://github.com/nobl9/nobl9-openslo) for conversion rules and supported resources.",
 		Example: convertOpenSLOExample,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return c.convertOpenSLO(cmd)
@@ -59,6 +63,11 @@ func (c ConvertCmd) newConvertOpenSLOCommand() *cobra.Command {
 
 	c.printer.MustRegisterFlags(cmd)
 	registerFileFlag(cmd, true, &c.definitionPaths)
+	setFlagDescriptions(cmd, flagFile,
+		"OpenSLO YAML or JSON source: file, directory, URL, glob pattern, "+
+			"or '-' for standard input. Repeat this flag to use multiple sources.",
+		"OpenSLO YAML or JSON source: file, directory, URL, glob pattern, "+
+			"or `-` for standard input. Repeat this flag to use multiple sources.")
 
 	return cmd
 }

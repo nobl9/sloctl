@@ -1,11 +1,11 @@
-# Edit one SLO from your default Project.
-sloctl edit slo my-slo
+# Edit one SLO.
+sloctl edit slos my-slo --project my-project
 
-# Use an alternative editor.
-SLOCTL_EDITOR="nano" sloctl edit project default
+# Edit multiple alert policies in one session.
+sloctl edit alertpolicies policy-a policy-b --project my-project
 
-# Edit one Service from a specific Project.
-sloctl edit service my-service -p my-project
+# Preview edited changes without persisting them.
+sloctl edit services my-service --project my-project --dry-run
 
-# Edit multiple Alert Policies in one session.
-sloctl edit alertpolicy policy-a policy-b
+# Use another editor for one invocation.
+SLOCTL_EDITOR=nano sloctl edit projects my-project

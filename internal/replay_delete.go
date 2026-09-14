@@ -11,9 +11,14 @@ import (
 // AddDeleteCommand returns cobra command delete, which allows to delete a queued Replay.
 func (r *ReplayCmd) AddDeleteCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "delete <slo-name>",
-		Short: "Delete a queued Replay",
-		Args:  r.deleteArguments,
+		Use:   "delete [slo-name]",
+		Short: "Remove queued Replays",
+		Long: "Remove one queued Replay, or remove every queued Replay across all Projects\n" +
+			"with `--all`. When an SLO name is provided, the Project defaults to the\n" +
+			"active context's Project. This command does not cancel a Replay that is already\n" +
+			"importing data.",
+		Example: "sloctl replay delete my-slo --project my-project\nsloctl replay delete --all",
+		Args:    r.deleteArguments,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if r.project != "" {
 				r.client.Config.Project = r.project
@@ -27,8 +32,13 @@ func (r *ReplayCmd) AddDeleteCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&r.project, "project", "p", "",
-		`Specifies the Project of the SLO you want to remove queued Replay for.`)
-	cmd.Flags().BoolVar(&r.deleteAll, "all", false, "Delete ALL queued Replays.")
+		"Project containing the SLO. Defaults to the active context's Project.")
+	cmd.Flags().BoolVar(
+		&r.deleteAll,
+		"all",
+		false,
+		"Remove all queued Replays across all Projects.",
+	)
 
 	return cmd
 }

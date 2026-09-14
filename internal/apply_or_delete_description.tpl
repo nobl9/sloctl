@@ -1,6 +1,10 @@
 {{ .Description }}
-Sloctl supports glob patterns when using '-f' flag, it uses the standard Go glob patterns grammar and extends it with support of '**' for recursive reading of files and directories.
-The standard Go grammar can be found here: https://pkg.go.dev/path/filepath#Match.
-Only files with extensions: {{ .Extensions }} are processed when using glob patterns.
-Additionally, before processing the file contents, sloctl checks if it contains Nobl9 API version with the following regex: '{{ .Regex }}'.
-Remember that glob patterns must be quoted to prevent the shell from evaluating them.
+
+Use `--file` for each input source.
+A source can be a local file, directory, URL, standard input (`-`), or glob pattern.
+Directories are read one level deep; use `**` in a glob to match recursively.
+
+Globs follow [Go's `filepath.Match` syntax](https://pkg.go.dev/path/filepath#Match) with added `**` support.
+Directory and glob sources include only {{ .Extensions }} files with a Nobl9 `apiVersion`; unrelated files are skipped.
+An explicit file without a Nobl9 `apiVersion` is rejected.
+Quote glob patterns so the shell does not expand them before sloctl receives them.

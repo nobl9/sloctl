@@ -16,9 +16,13 @@ func (r *RootCmd) NewMCPCmd() *cobra.Command {
 	mcpCmd := &MCPCmd{}
 
 	cmd := &cobra.Command{
-		Use:     "mcp",
-		Short:   "Start the MCP proxy listening on stdio",
-		Long:    "This feature is experimental and subject to bugs and breaking changes!",
+		Use:   "mcp",
+		Short: "Start the Nobl9 MCP proxy over stdio",
+		Long: "Start a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) proxy over standard input " +
+			"and output. The proxy uses the active sloctl context to authenticate and forwards requests to Nobl9.\n\n" +
+			"Use this proxy instead of a direct HTTP connection when the MCP client communicates over stdio, " +
+			"requires dynamic client registration, or should reuse credentials from the active sloctl context. " +
+			"See [Nobl9 MCP server](https://docs.nobl9.com/tools-and-utilities/mcp-server).",
 		Example: "sloctl mcp",
 		Args:    noPositionalArgsCondition,
 		PersistentPreRun: func(*cobra.Command, []string) {

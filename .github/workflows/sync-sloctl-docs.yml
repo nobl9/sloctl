@@ -1,0 +1,113 @@
+name: Sync sloctl docs
+
+on:
+  workflow_run:
+    workflows:
+      - Release
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-sloctl-docs-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - name: Validate official release
+        env:
+          DOCS_REPOSITORY: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
+          SLOCTL_SHA: ${{ github.event.workflow_run.head_sha }}
+          SLOCTL_TAG: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          if [[ ! "${SLOCTL_TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid official sloctl release tag: ${SLOCTL_TAG}" >&2
+            exit 2
+          fi
+          if [[ ! "${SLOCTL_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Invalid sloctl release SHA: ${SLOCTL_SHA}" >&2
+            exit 2
+          fi
+          if [[ ! "${DOCS_REPOSITORY}" =~ ^[A-Za-z0-9_.-]+$ ]]; then
+            echo "Invalid documentation repository name: ${DOCS_REPOSITORY}" >&2
+            exit 2
+          fi
+
+      - name: Check out sloctl
+        uses: actions/checkout@v4
+
+      - name: Create GitHub App token for attempt 1
+        id: app_token_1
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.DOCS_AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.DOCS_AUTOMATION_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
+          permission-actions: write
+
+      - name: Run documentation update attempt 1
+        id: attempt_1
+        continue-on-error: true
+        uses: ./.github/actions/sync-sloctl-docs-attempt
+        with:
+          docs-repository: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
+          expected-run-name: sloctl docs from release run ${{ github.event.workflow_run.id }}
+          sloctl-sha: ${{ github.event.workflow_run.head_sha }}
+          sloctl-tag: ${{ github.event.workflow_run.head_branch }}
+          source-run-id: ${{ github.event.workflow_run.id }}
+          token: ${{ steps.app_token_1.outputs.token }}
+
+      - name: Create GitHub App token for attempt 2
+        if: steps.attempt_1.outcome == 'failure'
+        id: app_token_2
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.DOCS_AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.DOCS_AUTOMATION_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
+          permission-actions: write
+
+      - name: Run documentation update attempt 2
+        if: steps.attempt_1.outcome == 'failure'
+        id: attempt_2
+        continue-on-error: true
+        uses: ./.github/actions/sync-sloctl-docs-attempt
+        with:
+          docs-repository: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
+          expected-run-name: sloctl docs from release run ${{ github.event.workflow_run.id }}
+          sloctl-sha: ${{ github.event.workflow_run.head_sha }}
+          sloctl-tag: ${{ github.event.workflow_run.head_branch }}
+          source-run-id: ${{ github.event.workflow_run.id }}
+          token: ${{ steps.app_token_2.outputs.token }}
+
+      - name: Create GitHub App token for attempt 3
+        if: steps.attempt_2.outcome == 'failure'
+        id: app_token_3
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.DOCS_AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.DOCS_AUTOMATION_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
+          permission-actions: write
+
+      - name: Run documentation update attempt 3
+        if: steps.attempt_2.outcome == 'failure'
+        uses: ./.github/actions/sync-sloctl-docs-attempt
+        with:
+          docs-repository: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
+          expected-run-name: sloctl docs from release run ${{ github.event.workflow_run.id }}
+          sloctl-sha: ${{ github.event.workflow_run.head_sha }}
+          sloctl-tag: ${{ github.event.workflow_run.head_branch }}
+          source-run-id: ${{ github.event.workflow_run.id }}
+          token: ${{ steps.app_token_3.outputs.token }}
