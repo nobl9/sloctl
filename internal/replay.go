@@ -101,7 +101,8 @@ func (r *ReplayCmd) Run(cmd *cobra.Command) error {
 
 func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (failedReplays int, err error) {
 	ctx := cmd.Context()
-	if err = r.verifySLOs(ctx, replays); err != nil {
+	replays, err = r.verifySLOs(ctx, replays)
+	if err != nil {
 		return 0, err
 	}
 
@@ -179,6 +180,7 @@ type ReplayConfig struct {
 	SourceSLO *replayV1.SourceSLO `json:"sourceSLO,omitempty"`
 
 	metricSource v1alphaSLO.MetricSourceSpec
+	isComposite  bool
 }
 
 type replaySLO struct {
@@ -204,8 +206,17 @@ func (r ReplayConfig) ToReplay(timeNow time.Time) replayV1.RunRequest {
 			Unit:  replayV1.DurationUnitMinute,
 			Value: startOffsetMinutes + int(windowDuration.Minutes()),
 		},
-		SourceSLO: r.SourceSLO,
+		SourceSLO:  r.SourceSLO,
+		ReplayType: r.replayType(),
 	}
+}
+
+// replayType leaves regular SLOs unset so the server applies its default.
+func (r ReplayConfig) replayType() replayV1.ReplayType {
+	if r.isComposite {
+		return replayV1.ReplayTypeRecalculation
+	}
+	return ""
 }
 
 func (r *ReplayCmd) prepareConfigs() ([]ReplayConfig, error) {
@@ -340,46 +351,41 @@ func decodeReplaySLO(object manifest.Object) (replaySLO, error) {
 	return slo, nil
 }
 
-// verifySLOs finds non-existent or RBAC protected SLOs.
-func (r *ReplayCmd) verifySLOs(ctx context.Context, replays []ReplayConfig) error {
+// verifySLOs finds non-existent or RBAC protected SLOs and checks Replay availability.
+// Run the returned configs, not the input: they carry the SLO details the run requests need.
+func (r *ReplayCmd) verifySLOs(ctx context.Context, replays []ReplayConfig) ([]ReplayConfig, error) {
 	slos, err := r.getReplaySLOs(ctx, replays)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	missingSLOs := make([]string, 0)
-	compositeSLOs := make([]string, 0)
-	filtered := make([]ReplayConfig, 0, len(replays))
+	verified, missingSLOs := matchReplaysToSLOs(replays, slos)
+	if len(missingSLOs) > 0 {
+		return nil, errors.Errorf("Some of the SLOs marked for Replay were not found or"+
+			" you don't have permissions to view them: \n - %s", strings.Join(missingSLOs, "\n - "))
+	}
+
+	if err := r.checkReplayAvailability(ctx, verified); err != nil {
+		return nil, err
+	}
+	return verified, nil
+}
+
+func matchReplaysToSLOs(replays []ReplayConfig, slos []replaySLO) (matched []ReplayConfig, missing []string) {
+	missing = make([]string, 0)
+	matched = make([]ReplayConfig, 0, len(replays))
 outer:
 	for _, replay := range replays {
 		for _, slo := range slos {
 			if replay.SLO == slo.name && replay.Project == slo.project {
-				if slo.hasCompositeObjectives {
-					compositeSLOs = append(compositeSLOs,
-						fmt.Sprintf("Replay is unavailable for composite SLOs: '%s' SLO in '%s' Project",
-							slo.name,
-							slo.project))
-					continue outer
-				}
 				replay.metricSource = slo.metricSource
-				filtered = append(filtered, replay)
+				replay.isComposite = slo.hasCompositeObjectives
+				matched = append(matched, replay)
 				continue outer
 			}
 		}
-		missingSLOs = append(
-			missingSLOs,
-			fmt.Sprintf("'%s' SLO in '%s' Project", replay.SLO, replay.Project),
-		)
+		missing = append(missing, fmt.Sprintf("'%s' SLO in '%s' Project", replay.SLO, replay.Project))
 	}
-	if len(missingSLOs) > 0 {
-		return errors.Errorf("Some of the SLOs marked for Replay were not found or"+
-			" you don't have permissions to view them: \n - %s", strings.Join(missingSLOs, "\n - "))
-	}
-	if len(compositeSLOs) > 0 {
-		return errors.Errorf("The following SLOs are composite and not eligible for Replay: \n - %s",
-			strings.Join(compositeSLOs, "\n - "))
-	}
-
-	return r.checkReplayAvailability(ctx, filtered)
+	return matched, missing
 }
 
 func (r *ReplayCmd) checkReplayAvailability(ctx context.Context, replays []ReplayConfig) error {
@@ -484,7 +490,7 @@ func (r *ReplayCmd) getReplayAvailability(
 	response, err := r.client.Replay().V1().GetAvailability(ctx, replayV1.GetAvailabilityRequest{
 		Project:       config.Project,
 		SLOName:       config.SLO,
-		Type:          replayV1.ReplayTypeReimportAndRecalculation,
+		Type:          config.replayType(),
 		DurationUnit:  durationUnit,
 		DurationValue: durationValue,
 	})
@@ -575,6 +581,9 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 		return "You've exceeded the limit of concurrent Replay runs. Wait until the current Replay(s) are done."
 	case replayV1.ReplayAvailabilityReasonUnknownAgentVersion:
 		return "Your Agent isn't connected to the Data Source. Deploy the Agent and run Replay once again."
+	case replayV1.ReplayAvailabilityReasonCompositeSloNotSupported:
+		return "Replay is available only for composite SLOs v2, and only if it's enabled for your organization." +
+			" To enable it, contact Nobl9 support."
 	default:
 		return reason.String()
 	}

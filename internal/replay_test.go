@@ -2,11 +2,13 @@ package internal
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,6 +16,7 @@ import (
 	"github.com/nobl9/nobl9-go/manifest/v1alpha"
 	"github.com/nobl9/nobl9-go/sdk"
 	replayV1 "github.com/nobl9/nobl9-go/sdk/endpoints/replay/v1"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -127,4 +130,88 @@ type replayRoundTripper func(*http.Request) (*http.Response, error)
 
 func (f replayRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
 	return f(request)
+}
+
+func TestMatchReplaysToSLOsReportsUnmatchedSLOs(t *testing.T) {
+	replays := []ReplayConfig{{Project: "project", SLO: "missing-slo"}}
+
+	matched, missing := matchReplaysToSLOs(replays, nil)
+
+	assert.Empty(t, matched)
+	assert.Equal(t, []string{"'missing-slo' SLO in 'project' Project"}, missing)
+}
+
+func TestRunReplaysSendsRecalculationOnlyForCompositeSLOs(t *testing.T) {
+	compositeSpec := map[string]any{"objectives": []any{map[string]any{
+		"name": "composite", "target": 0.95, "composite": map[string]any{},
+	}}}
+	regularSpec := map[string]any{"indicator": map[string]any{
+		"metricSource": map[string]any{"name": "ds", "project": "target-project"},
+	}}
+	for name, test := range map[string]struct {
+		spec         map[string]any
+		expectedType string
+	}{
+		"composite SLO": {spec: compositeSpec, expectedType: string(replayV1.ReplayTypeRecalculation)},
+		"regular SLO":   {spec: regularSpec, expectedType: ""},
+	} {
+		t.Run(name, func(t *testing.T) {
+			apiURL, err := url.Parse("https://example.com/api")
+			require.NoError(t, err)
+			client, err := sdk.NewClient(&sdk.Config{
+				DisableOkta:  true,
+				Organization: "test-organization",
+				Project:      "target-project",
+				URL:          apiURL,
+			})
+			require.NoError(t, err)
+
+			var runRequest map[string]any
+			var availabilityQuery url.Values
+			client.HTTP = &http.Client{
+				Transport: replayRoundTripper(func(request *http.Request) (*http.Response, error) {
+					recorder := httptest.NewRecorder()
+					recorder.Header().Set("Content-Type", "application/json")
+					switch {
+					case strings.Contains(request.URL.Path, "timemachine/availability"):
+						availabilityQuery = request.URL.Query()
+						assert.NoError(t, json.NewEncoder(recorder).Encode(
+							replayV1.ReplayAvailability{Available: true},
+						))
+					case request.Method == http.MethodPost && strings.HasSuffix(request.URL.Path, "/timetravel"):
+						assert.NoError(t, json.NewDecoder(request.Body).Decode(&runRequest))
+						recorder.WriteHeader(http.StatusCreated)
+					default:
+						assert.NoError(t, json.NewEncoder(recorder).Encode([]v1alpha.GenericObject{{
+							"apiVersion": manifest.VersionV1alpha,
+							"kind":       manifest.KindSLO,
+							"metadata":   map[string]any{"name": "target-slo", "project": "target-project"},
+							"spec":       test.spec,
+						}}))
+					}
+					return recorder.Result(), nil
+				}),
+			}
+
+			replay := ReplayCmd{client: client, playlistsAvailable: true}
+			cmd := &cobra.Command{}
+			cmd.SetOut(io.Discard)
+			cmd.SetContext(t.Context())
+
+			failed, err := replay.RunReplays(cmd, []ReplayConfig{{
+				Project: "target-project",
+				SLO:     "target-slo",
+				From:    time.Now().Add(-10 * time.Minute),
+			}})
+
+			require.NoError(t, err)
+			assert.Zero(t, failed)
+			replayType, hasReplayType := runRequest["replayType"]
+			assert.Equal(t, test.expectedType != "", hasReplayType)
+			if hasReplayType {
+				assert.Equal(t, test.expectedType, replayType)
+			}
+			assert.Equal(t, test.expectedType, availabilityQuery.Get("type"))
+		})
+	}
 }
