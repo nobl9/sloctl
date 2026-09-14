@@ -191,7 +191,8 @@ func TestRunReplaysSendsRecalculationOnlyForCompositeSLOs(t *testing.T) {
 					case strings.Contains(request.URL.Path, "timemachine/availability"):
 						availabilityQuery = request.URL.Query()
 						assert.NoError(t, json.NewEncoder(recorder).Encode(
-							replayV1.ReplayAvailability{Available: true}))
+							replayV1.ReplayAvailability{Available: true},
+						))
 					case request.Method == http.MethodPost && strings.HasSuffix(request.URL.Path, "/timetravel"):
 						assert.NoError(t, json.NewDecoder(request.Body).Decode(&runRequest))
 						recorder.WriteHeader(http.StatusCreated)

@@ -211,7 +211,7 @@ func (r ReplayConfig) ToReplay(timeNow time.Time) replayV1.RunRequest {
 	}
 }
 
-// Regular SLOs leave the type unset so the server applies its default.
+// replayType leaves regular SLOs unset so the server applies its default.
 func (r ReplayConfig) replayType() replayV1.ReplayType {
 	if r.isComposite {
 		return replayV1.ReplayTypeRecalculation
