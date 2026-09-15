@@ -1,23 +1,19 @@
-# Update Adjustment Events using a file:
-cat <<EOF > ./events.yaml
-- eventStart: 2024-10-24T04:07:04Z
-  eventEnd: 2024-10-24T05:27:04Z
+# Identify one event and provide its replacement timestamps.
+cat <<'EOF' >./events.yaml
+- eventStart: 2025-04-07T01:00:00Z
+  eventEnd: 2025-04-07T02:00:00Z
   slos:
-  - project: test-project
-    name: sample-slo-1
+    - project: my-project
+      name: my-slo
   update:
-    eventStart: 2024-10-24T03:07:04Z
-    eventEnd: 2024-10-24T04:27:04Z
-- eventStart: 2024-10-25T04:07:04Z
-  eventEnd: 2024-10-25T05:27:04Z
-  slos:
-  - project: test-project
-    name: sample-slo-2
-  update:
-    eventStart: 2024-10-25T03:07:04Z
-    eventEnd: 2024-10-25T04:27:04Z
+    eventStart: 2025-04-07T03:00:00Z
+    eventEnd: 2025-04-07T04:00:00Z
 EOF
-sloctl budgetadjustments events update --adjustment-name=sample-adjustment-name -f ./events.yaml
+sloctl budgetadjustments events update \
+  --adjustment-name maintenance \
+  --file ./events.yaml
 
-# Update Adjustment Events using stdin:
-sloctl budgetadjustments events update --adjustment-name=sample-adjustment-name -f - <./events.yaml
+# Read the same definition from standard input.
+sloctl budgetadjustments events update \
+  --adjustment-name maintenance \
+  --file - <./events.yaml

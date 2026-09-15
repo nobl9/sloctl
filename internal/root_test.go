@@ -92,3 +92,15 @@ func Test_executeRootCommand_TimeoutHint(t *testing.T) {
 		})
 	}
 }
+
+func TestRootHelpDoesNotRepeatCommandHelpHint(t *testing.T) {
+	t.Parallel()
+
+	cmd := NewRootCmd()
+	var output bytes.Buffer
+	cmd.SetOut(&output)
+
+	require.NoError(t, cmd.Help())
+	assert.NotContains(t, output.String(), "Run `sloctl <command> --help`")
+	assert.Contains(t, output.String(), `Use "sloctl [command] --help"`)
+}

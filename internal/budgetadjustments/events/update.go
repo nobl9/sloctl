@@ -27,8 +27,13 @@ func NewUpdateCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 	update := &UpdateCmd{}
 
 	cmd := &cobra.Command{
-		Use:     "update",
-		Short:   "Update existing past events with new values. Values for eventStart and eventEnd are required.",
+		Use:   "update",
+		Short: "Update past budget adjustment events",
+		Long: "Update past events for one budget adjustment. Only events that ended within the last 30 days " +
+			"can be updated. Updates recalculate affected SLO error budgets and can alter reliability reports.\n\n" +
+			"Provide YAML input from a local file or standard input. Identify each event by its existing " +
+			"timestamps and SLOs, and provide the replacement timestamps under `update`. Separate multiple " +
+			"YAML documents with `---`.",
 		Example: updateExample,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			update.client = clientProvider.GetClient()

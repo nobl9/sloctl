@@ -1,12 +1,13 @@
-Edit resources from the default editor.
+Fetch selected resources into a temporary YAML file and open it for editing.
+Use `{{ .EditorEnvSloctl }}` if set, otherwise `{{ .EditorEnvSystem }}`.
+If neither is set, sloctl uses the platform default.
+On Windows, the default is `{{ .DefaultEditorWindows }}`.
+On Unix systems, it is the first available editor from `{{ .DefaultEditorUnixVim }}`, `{{ .DefaultEditorUnixVi }}`, and `{{ .DefaultEditorUnixFallback }}`.
 
-The edit command allows you to directly edit Nobl9 resources like SLOs or Alert Policies.
-It will open the editor defined by your {{ .EditorEnvSloctl }} or {{ .EditorEnvSystem }} environment variables.
-If neither is defined, it falls back to:
-- {{ .DefaultEditorWindows }} for Windows
-- or the first available editor from: {{ .DefaultEditorUnixVim }}, {{ .DefaultEditorUnixVi }}, {{ .DefaultEditorUnixFallback }} for Unix systems, including macOS
+Saving an empty or unchanged file cancels the operation.
+Removing a resource from the file does not delete it.
+You cannot change its kind, name, or project.
+Invalid YAML or server errors reopen the editor with error details.
 
-When attempting to open the editor, sloctl will first attempt to use the shell defined in the {{ .ShellEnv }} environment variable.
-If this is not defined, the default shell will be used, which is {{ .DefaultShellUnix }} for Unix systems or {{ .DefaultShellWindows }} for Windows.
-
-In the event an error occurs while applying your changes, a temporary file will be preserved on disk with your unapplied changes.
+If the editor fails, sloctl preserves the temporary file and prints its path.
+It also preserves the file and prints its path if you abandon invalid changes without fixing or reverting them.

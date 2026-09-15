@@ -27,6 +27,27 @@ Continuous integration pipelines utilize the same Makefile commands which
 you run locally. This ensures consistent behavior of the executed checks
 and makes local debugging easier.
 
+## Command-reference data
+
+Run `make generate/docs-data` to export the Cobra command tree to
+`docs/sloctl-command-reference.json`.
+The versioned JSON document contains each Cobra command's short description,
+command descriptions as Markdown,
+usage and example text,
+visible local and inherited options,
+and the nested command hierarchy.
+It does not contain MDX layout or documentation-site customizations;
+those belong to the `nobl9/documentation` renderer.
+The renderer can use the command `path` as a stable key for supplemental content.
+It must append that content to `descriptionMarkdown` before rendering the command.
+This keeps MDX components, site navigation links,
+and other site-only details in the description block,
+before usage, examples, and options.
+
+The documentation renderer rejects unsupported schema versions.
+Deploy support for a new schema version there before changing
+`commandReferenceSchemaVersion` in sloctl.
+
 ## Object model caveat
 
 Sloctl configures the v1alpha parser to use [v1alpha.GenericObject].

@@ -1,12 +1,13 @@
-# Get Adjustment Events for 'sample-adjustment-name' from 2024-09-23T00:45:00 UTC to 2024-09-23T20:46:00 UTC.
-sloctl budgetadjustments events get --adjustment-name=sample-adjustment-name --from=2024-09-23T00:45:00Z --to=2024-09-23T20:46:00Z
-
-
-# Get Adjustment Events for 'sample-adjustment-name' from 2024-09-23T00:45:00 UTC to 2024-09-23T20:46:00 UTC
-# only for one slo with sloName and project filters.
+# Get events for one budget adjustment in a time range.
 sloctl budgetadjustments events get \
-  --adjustment-name=sample-adjustment-name \
-  --from=2024-09-23T00:45:00Z \
-  --to=2024-09-23T20:46:00Z \
-  --slo-project=sample-project-name \
-  --slo-name=sample-slo-name
+  --adjustment-name maintenance \
+  --from 2025-04-07T00:00:00Z \
+  --to 2025-04-08T00:00:00Z
+
+# Filter the events by one SLO and its Project.
+sloctl budgetadjustments events get \
+  --adjustment-name maintenance \
+  --from 2025-04-07T00:00:00Z \
+  --to 2025-04-08T00:00:00Z \
+  --slo-project my-project \
+  --slo-name my-slo

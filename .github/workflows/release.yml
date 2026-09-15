@@ -31,6 +31,8 @@ jobs:
         with:
           go-version-file: go.mod
           check-latest: true
+      - name: Verify generated files
+        run: make check/generate
       - name: Release Binaries
         uses: goreleaser/goreleaser-action@v7.2.3
         with:

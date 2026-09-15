@@ -75,9 +75,20 @@ func (v *ValidateCmd) NewSLICmd(clientProvider func() *sdk.Client) *cobra.Comman
 
 	cmd := &cobra.Command{
 		Use:   "sli [slo-name]",
-		Short: "Validate SLI queries by querying data source values.",
-		Long: "Validate SLI queries by querying data source values for SLO manifests or an existing SLO. " +
-			"By default, it validates the last 15 minutes.",
+		Short: "Query data sources to validate SLI queries",
+		Long: "Query the data source configured by an SLO and return the values produced by each SLI query.\n\n" +
+			"Provide either an existing SLO name or one or more SLO manifests with `--file`. " +
+			"For file input, use `--slo` and `--objective` to limit validation.\n\n" +
+			"The default time range is the last 15 minutes, and a range cannot exceed one hour. " +
+			"At most 50 SLI queries can be validated at once. Query failures are reported and cause a non-zero exit status.",
+		Example: `# Validate all SLI queries for an existing SLO in the default Project.
+sloctl validate sli checkout
+
+# Validate one objective from a manifest over the last 30 minutes.
+sloctl validate sli --file ./slo.yaml --slo checkout --objective availability --last 30m
+
+# Validate an explicit time range and return JSON.
+sloctl validate sli checkout --from 2026-07-02T10:00:00Z --to 2026-07-02T10:30:00Z --output json`,
 		Args: validateSLI.arguments,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			validateSLI.validate.client = clientProvider()
@@ -88,13 +99,14 @@ func (v *ValidateCmd) NewSLICmd(clientProvider func() *sdk.Client) *cobra.Comman
 	validateSLI.printer.MustRegisterFlags(cmd)
 	registerFileFlag(cmd, false, &validateSLI.definitionPaths)
 	cmd.Flags().StringVarP(&validateSLI.project, "project", "p", "",
-		"Specifies the Project for the SLO selected by name, or assigns a default Project to SLOs read from a file.")
-	cmd.Flags().StringVar(&validateSLI.sloFilter, "slo", "", "Filters SLOs read from a file by name.")
-	cmd.Flags().StringVar(&validateSLI.objectiveFilter, "objective", "", "Filters SLO objectives by name.")
+		"Project of an SLO selected by name, or the default Project for file definitions that omit one. "+
+			"Project names specified in file definitions must match this value.")
+	cmd.Flags().StringVar(&validateSLI.sloFilter, "slo", "", "Select one SLO by name from file input.")
+	cmd.Flags().StringVar(&validateSLI.objectiveFilter, "objective", "", "Validate only the named objective.")
 	cmd.Flags().DurationVar(&validateSLI.last, "last", defaultValidateSLILast,
-		"Sets a relative validation time range ending now. Maximum value is 1h.")
-	flags.RegisterTimeVar(cmd, &validateSLI.from, "from", "Sets the validation time range start.")
-	flags.RegisterTimeVar(cmd, &validateSLI.to, "to", "Sets the validation time range end.")
+		"Validation time range ending now. Maximum value is 1h.")
+	flags.RegisterTimeVar(cmd, &validateSLI.from, "from", "Start of the validation time range.")
+	flags.RegisterTimeVar(cmd, &validateSLI.to, "to", "End of the validation time range.")
 
 	return cmd
 }

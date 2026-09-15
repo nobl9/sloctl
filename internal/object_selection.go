@@ -46,9 +46,10 @@ func registerObjectSelectionFlags(
 		registerSLOServiceFlag(cmd, &selection.services)
 	}
 	if kind == manifest.KindBudgetAdjustment {
-		registerProjectFlag(cmd, &selection.project)
+		cmd.Flags().StringVarP(&selection.project, "project", "p", "",
+			"Filter budget adjustments by SLO project. Must be used with --slo.")
 		cmd.Flags().StringVarP(&selection.slo, "slo", "", "",
-			`Filter resource by SLO name. Example: my-sample-slo-name.`)
+			"Filter budget adjustments by SLO name. Must be used with --project.")
 		cmd.MarkFlagsRequiredTogether("slo", "project")
 	}
 	if kind == manifest.KindAnnotation {
@@ -64,7 +65,7 @@ func buildObjectSelectionQuery(kind manifest.Kind, names []string, selection obj
 	if len(selection.services) > 0 && kind == manifest.KindSLO {
 		query[objectsV1.QueryKeyServiceName] = selection.services
 	}
-	if len(selection.slo) > 0 && len(selection.project) > 0 && kind == manifest.KindBudgetAdjustment {
+	if selection.slo != "" && selection.project != "" && kind == manifest.KindBudgetAdjustment {
 		query.Set(objectsV1.QueryKeySLOProjectName, selection.project)
 		query.Set(objectsV1.QueryKeySLOName, selection.slo)
 	}
@@ -75,43 +76,68 @@ func objectKindSupportsSelectionProjectFlag(kind manifest.Kind) bool {
 	return objectKindSupportsProjectFlag(kind) || kind == manifest.KindBudgetAdjustment
 }
 
+func humanReadablePluralForKind(kind manifest.Kind) string {
+	switch kind {
+	case manifest.KindAlertMethod:
+		return "alert methods"
+	case manifest.KindAlertPolicy:
+		return "alert policies"
+	case manifest.KindAlertSilence:
+		return "alert silences"
+	case manifest.KindBudgetAdjustment:
+		return "budget adjustments"
+	case manifest.KindDataExport:
+		return "data exports"
+	case manifest.KindDirect:
+		return "direct data sources"
+	case manifest.KindRoleBinding:
+		return "role bindings"
+	case manifest.KindSLO:
+		return "SLOs"
+	case manifest.KindUserGroup:
+		return "user groups"
+	default:
+		return strings.ToLower(pluralForKind(kind))
+	}
+}
+
 func registerAnnotationSelectionFlags(cmd *cobra.Command, selection *objectSelectionFlags) {
 	cmd.Flags().StringVar(
 		&selection.slo,
 		"slo",
 		"",
-		"Get annotations for a given SLO (name) only.",
+		"Filter annotations by SLO name.",
 	)
 	flags.RegisterTimeVar(
 		cmd,
 		&selection.annotationFrom,
 		"from",
-		"Get annotations which have 'spec.startTime' after or equal to the given time.",
+		"Filter annotations whose spec.startTime is at or after this RFC3339 timestamp.",
 	)
 	flags.RegisterTimeVar(
 		cmd,
 		&selection.annotationTo,
 		"to",
-		"Get annotations which have 'spec.endTime' before or equal to the given time.",
+		"Filter annotations whose spec.endTime is at or before this RFC3339 timestamp.",
 	)
 	cmd.Flags().BoolVar(
 		&selection.annotationUserCategories,
 		"user",
 		false,
-		"Get annotations which were created by user actions.",
+		"Include annotations in user categories.",
 	)
 	cmd.Flags().BoolVar(
 		&selection.annotationSystemCategories,
 		"system",
 		false,
-		"Get annotations which were automatically created by Nobl9 platform.",
+		"Include annotations in system categories.",
 	)
 	cmd.Flags().StringArrayVar(
 		&selection.annotationCategories,
 		"category",
 		nil,
 		fmt.Sprintf(
-			"Filter annotations by their category (one of: %s).",
+			"Filter by annotation category (one of: %s). Repeat to select multiple categories.",
 			strings.Join(stringsTypeToStrings(v1alphaAnnotation.CategoryValues()), ", "),
 		),
 	)
