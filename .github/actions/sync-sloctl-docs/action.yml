@@ -1,5 +1,5 @@
-name: Run sloctl docs synchronization attempt
-description: Dispatch and monitor one documentation update attempt.
+name: Sync sloctl docs
+description: Dispatch and monitor a sloctl documentation update.
 
 inputs:
   docs-repository:

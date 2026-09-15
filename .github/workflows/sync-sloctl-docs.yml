@@ -57,7 +57,7 @@ jobs:
           permission-actions: write
 
       - name: Run documentation update
-        uses: ./.github/actions/sync-sloctl-docs-attempt
+        uses: ./.github/actions/sync-sloctl-docs
         with:
           docs-repository: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
           expected-run-name: sloctl docs from release run ${{ github.event.workflow_run.id }}
