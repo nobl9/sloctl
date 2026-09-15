@@ -41,8 +41,13 @@ opens a pull request,
 waits for the exact required checks,
 automatically squash-merges the update,
 and verifies that the exact merge commit's production `build-deploy` run succeeds.
-The dispatcher retries a failed documentation run up to three times
-to recover from concurrent changes to the documentation repository.
+
+The synchronization script allows up to three attempts
+for each GitHub API read and for monitoring.
+The job has a 55-minute timeout to stay within the App token's one-hour lifetime.
+If synchronization fails, rerun `Sync sloctl docs` from GitHub Actions.
+A rerun skips a successful documentation run or resumes monitoring an active run.
+After a failed documentation run, a rerun dispatches a new update.
 
 The dispatcher requires the following repository configuration:
 

@@ -21,7 +21,8 @@ jobs:
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
-    timeout-minutes: 240
+    # Keep the job within the GitHub App token's one-hour lifetime.
+    timeout-minutes: 55
     steps:
       - name: Validate official release
         env:
@@ -45,8 +46,8 @@ jobs:
       - name: Check out sloctl
         uses: actions/checkout@v4
 
-      - name: Create GitHub App token for attempt 1
-        id: app_token_1
+      - name: Create GitHub App token
+        id: app_token
         uses: actions/create-github-app-token@v3
         with:
           client-id: ${{ vars.DOCS_AUTOMATION_CLIENT_ID }}
@@ -55,9 +56,7 @@ jobs:
           repositories: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
           permission-actions: write
 
-      - name: Run documentation update attempt 1
-        id: attempt_1
-        continue-on-error: true
+      - name: Run documentation update
         uses: ./.github/actions/sync-sloctl-docs-attempt
         with:
           docs-repository: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
@@ -65,50 +64,4 @@ jobs:
           sloctl-sha: ${{ github.event.workflow_run.head_sha }}
           sloctl-tag: ${{ github.event.workflow_run.head_branch }}
           source-run-id: ${{ github.event.workflow_run.id }}
-          token: ${{ steps.app_token_1.outputs.token }}
-
-      - name: Create GitHub App token for attempt 2
-        if: steps.attempt_1.outcome == 'failure'
-        id: app_token_2
-        uses: actions/create-github-app-token@v3
-        with:
-          client-id: ${{ vars.DOCS_AUTOMATION_CLIENT_ID }}
-          private-key: ${{ secrets.DOCS_AUTOMATION_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-          repositories: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
-          permission-actions: write
-
-      - name: Run documentation update attempt 2
-        if: steps.attempt_1.outcome == 'failure'
-        id: attempt_2
-        continue-on-error: true
-        uses: ./.github/actions/sync-sloctl-docs-attempt
-        with:
-          docs-repository: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
-          expected-run-name: sloctl docs from release run ${{ github.event.workflow_run.id }}
-          sloctl-sha: ${{ github.event.workflow_run.head_sha }}
-          sloctl-tag: ${{ github.event.workflow_run.head_branch }}
-          source-run-id: ${{ github.event.workflow_run.id }}
-          token: ${{ steps.app_token_2.outputs.token }}
-
-      - name: Create GitHub App token for attempt 3
-        if: steps.attempt_2.outcome == 'failure'
-        id: app_token_3
-        uses: actions/create-github-app-token@v3
-        with:
-          client-id: ${{ vars.DOCS_AUTOMATION_CLIENT_ID }}
-          private-key: ${{ secrets.DOCS_AUTOMATION_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-          repositories: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
-          permission-actions: write
-
-      - name: Run documentation update attempt 3
-        if: steps.attempt_2.outcome == 'failure'
-        uses: ./.github/actions/sync-sloctl-docs-attempt
-        with:
-          docs-repository: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
-          expected-run-name: sloctl docs from release run ${{ github.event.workflow_run.id }}
-          sloctl-sha: ${{ github.event.workflow_run.head_sha }}
-          sloctl-tag: ${{ github.event.workflow_run.head_branch }}
-          source-run-id: ${{ github.event.workflow_run.id }}
-          token: ${{ steps.app_token_3.outputs.token }}
+          token: ${{ steps.app_token.outputs.token }}
