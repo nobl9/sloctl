@@ -99,7 +99,8 @@ sloctl validate sli checkout --from 2026-07-02T10:00:00Z --to 2026-07-02T10:30:0
 	validateSLI.printer.MustRegisterFlags(cmd)
 	registerFileFlag(cmd, false, &validateSLI.definitionPaths)
 	cmd.Flags().StringVarP(&validateSLI.project, "project", "p", "",
-		"Project of an SLO selected by name, or the default Project for file definitions that omit one.")
+		"Project of an SLO selected by name, or the default Project for file definitions that omit one. "+
+			"Project names specified in file definitions must match this value.")
 	cmd.Flags().StringVar(&validateSLI.sloFilter, "slo", "", "Select one SLO by name from file input.")
 	cmd.Flags().StringVar(&validateSLI.objectiveFilter, "objective", "", "Validate only the named objective.")
 	cmd.Flags().DurationVar(&validateSLI.last, "last", defaultValidateSLILast,

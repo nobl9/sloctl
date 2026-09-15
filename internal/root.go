@@ -76,10 +76,12 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.PersistentFlags().StringVarP(&root.Flags.Context, "context", "c", "",
 		"Use this context instead of the configured default for the selected command.")
 	_ = rootCmd.RegisterFlagCompletionFunc("context", root.completeContextFlag)
-	noConfigFileUsage := "Do not read or create config.toml; authenticate with SLOCTL_CLIENT_ID and SLOCTL_CLIENT_SECRET."
+	noConfigFileUsage := "For API authentication, use SLOCTL_CLIENT_ID and SLOCTL_CLIENT_SECRET without reading or " +
+		"creating config.toml. Configuration commands still access the file."
 	rootCmd.PersistentFlags().BoolVarP(&root.Flags.NoConfigFile, "no-config-file", "", false, noConfigFileUsage)
 	setFlagDescriptions(rootCmd, "no-config-file", noConfigFileUsage,
-		"Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`.")
+		"For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or "+
+			"creating `config.toml`. Configuration commands still access the file.")
 
 	rootCmd.AddCommand(root.NewApplyCmd())
 	rootCmd.AddCommand(root.NewDeleteCmd())

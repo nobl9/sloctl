@@ -76,8 +76,8 @@ func (c *ConfigCmd) AddContextCommand() *cobra.Command {
 		Short: "Add a configuration context",
 		Long: `Add a context through an interactive form.
 The form collects credentials, the Nobl9 instance, and a default Project.
-The first context becomes the default automatically; for later contexts,
-choose whether to make the new context the default.`,
+If the configuration contains no contexts, the new context becomes the default.
+Otherwise, choose whether to make it the default.`,
 		Example: `# Add a context interactively.
 sloctl config add-context`,
 		RunE: func(cmd *cobra.Command, args []string) error {

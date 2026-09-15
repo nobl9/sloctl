@@ -129,7 +129,7 @@ func newSubcommand(
 ) *cobra.Command {
 	resourceName := humanReadablePluralForKind(kind)
 	longDesc := fmt.Sprintf(
-		"Delete one or more %s by positional name. At least one name is required.",
+		"Delete one or more %s by name. At least one name is required.",
 		resourceName,
 	)
 	if objectKindSupportsProjectFlag(kind) {

@@ -20,7 +20,7 @@
       },
       {
         "syntax": "--no-config-file",
-        "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+        "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
       }
     ],
     "inheritedOptions": [],
@@ -55,7 +55,7 @@
           },
           {
             "syntax": "-y, --yes",
-            "description": "Skip the file-count confirmation prompt. By default, the prompt appears when a directory or glob resolves to more than 23 files. Configure the top-level `filesPromptEnabled` and `filesPromptThreshold` settings in `config.toml`, or use the matching `SLOCTL_*` environment variables."
+            "description": "Skip the file-count confirmation prompt. By default, the prompt appears when a directory or glob resolves to more than 23 files. Configure `filesPromptEnabled` and `filesPromptThreshold` in the `[sloctl]` section of `config.toml`, or set `SLOCTL_FILES_PROMPT_ENABLED` and `SLOCTL_FILES_PROMPT_THRESHOLD`."
           }
         ],
         "inheritedOptions": [
@@ -73,7 +73,7 @@
           },
           {
             "syntax": "--no-config-file",
-            "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
         "subcommands": []
@@ -108,7 +108,7 @@
           },
           {
             "syntax": "--no-config-file",
-            "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
         "subcommands": [
@@ -139,7 +139,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -175,7 +175,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -208,7 +208,7 @@
           },
           {
             "syntax": "--no-config-file",
-            "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
         "subcommands": [
@@ -234,7 +234,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": [
@@ -270,7 +270,7 @@
                   },
                   {
                     "syntax": "--no-config-file",
-                    "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                    "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
                   }
                 ],
                 "subcommands": []
@@ -327,7 +327,7 @@
                   },
                   {
                     "syntax": "--no-config-file",
-                    "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                    "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
                   }
                 ],
                 "subcommands": []
@@ -364,7 +364,7 @@
                   },
                   {
                     "syntax": "--no-config-file",
-                    "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                    "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
                   }
                 ],
                 "subcommands": []
@@ -394,7 +394,7 @@
           },
           {
             "syntax": "--no-config-file",
-            "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
         "subcommands": [
@@ -425,7 +425,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -457,7 +457,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -489,7 +489,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -521,7 +521,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -549,7 +549,7 @@
           },
           {
             "syntax": "--no-config-file",
-            "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
         "subcommands": [
@@ -557,7 +557,7 @@
             "name": "add-context",
             "path": "sloctl config add-context",
             "shortDescription": "Add a configuration context",
-            "descriptionMarkdown": "Add a context through an interactive form.\nThe form collects credentials, the Nobl9 instance, and a default Project.\nThe first context becomes the default automatically; for later contexts,\nchoose whether to make the new context the default.",
+            "descriptionMarkdown": "Add a context through an interactive form.\nThe form collects credentials, the Nobl9 instance, and a default Project.\nIf the configuration contains no contexts, the new context becomes the default.\nOtherwise, choose whether to make it the default.",
             "usage": "sloctl config add-context [flags]",
             "example": "# Add a context interactively.\nsloctl config add-context",
             "options": [],
@@ -576,7 +576,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -621,7 +621,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -662,7 +662,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -690,7 +690,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -731,7 +731,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -759,7 +759,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -787,7 +787,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -815,7 +815,7 @@
           },
           {
             "syntax": "--no-config-file",
-            "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
         "subcommands": [
@@ -855,7 +855,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -884,7 +884,7 @@
           },
           {
             "syntax": "-y, --yes",
-            "description": "Skip the file-count confirmation prompt. By default, the prompt appears when a directory or glob resolves to more than 23 files. Configure the top-level `filesPromptEnabled` and `filesPromptThreshold` settings in `config.toml`, or use the matching `SLOCTL_*` environment variables."
+            "description": "Skip the file-count confirmation prompt. By default, the prompt appears when a directory or glob resolves to more than 23 files. Configure `filesPromptEnabled` and `filesPromptThreshold` in the `[sloctl]` section of `config.toml`, or set `SLOCTL_FILES_PROMPT_ENABLED` and `SLOCTL_FILES_PROMPT_THRESHOLD`."
           }
         ],
         "inheritedOptions": [
@@ -902,7 +902,7 @@
           },
           {
             "syntax": "--no-config-file",
-            "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
         "subcommands": [
@@ -910,7 +910,7 @@
             "name": "agents",
             "path": "sloctl delete agents",
             "shortDescription": "Delete agents by name",
-            "descriptionMarkdown": "Delete one or more agents by positional name. At least one name is required. Use `--project` to override the configured default project.",
+            "descriptionMarkdown": "Delete one or more agents by name. At least one name is required. Use `--project` to override the configured default project.",
             "usage": "sloctl delete agents \u003cname\u003e [name...] [flags]",
             "options": [
               {
@@ -937,7 +937,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -946,7 +946,7 @@
             "name": "alertmethods",
             "path": "sloctl delete alertmethods",
             "shortDescription": "Delete alert methods by name",
-            "descriptionMarkdown": "Delete one or more alert methods by positional name. At least one name is required. Use `--project` to override the configured default project.",
+            "descriptionMarkdown": "Delete one or more alert methods by name. At least one name is required. Use `--project` to override the configured default project.",
             "usage": "sloctl delete alertmethods \u003cname\u003e [name...] [flags]",
             "options": [
               {
@@ -973,7 +973,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -982,7 +982,7 @@
             "name": "alertpolicies",
             "path": "sloctl delete alertpolicies",
             "shortDescription": "Delete alert policies by name",
-            "descriptionMarkdown": "Delete one or more alert policies by positional name. At least one name is required. Use `--project` to override the configured default project.",
+            "descriptionMarkdown": "Delete one or more alert policies by name. At least one name is required. Use `--project` to override the configured default project.",
             "usage": "sloctl delete alertpolicies \u003cname\u003e [name...] [flags]",
             "options": [
               {
@@ -1009,7 +1009,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1018,7 +1018,7 @@
             "name": "alertsilences",
             "path": "sloctl delete alertsilences",
             "shortDescription": "Delete alert silences by name",
-            "descriptionMarkdown": "Delete one or more alert silences by positional name. At least one name is required. Use `--project` to override the configured default project.",
+            "descriptionMarkdown": "Delete one or more alert silences by name. At least one name is required. Use `--project` to override the configured default project.",
             "usage": "sloctl delete alertsilences \u003cname\u003e [name...] [flags]",
             "options": [
               {
@@ -1045,7 +1045,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1054,7 +1054,7 @@
             "name": "annotations",
             "path": "sloctl delete annotations",
             "shortDescription": "Delete annotations by name",
-            "descriptionMarkdown": "Delete one or more annotations by positional name. At least one name is required. Use `--project` to override the configured default project.",
+            "descriptionMarkdown": "Delete one or more annotations by name. At least one name is required. Use `--project` to override the configured default project.",
             "usage": "sloctl delete annotations \u003cname\u003e [name...] [flags]",
             "options": [
               {
@@ -1081,7 +1081,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1090,7 +1090,7 @@
             "name": "budgetadjustments",
             "path": "sloctl delete budgetadjustments",
             "shortDescription": "Delete budget adjustments by name",
-            "descriptionMarkdown": "Delete one or more budget adjustments by positional name. At least one name is required.",
+            "descriptionMarkdown": "Delete one or more budget adjustments by name. At least one name is required.",
             "usage": "sloctl delete budgetadjustments \u003cname\u003e [name...] [flags]",
             "options": [
               {
@@ -1113,7 +1113,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1122,7 +1122,7 @@
             "name": "dataexports",
             "path": "sloctl delete dataexports",
             "shortDescription": "Delete data exports by name",
-            "descriptionMarkdown": "Delete one or more data exports by positional name. At least one name is required. Use `--project` to override the configured default project.",
+            "descriptionMarkdown": "Delete one or more data exports by name. At least one name is required. Use `--project` to override the configured default project.",
             "usage": "sloctl delete dataexports \u003cname\u003e [name...] [flags]",
             "options": [
               {
@@ -1149,7 +1149,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1158,7 +1158,7 @@
             "name": "directs",
             "path": "sloctl delete directs",
             "shortDescription": "Delete direct data sources by name",
-            "descriptionMarkdown": "Delete one or more direct data sources by positional name. At least one name is required. Use `--project` to override the configured default project.",
+            "descriptionMarkdown": "Delete one or more direct data sources by name. At least one name is required. Use `--project` to override the configured default project.",
             "usage": "sloctl delete directs \u003cname\u003e [name...] [flags]",
             "options": [
               {
@@ -1185,7 +1185,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1194,7 +1194,7 @@
             "name": "projects",
             "path": "sloctl delete projects",
             "shortDescription": "Delete projects by name",
-            "descriptionMarkdown": "Delete one or more projects by positional name. At least one name is required.",
+            "descriptionMarkdown": "Delete one or more projects by name. At least one name is required.",
             "usage": "sloctl delete projects \u003cname\u003e [name...] [flags]",
             "options": [
               {
@@ -1217,7 +1217,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1226,7 +1226,7 @@
             "name": "reports",
             "path": "sloctl delete reports",
             "shortDescription": "Delete reports by name",
-            "descriptionMarkdown": "Delete one or more reports by positional name. At least one name is required.",
+            "descriptionMarkdown": "Delete one or more reports by name. At least one name is required.",
             "usage": "sloctl delete reports \u003cname\u003e [name...] [flags]",
             "options": [
               {
@@ -1249,7 +1249,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1258,7 +1258,7 @@
             "name": "rolebindings",
             "path": "sloctl delete rolebindings",
             "shortDescription": "Delete role bindings by name",
-            "descriptionMarkdown": "Delete one or more role bindings by positional name. At least one name is required. Use `--project` to override the configured default project.",
+            "descriptionMarkdown": "Delete one or more role bindings by name. At least one name is required. Use `--project` to override the configured default project.",
             "usage": "sloctl delete rolebindings \u003cname\u003e [name...] [flags]",
             "options": [
               {
@@ -1285,7 +1285,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1294,7 +1294,7 @@
             "name": "services",
             "path": "sloctl delete services",
             "shortDescription": "Delete services by name",
-            "descriptionMarkdown": "Delete one or more services by positional name. At least one name is required. Use `--project` to override the configured default project.",
+            "descriptionMarkdown": "Delete one or more services by name. At least one name is required. Use `--project` to override the configured default project.",
             "usage": "sloctl delete services \u003cname\u003e [name...] [flags]",
             "options": [
               {
@@ -1321,7 +1321,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1330,7 +1330,7 @@
             "name": "slos",
             "path": "sloctl delete slos",
             "shortDescription": "Delete SLOs by name",
-            "descriptionMarkdown": "Delete one or more SLOs by positional name. At least one name is required. Use `--project` to override the configured default project.",
+            "descriptionMarkdown": "Delete one or more SLOs by name. At least one name is required. Use `--project` to override the configured default project.",
             "usage": "sloctl delete slos \u003cname\u003e [name...] [flags]",
             "options": [
               {
@@ -1357,7 +1357,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1368,7 +1368,7 @@
         "name": "edit",
         "path": "sloctl edit",
         "shortDescription": "Edit Nobl9 resources in the configured editor",
-        "descriptionMarkdown": "Fetch selected resources, write them to a temporary YAML file, and open the file in the editor selected by `SLOCTL_EDITOR`, then `EDITOR`.\nIf neither is set, sloctl uses `notepad` on Windows or the first available editor from `vim`, `vi`, and `nano` on Unix systems.\n\nSaving an empty or unchanged file cancels the operation.\nRemoving a resource from the file does not delete it, and changing its kind, name, or project is not supported.\nInvalid YAML or server errors reopen the editor with error details.\n\nIf the editor fails, or invalid changes are abandoned without being fixed or reverted, sloctl preserves the temporary file and prints its path.\n",
+        "descriptionMarkdown": "Fetch selected resources into a temporary YAML file and open it for editing.\nUse `SLOCTL_EDITOR` if set, otherwise `EDITOR`.\nIf neither is set, sloctl uses the platform default.\nOn Windows, the default is `notepad`.\nOn Unix systems, it is the first available editor from `vim`, `vi`, and `nano`.\n\nSaving an empty or unchanged file cancels the operation.\nRemoving a resource from the file does not delete it.\nYou cannot change its kind, name, or project.\nInvalid YAML or server errors reopen the editor with error details.\n\nIf the editor fails, sloctl preserves the temporary file and prints its path.\nIt also preserves the file and prints its path if you abandon invalid changes without fixing or reverting them.\n",
         "example": "# Edit one SLO.\nsloctl edit slos my-slo --project my-project\n\n# Edit multiple alert policies in one session.\nsloctl edit alertpolicies policy-a policy-b --project my-project\n\n# Preview edited changes without persisting them.\nsloctl edit services my-service --project my-project --dry-run\n\n# Use another editor for one invocation.\nSLOCTL_EDITOR=nano sloctl edit projects my-project\n",
         "options": [
           {
@@ -1391,7 +1391,7 @@
           },
           {
             "syntax": "--no-config-file",
-            "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
         "subcommands": [
@@ -1399,7 +1399,7 @@
             "name": "agents",
             "path": "sloctl edit agents",
             "shortDescription": "Edit one agent",
-            "descriptionMarkdown": "Select one agent by positional name and open it for editing. If the selection resolves to more than one agent, the command fails. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "descriptionMarkdown": "Select one agent by name and open it for editing. If the selection resolves to more than one agent, the command fails. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
             "usage": "sloctl edit agents [name] [flags]",
             "options": [
               {
@@ -1430,7 +1430,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1439,7 +1439,7 @@
             "name": "alertmethods",
             "path": "sloctl edit alertmethods",
             "shortDescription": "Edit alert methods",
-            "descriptionMarkdown": "Select alert methods by positional name or available filters and open them for editing. Without names, all matching alert methods are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "descriptionMarkdown": "Select alert methods by name or available filters and open them for editing. Without names, all matching alert methods are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
             "usage": "sloctl edit alertmethods [name...] [flags]",
             "options": [
               {
@@ -1470,7 +1470,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1479,7 +1479,7 @@
             "name": "alertpolicies",
             "path": "sloctl edit alertpolicies",
             "shortDescription": "Edit alert policies",
-            "descriptionMarkdown": "Select alert policies by positional name or available filters and open them for editing. Without names, all matching alert policies are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "descriptionMarkdown": "Select alert policies by name or available filters and open them for editing. Without names, all matching alert policies are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
             "usage": "sloctl edit alertpolicies [name...] [flags]",
             "options": [
               {
@@ -1514,7 +1514,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1523,7 +1523,7 @@
             "name": "alertsilences",
             "path": "sloctl edit alertsilences",
             "shortDescription": "Edit alert silences",
-            "descriptionMarkdown": "Select alert silences by positional name or available filters and open them for editing. Without names, all matching alert silences are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "descriptionMarkdown": "Select alert silences by name or available filters and open them for editing. Without names, all matching alert silences are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
             "usage": "sloctl edit alertsilences [name...] [flags]",
             "options": [
               {
@@ -1554,7 +1554,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1563,7 +1563,7 @@
             "name": "annotations",
             "path": "sloctl edit annotations",
             "shortDescription": "Edit annotations",
-            "descriptionMarkdown": "Select annotations by positional name or available filters and open them for editing. Without names, all matching annotations are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "descriptionMarkdown": "Select annotations by name or available filters and open them for editing. Without names, all matching annotations are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
             "usage": "sloctl edit annotations [name...] [flags]",
             "options": [
               {
@@ -1618,7 +1618,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1627,7 +1627,7 @@
             "name": "budgetadjustments",
             "path": "sloctl edit budgetadjustments",
             "shortDescription": "Edit budget adjustments",
-            "descriptionMarkdown": "Select budget adjustments by positional name or available filters and open them for editing. Without names, all matching budget adjustments are opened. `--project` and `--slo` must be supplied together when filtering by SLO. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "descriptionMarkdown": "Select budget adjustments by name or available filters and open them for editing. Without names, all matching budget adjustments are opened. `--project` and `--slo` must be supplied together when filtering by SLO. Run `sloctl edit --help` for editor selection and failure safeguards.",
             "usage": "sloctl edit budgetadjustments [name...] [flags]",
             "options": [
               {
@@ -1658,7 +1658,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1667,7 +1667,7 @@
             "name": "dataexports",
             "path": "sloctl edit dataexports",
             "shortDescription": "Edit data exports",
-            "descriptionMarkdown": "Select data exports by positional name or available filters and open them for editing. Without names, all matching data exports are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "descriptionMarkdown": "Select data exports by name or available filters and open them for editing. Without names, all matching data exports are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
             "usage": "sloctl edit dataexports [name...] [flags]",
             "options": [
               {
@@ -1698,7 +1698,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1707,7 +1707,7 @@
             "name": "directs",
             "path": "sloctl edit directs",
             "shortDescription": "Edit direct data sources",
-            "descriptionMarkdown": "Select direct data sources by positional name or available filters and open them for editing. Without names, all matching direct data sources are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "descriptionMarkdown": "Select direct data sources by name or available filters and open them for editing. Without names, all matching direct data sources are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
             "usage": "sloctl edit directs [name...] [flags]",
             "options": [
               {
@@ -1738,7 +1738,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1747,7 +1747,7 @@
             "name": "projects",
             "path": "sloctl edit projects",
             "shortDescription": "Edit projects",
-            "descriptionMarkdown": "Select projects by positional name or available filters and open them for editing. Without names, all matching projects are opened. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "descriptionMarkdown": "Select projects by name or available filters and open them for editing. Without names, all matching projects are opened. Run `sloctl edit --help` for editor selection and failure safeguards.",
             "usage": "sloctl edit projects [name...] [flags]",
             "options": [
               {
@@ -1774,7 +1774,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1783,7 +1783,7 @@
             "name": "reports",
             "path": "sloctl edit reports",
             "shortDescription": "Edit reports",
-            "descriptionMarkdown": "Select reports by positional name or available filters and open them for editing. Without names, all matching reports are opened. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "descriptionMarkdown": "Select reports by name or available filters and open them for editing. Without names, all matching reports are opened. Run `sloctl edit --help` for editor selection and failure safeguards.",
             "usage": "sloctl edit reports [name...] [flags]",
             "options": [],
             "inheritedOptions": [
@@ -1805,7 +1805,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1814,7 +1814,7 @@
             "name": "rolebindings",
             "path": "sloctl edit rolebindings",
             "shortDescription": "Edit role bindings",
-            "descriptionMarkdown": "Select role bindings by positional name or available filters and open them for editing. Without names, all matching role bindings are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "descriptionMarkdown": "Select role bindings by name or available filters and open them for editing. Without names, all matching role bindings are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
             "usage": "sloctl edit rolebindings [name...] [flags]",
             "options": [
               {
@@ -1845,7 +1845,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1854,7 +1854,7 @@
             "name": "services",
             "path": "sloctl edit services",
             "shortDescription": "Edit services",
-            "descriptionMarkdown": "Select services by positional name or available filters and open them for editing. Without names, all matching services are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "descriptionMarkdown": "Select services by name or available filters and open them for editing. Without names, all matching services are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
             "usage": "sloctl edit services [name...] [flags]",
             "options": [
               {
@@ -1889,7 +1889,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1898,7 +1898,7 @@
             "name": "slos",
             "path": "sloctl edit slos",
             "shortDescription": "Edit SLOs",
-            "descriptionMarkdown": "Select SLOs by positional name or available filters and open them for editing. Without names, all matching SLOs are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "descriptionMarkdown": "Select SLOs by name or available filters and open them for editing. Without names, all matching SLOs are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
             "usage": "sloctl edit slos [name...] [flags]",
             "options": [
               {
@@ -1937,7 +1937,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -1975,7 +1975,7 @@
           },
           {
             "syntax": "--no-config-file",
-            "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
         "subcommands": [
@@ -2018,7 +2018,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -2062,7 +2062,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -2110,7 +2110,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -2123,7 +2123,7 @@
             "name": "alerts",
             "path": "sloctl get alerts",
             "shortDescription": "Get alerts",
-            "descriptionMarkdown": "Get alerts by ID or filter. Alert IDs can also be read from standard input. Repeat the same filter to match any supplied value; different filters are combined.\n\nActive and resolved alerts are both included by default. Set `--resolved=false` or `--triggered=false` to select only one status.\n\nA filter can return no alerts when a referenced Alert Policy, SLO, Service, or Objective was deleted. Recreating a resource with the same name does not restore its old alerts. Unlinking an Alert Policy from an SLO can also hide related alerts.\n\nAlert output includes these metric-time fields:\n\n- `spec.conditions[].status.firstMetMetricTime`: when the condition first became true.\n- `spec.conditions[].status.lastsForMetMetricTime`: when the required `lastsFor` duration was met.\n- `spec.conditions[].status.lastMetMetricTime`: the last time the condition remained true.\n- `spec.coolDownStartedAtMetricTime`: when the cooldown started for a resolved alert.\n- `spec.resolutionReason`: why the alert was resolved or canceled.\n\nResults may be truncated by the API. If sloctl reports truncation, use narrower filters.",
+            "descriptionMarkdown": "Get alerts by ID or filter. Alert IDs can also be read from standard input. Repeat the same filter to match any supplied value; different filters are combined.\n\nActive and resolved alerts are both included by default. Set `--resolved=false` or `--triggered=false` to select only one status.\n\nA filter can return no alerts when a referenced Alert Policy, SLO, Service, or Objective was deleted. Recreating a resource with the same name does not restore its old alerts. Unlinking an Alert Policy from an SLO can also hide related alerts.\n\nAlert output includes these timing and resolution fields:\n\n- `spec.conditions[].status.firstMetMetricTime`: when the condition first became true.\n- `spec.conditions[].status.lastsForMetMetricTime`: when the required `lastsFor` duration was met.\n- `spec.conditions[].status.lastMetMetricTime`: the last time the condition remained true.\n- `spec.coolDownStartedAtMetricTime`: when the cooldown started for a resolved alert.\n- `spec.resolutionReason`: why the alert was resolved or canceled.\n\nResults may be truncated by the API. If sloctl reports truncation, use narrower filters.",
             "usage": "sloctl get alerts [id...] [flags]",
             "example": "# Get active and resolved alerts from all projects.\nsloctl get alerts --all-projects\n\n# Get only active alerts.\nsloctl get alerts --all-projects --triggered --resolved=false\n\n# Get only resolved alerts.\nsloctl get alerts --all-projects --resolved --triggered=false\n\n# Match either objective while also requiring the specified SLO.\nsloctl get alerts --project my-project --slo my-slo \\\n  --objective availability --objective latency\n\n# Filter by metric-time range.\nsloctl get alerts --all-projects \\\n  --from=2025-03-22T00:00:00Z \\\n  --to=2025-03-22T23:59:59Z\n",
             "options": [
@@ -2187,7 +2187,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -2231,7 +2231,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -2300,7 +2300,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -2344,7 +2344,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -2388,7 +2388,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -2432,7 +2432,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -2472,7 +2472,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -2507,7 +2507,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -2551,7 +2551,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -2599,7 +2599,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -2651,7 +2651,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -2691,7 +2691,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -2726,7 +2726,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -2760,7 +2760,7 @@
           },
           {
             "syntax": "--no-config-file",
-            "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
         "subcommands": []
@@ -2786,7 +2786,7 @@
           },
           {
             "syntax": "--no-config-file",
-            "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
         "subcommands": [
@@ -2830,7 +2830,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -2847,7 +2847,7 @@
         "options": [
           {
             "syntax": "-f, --file stringArray",
-            "description": "Path to a local YAML or JSON Replay configuration file. This flag can be specified multiple times."
+            "description": "Path to a local YAML or JSON Replay configuration file. Repeat this flag to use multiple files."
           },
           {
             "syntax": "--from time",
@@ -2881,7 +2881,7 @@
           },
           {
             "syntax": "--no-config-file",
-            "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
         "subcommands": [
@@ -2917,7 +2917,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -2962,7 +2962,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -2998,7 +2998,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
                 "syntax": "-o, --output format",
@@ -3030,7 +3030,7 @@
           },
           {
             "syntax": "--no-config-file",
-            "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
         "subcommands": [
@@ -3055,14 +3055,14 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": [
               {
                 "name": "not-started",
                 "path": "sloctl review set-status not-started",
-                "shortDescription": "Set an SLO review to notStarted",
+                "shortDescription": "Reset an SLO review to not started",
                 "descriptionMarkdown": "Set one SLO's review status to `notStarted`.\nThe Project defaults to the active context's Project.\nAvailable only when the SLO's Service has no review schedule.\n\nThis feature requires Nobl9 Enterprise Edition.",
                 "usage": "sloctl review set-status not-started \u003cslo-name\u003e [flags]",
                 "example": "sloctl review set-status not-started my-slo --project my-project",
@@ -3087,7 +3087,7 @@
                   },
                   {
                     "syntax": "--no-config-file",
-                    "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                    "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
                   }
                 ],
                 "subcommands": []
@@ -3120,7 +3120,7 @@
                   },
                   {
                     "syntax": "--no-config-file",
-                    "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                    "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
                   }
                 ],
                 "subcommands": []
@@ -3157,7 +3157,7 @@
                   },
                   {
                     "syntax": "--no-config-file",
-                    "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                    "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
                   }
                 ],
                 "subcommands": []
@@ -3194,7 +3194,7 @@
                   },
                   {
                     "syntax": "--no-config-file",
-                    "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                    "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
                   }
                 ],
                 "subcommands": []
@@ -3202,7 +3202,7 @@
               {
                 "name": "to-review",
                 "path": "sloctl review set-status to-review",
-                "shortDescription": "Set an SLO review to toReview",
+                "shortDescription": "Mark an SLO as awaiting review",
                 "descriptionMarkdown": "Set one SLO's review status to `toReview`.\nThe Project defaults to the active context's Project.\nAvailable only when the SLO's Service has a review schedule.\n\nThis feature requires Nobl9 Enterprise Edition.",
                 "usage": "sloctl review set-status to-review \u003cslo-name\u003e [flags]",
                 "example": "sloctl review set-status to-review my-slo --project my-project",
@@ -3227,7 +3227,7 @@
                   },
                   {
                     "syntax": "--no-config-file",
-                    "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                    "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
                   }
                 ],
                 "subcommands": []
@@ -3258,7 +3258,7 @@
           },
           {
             "syntax": "--no-config-file",
-            "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
         "subcommands": [
@@ -3296,7 +3296,7 @@
               },
               {
                 "syntax": "-p, --project string",
-                "description": "Project of an SLO selected by name, or the default Project for file definitions that omit one."
+                "description": "Project of an SLO selected by name, or the default Project for file definitions that omit one. Project names specified in file definitions must match this value."
               },
               {
                 "syntax": "--slo string",
@@ -3322,7 +3322,7 @@
               },
               {
                 "syntax": "--no-config-file",
-                "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
             "subcommands": []
@@ -3352,7 +3352,7 @@
           },
           {
             "syntax": "--no-config-file",
-            "description": "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET`."
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
         "subcommands": []

@@ -95,7 +95,7 @@ func (r *ReviewCmd) NewSetStatusToReviewCmd() *cobra.Command {
 	return r.newSetStatusCmd(
 		"to-review",
 		"toReview",
-		"Set an SLO review to toReview",
+		"Mark an SLO as awaiting review",
 		"sloctl review set-status to-review my-slo --project my-project",
 		false,
 	)
@@ -115,7 +115,7 @@ func (r *ReviewCmd) NewSetStatusNotStartedCmd() *cobra.Command {
 	return r.newSetStatusCmd(
 		"not-started",
 		"notStarted",
-		"Set an SLO review to notStarted",
+		"Reset an SLO review to not started",
 		"sloctl review set-status not-started my-slo --project my-project",
 		false,
 	)

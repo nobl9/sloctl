@@ -36,8 +36,8 @@ func TestGenerateCommandReference_ActualSloctlIsDeterministic(t *testing.T) {
 	})
 	assert.Contains(t, document.Command.Options, optionReference{
 		Syntax: "--no-config-file",
-		DescriptionMarkdown: "Do not read or create config.toml; authenticate with `SLOCTL_CLIENT_ID` " +
-			"and `SLOCTL_CLIENT_SECRET`.",
+		DescriptionMarkdown: "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` " +
+			"without reading or creating `config.toml`. Configuration commands still access the file.",
 	})
 
 	paths := commandPaths(document.Command)
@@ -59,14 +59,15 @@ func TestGenerateCommandReference_ActualSloctlIsDeterministic(t *testing.T) {
 	assert.Contains(t, apply.Options, optionReference{
 		Syntax: "-y, --yes",
 		DescriptionMarkdown: "Skip the file-count confirmation prompt. By default, the prompt appears when a " +
-			"directory or glob resolves to more than 23 files. Configure the top-level `filesPromptEnabled` and " +
-			"`filesPromptThreshold` settings in `config.toml`, or use the matching `SLOCTL_*` environment variables.",
+			"directory or glob resolves to more than 23 files. Configure `filesPromptEnabled` and " +
+			"`filesPromptThreshold` in the `[sloctl]` section of `config.toml`, or set `SLOCTL_FILES_PROMPT_ENABLED` " +
+			"and `SLOCTL_FILES_PROMPT_THRESHOLD`.",
 	})
 	replay := requireCommandReference(t, document.Command, "sloctl replay")
 	assert.Contains(t, replay.Options, optionReference{
 		Syntax: "-f, --file stringArray",
 		DescriptionMarkdown: "Path to a local YAML or JSON Replay configuration file. " +
-			"This flag can be specified multiple times.",
+			"Repeat this flag to use multiple files.",
 	})
 
 	agents := requireCommandReference(t, document.Command, "sloctl get agents")

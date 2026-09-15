@@ -129,12 +129,12 @@ func (e *EditCmd) newEditObjectsCommand(
 
 func editObjectsLongDescription(kind manifest.Kind, resourceName string) string {
 	if kind == manifest.KindAgent {
-		return "Select one agent by positional name and open it for editing. If the selection resolves to more " +
+		return "Select one agent by name and open it for editing. If the selection resolves to more " +
 			"than one agent, the command fails. Use `--project` to select a project or `--all-projects` to select " +
 			"across projects. Run `sloctl edit --help` for editor selection and failure safeguards."
 	}
 	description := fmt.Sprintf(
-		"Select %s by positional name or available filters and open them for editing. Without names, all matching "+
+		"Select %s by name or available filters and open them for editing. Without names, all matching "+
 			"%s are opened.",
 		resourceName,
 		resourceName,

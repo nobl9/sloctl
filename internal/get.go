@@ -187,7 +187,7 @@ func (g *GetCmd) newGetAlertCommand(cmd *cobra.Command) *cobra.Command {
 		"A filter can return no alerts when a referenced Alert Policy, SLO, Service, or Objective was deleted. " +
 		"Recreating a resource with the same name does not restore its old alerts. " +
 		"Unlinking an Alert Policy from an SLO can also hide related alerts.\n\n" +
-		"Alert output includes these metric-time fields:\n\n" +
+		"Alert output includes these timing and resolution fields:\n\n" +
 		"- `spec.conditions[].status.firstMetMetricTime`: when the condition first became true.\n" +
 		"- `spec.conditions[].status.lastsForMetMetricTime`: when the required `lastsFor` duration was met.\n" +
 		"- `spec.conditions[].status.lastMetMetricTime`: the last time the condition remained true.\n" +

@@ -54,13 +54,13 @@ func registerVerboseFlag(cmd *cobra.Command, storeIn *bool) {
 
 func registerAutoConfirmationFlag(cmd *cobra.Command, storeIn *bool) {
 	usage := "Skip the file-count confirmation prompt. By default, the prompt appears when a directory or glob " +
-		"resolves to more than 23 files. Configure the top-level filesPromptEnabled and filesPromptThreshold " +
-		"settings in config.toml, or use the matching SLOCTL_* environment variables."
+		"resolves to more than 23 files. Configure filesPromptEnabled and filesPromptThreshold in the [sloctl] " +
+		"section of config.toml, or set SLOCTL_FILES_PROMPT_ENABLED and SLOCTL_FILES_PROMPT_THRESHOLD."
 	cmd.Flags().BoolVarP(storeIn, "yes", "y", false, usage)
 	setFlagDescriptions(cmd, "yes", usage,
 		"Skip the file-count confirmation prompt. By default, the prompt appears when a directory or glob "+
-			"resolves to more than 23 files. Configure the top-level `filesPromptEnabled` and "+
-			"`filesPromptThreshold` settings in `config.toml`, or use the matching `SLOCTL_*` environment variables.")
+			"resolves to more than 23 files. Configure `filesPromptEnabled` and `filesPromptThreshold` in the "+
+			"`[sloctl]` section of `config.toml`, or set `SLOCTL_FILES_PROMPT_ENABLED` and `SLOCTL_FILES_PROMPT_THRESHOLD`.")
 }
 
 func registerProjectFlag(cmd *cobra.Command, storeIn *string) {

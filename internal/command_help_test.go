@@ -77,9 +77,9 @@ func TestCommandHelpDescribesOperationalBehavior(t *testing.T) {
 	assert.Contains(t, applyCmd.Long, "Replay is skipped during `--dry-run`")
 	assert.Contains(t, applyCmd.Flag("project").Usage, "definitions specifying another project are rejected")
 	assert.Contains(t, applyCmd.Example, "--replay --from=")
-	assert.Contains(t, applyCmd.Flag("yes").Usage, "top-level filesPromptEnabled")
+	assert.Contains(t, applyCmd.Flag("yes").Usage, "filesPromptEnabled and filesPromptThreshold in the [sloctl] section")
 	assert.Contains(t, applyCmd.Flag("yes").Usage, "more than 23 files")
-	assert.NotContains(t, applyCmd.Flag("yes").Usage, "under [sloctl]")
+	assert.NotContains(t, applyCmd.Flag("yes").Usage, "top-level")
 
 	deleteCmd := root.NewDeleteCmd()
 	assert.Equal(t, "Delete Nobl9 resources by name or definition file", deleteCmd.Short)

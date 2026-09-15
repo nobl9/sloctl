@@ -80,7 +80,7 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 	replay.printer.MustRegisterFlags(cmd)
 	registerFileFlag(cmd, false, &replay.configPaths)
 	replayFileDescription := "Path to a local YAML or JSON Replay configuration file. " +
-		"This flag can be specified multiple times."
+		"Repeat this flag to use multiple files."
 	setFlagDescriptions(cmd, flagFile, replayFileDescription, replayFileDescription)
 	cmd.Flags().StringVarP(&replay.project, "project", "p", "",
 		"Project for a single SLO, or fallback Project for file entries that omit it. "+
