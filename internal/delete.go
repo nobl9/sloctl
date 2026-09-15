@@ -35,7 +35,8 @@ func (r *RootCmd) NewDeleteCmd() *cobra.Command {
 		Short: "Delete Nobl9 resources by name or definition file",
 		Long: getApplyOrDeleteDescription(
 			"Delete resources described by one or more YAML or JSON sources. To delete resources by name, " +
-				"use a resource subcommand such as `sloctl delete slos <name>`."),
+				"use a resource subcommand such as `sloctl delete slos <name>`.",
+		),
 		Example: deleteExample,
 		Args:    noPositionalArgsCondition,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -87,7 +88,8 @@ func (r *RootCmd) NewDeleteCmd() *cobra.Command {
 			deleteCmd,
 			def.kind,
 			strings.ToLower(def.plural),
-			append(def.aliases, def.kind.ToLower(), def.kind.String())...))
+			append(def.aliases, def.kind.ToLower(), def.kind.String())...,
+		))
 	}
 
 	return cmd
@@ -103,7 +105,8 @@ func (d DeleteCmd) Run(cmd *cobra.Command) error {
 		cmd,
 		d.definitionPaths,
 		newFilesPrompt(d.client.Config.FilesPromptEnabled, d.autoConfirm, d.client.Config.FilesPromptThreshold),
-		d.projectFlagWasSet)
+		d.projectFlagWasSet,
+	)
 	if err != nil {
 		return err
 	}

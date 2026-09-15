@@ -1572,7 +1572,7 @@
               },
               {
                 "syntax": "--category stringArray",
-                "description": "Filter by annotation category (one of: Comment, ReviewNote, SloEdit, Alert, Adjustment, NoDataAnomaly, IncrementalMismatchAnomaly, NoBurnAnomaly, ConstantBurnAnomaly). Repeat to select multiple categories."
+                "description": "Filter by annotation category (one of: Comment, ReviewNote, SloEdit, Alert, Adjustment, NoDataAnomaly, IncrementalMismatchAnomaly, NoBurnAnomaly, ConstantBurnAnomaly, GoodOverTotalAnomaly). Repeat to select multiple categories."
               },
               {
                 "syntax": "--from time",
@@ -2254,7 +2254,7 @@
               },
               {
                 "syntax": "--category stringArray",
-                "description": "Filter by annotation category (one of: Comment, ReviewNote, SloEdit, Alert, Adjustment, NoDataAnomaly, IncrementalMismatchAnomaly, NoBurnAnomaly, ConstantBurnAnomaly). Repeat to select multiple categories."
+                "description": "Filter by annotation category (one of: Comment, ReviewNote, SloEdit, Alert, Adjustment, NoDataAnomaly, IncrementalMismatchAnomaly, NoBurnAnomaly, ConstantBurnAnomaly, GoodOverTotalAnomaly). Repeat to select multiple categories."
               },
               {
                 "syntax": "--from time",

@@ -46,7 +46,6 @@
     "gojq",
     "golangci",
     "gosec",
-    "govulncheck",
     "ldflags",
     "nobl",
     "openslo",
@@ -61,8 +60,6 @@
     "svcs",
     "tpng",
     "unmarshalling",
-    "vuln",
-    "vulns",
     "wrapf"
   ]
 }

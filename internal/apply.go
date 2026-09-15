@@ -40,7 +40,8 @@ func (r *RootCmd) NewApplyCmd() *cobra.Command {
 		Long: getApplyOrDeleteDescription(
 			"Apply Nobl9 resource definitions from one or more YAML or JSON sources.\n\n" +
 				"With `--replay`, Replay runs only for applied SLOs. Replay is skipped during `--dry-run`, " +
-				"and applied changes are not rolled back if Replay fails."),
+				"and applied changes are not rolled back if Replay fails.",
+		),
 		Example: applyExample,
 		Args:    noPositionalArgsCondition,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -90,7 +91,8 @@ func (a ApplyCmd) Run(cmd *cobra.Command) error {
 		cmd,
 		a.definitionPaths,
 		newFilesPrompt(a.client.Config.FilesPromptEnabled, a.autoConfirm, a.client.Config.FilesPromptThreshold),
-		a.projectFlagWasSet)
+		a.projectFlagWasSet,
+	)
 	if err != nil {
 		return err
 	}
