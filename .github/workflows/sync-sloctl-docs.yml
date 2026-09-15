@@ -49,7 +49,7 @@ jobs:
         id: app_token_1
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ vars.DOCS_AUTOMATION_APP_ID }}
+          client-id: ${{ vars.DOCS_AUTOMATION_CLIENT_ID }}
           private-key: ${{ secrets.DOCS_AUTOMATION_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
@@ -72,7 +72,7 @@ jobs:
         id: app_token_2
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ vars.DOCS_AUTOMATION_APP_ID }}
+          client-id: ${{ vars.DOCS_AUTOMATION_CLIENT_ID }}
           private-key: ${{ secrets.DOCS_AUTOMATION_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
@@ -96,7 +96,7 @@ jobs:
         id: app_token_3
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ vars.DOCS_AUTOMATION_APP_ID }}
+          client-id: ${{ vars.DOCS_AUTOMATION_CLIENT_ID }}
           private-key: ${{ secrets.DOCS_AUTOMATION_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}

@@ -48,8 +48,8 @@ The dispatcher requires the following repository configuration:
 
 - `DOCS_AUTOMATION_REPOSITORY` variable:
   destination repository name without the owner.
-- `DOCS_AUTOMATION_APP_ID` variable:
-  App ID of a dedicated GitHub App installed on the destination repository.
+- `DOCS_AUTOMATION_CLIENT_ID` variable:
+  Client ID of a dedicated GitHub App installed on the destination repository.
 
 Create a `sloctl-docs-dispatch` environment in the sloctl repository.
 Under **Deployment branches and tags**, choose **Selected branches and tags**
