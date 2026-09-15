@@ -9,7 +9,6 @@ from pathlib import Path
 
 
 RELEASE_PATH = "/repos/nobl9/sloctl/releases/latest"
-DEFAULT_RELEASE_BODY_FILE = Path(__file__).with_name("release-bodies") / "feature.md"
 
 
 class ReleaseHandler(BaseHTTPRequestHandler):
@@ -55,9 +54,7 @@ class ReleaseServer(ThreadingHTTPServer):
 
 def release_body():
     body_file = os.environ.get("RELEASE_SERVER_BODY_FILE")
-    if body_file:
-        return Path(body_file).read_text(encoding="utf-8")
-    return DEFAULT_RELEASE_BODY_FILE.read_text(encoding="utf-8")
+    return Path(body_file).read_text(encoding="utf-8") if body_file else ""
 
 
 def log_request(method, path, headers):

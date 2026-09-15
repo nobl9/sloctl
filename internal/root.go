@@ -21,14 +21,12 @@ import (
 const programName = "sloctl"
 
 // Execute may check for updates before running the requested command.
-// When the user chooses to update sloctl, it runs the update command and exits
-// without running the requested command.
+// A successful update exits without running the requested command.
+// Notification and update failures let the requested command continue.
 func Execute() {
 	switch notifications.Notify(getBuildVersion()) {
 	case notifications.ResultExitSuccess:
 		return
-	case notifications.ResultExitFailure:
-		os.Exit(1)
 	case notifications.ResultInterrupted:
 		os.Exit(130)
 	case notifications.ResultContinue:

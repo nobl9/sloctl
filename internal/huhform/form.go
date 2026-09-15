@@ -16,17 +16,13 @@ const accessibleModeEnv = "SLOCTL_ACCESSIBLE_MODE"
 
 // New returns a form configured with sloctl's shared terminal theme.
 func New(groups ...*huh.Group) *huh.Form {
-	return NewWithTheme(huh.ThemeFunc(style.HuhTheme), groups...)
-}
-
-// NewWithTheme returns a form configured with the provided terminal theme.
-func NewWithTheme(theme huh.Theme, groups ...*huh.Group) *huh.Form {
 	return huh.NewForm(groups...).
-		WithTheme(theme).
-		WithAccessible(getAccessibleEnvValue())
+		WithTheme(huh.ThemeFunc(style.HuhTheme)).
+		WithAccessible(AccessibleMode())
 }
 
-func getAccessibleEnvValue() bool {
+// AccessibleMode reports whether SLOCTL_ACCESSIBLE_MODE enables plain-text prompts.
+func AccessibleMode() bool {
 	v, ok := os.LookupEnv(accessibleModeEnv)
 	if !ok {
 		return false

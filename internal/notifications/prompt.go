@@ -1,24 +1,14 @@
 package notifications
 
 import (
+	"bufio"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
 	huh "charm.land/huh/v2"
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/glamour"
-	"golang.org/x/term"
 
 	"github.com/nobl9/sloctl/internal/huhform"
-	"github.com/nobl9/sloctl/internal/style"
-)
-
-const (
-	defaultPromptWidth   = 92
-	minPromptWidth       = 48
-	installationGuideURL = "https://github.com/nobl9/sloctl#install"
 )
 
 type updateAction string
@@ -29,83 +19,60 @@ const (
 	updateActionSkipUntilNextVersion updateAction = "skip-until-next-version"
 )
 
-type terminalInfo struct {
-	width int
-	dark  bool
-}
-
 func (n notifier) promptUpdate(
 	release githubRelease,
-	releaseNotesMarkdown string,
 	command updateCommand,
 	showUpdateForm bool,
 ) (updateAction, error) {
-	terminal := n.terminalInfo()
-	showUpdateForm = showUpdateForm && command.available()
-	n.printNotification(release, releaseNotesMarkdown, command, showUpdateForm, terminal)
-	if !showUpdateForm {
+	_, _ = fmt.Fprintf(n.stderr, "New sloctl version %s is available!\n\n", release.TagName)
+	if highlights := releaseHighlights(release.Body); highlights != "" {
+		_, _ = fmt.Fprintf(n.stderr, "%s\n\n", highlights)
+	}
+	_, _ = fmt.Fprintf(n.stderr, "📜 %s\n\n", release.HTMLURL)
+	if !showUpdateForm || !command.available() {
 		return updateActionSkip, nil
 	}
 
-	action := updateActionRunUpgrade
-	form := huhform.NewWithTheme(
-		huh.ThemeFunc(func(bool) *huh.Styles {
-			return style.HuhTheme(terminal.dark)
-		}),
+	options := updateActionOptions(command.display)
+	if huhform.AccessibleMode() {
+		return n.promptAccessibleUpdate(options)
+	}
+	action := updateActionSkip
+	form := huhform.New(
 		huh.NewGroup(
 			huh.NewSelect[updateAction]().
 				Title("Choose update action").
-				Options(updateActionOptions(command.display)...).
+				Options(options...).
 				Value(&action),
 		),
 	).
 		WithInput(n.stdin).
 		WithOutput(n.stderr)
-	return action, form.Run()
+	err := form.Run()
+	return action, err
 }
 
-func (n notifier) printNotification(
-	release githubRelease,
-	releaseNotesMarkdown string,
-	command updateCommand,
-	showUpdateForm bool,
-	terminal terminalInfo,
-) {
-	_, _ = fmt.Fprintln(n.stderr, renderNotification(release, releaseNotesMarkdown, terminal.width, terminal.dark))
-	switch {
-	case !command.available():
-		label := style.NotificationLabel(terminal.dark).Render("Installation options:")
-		link := style.NotificationLink(terminal.dark).Render(installationGuideURL)
-		_, _ = fmt.Fprintf(n.stderr, "\n%s %s\n", label, link)
-	case !showUpdateForm:
-		label := style.NotificationLabel(terminal.dark).Render("Update with:")
-		_, _ = fmt.Fprintf(n.stderr, "\n%s %s\n", label, command.display)
+func (n notifier) promptAccessibleUpdate(options []huh.Option[updateAction]) (updateAction, error) {
+	_, _ = fmt.Fprintln(n.stderr, "Choose update action")
+	for i, option := range options {
+		_, _ = fmt.Fprintf(n.stderr, "%d. %s\n", i+1, option.Key)
 	}
+	_, _ = fmt.Fprintf(n.stderr, "Enter a number between 1 and %d [2]: ", len(options))
+	// Huh's accessible selector treats EOF as a choice instead of a read failure.
+	input, err := bufio.NewReader(n.stdin).ReadString('\n')
 	_, _ = fmt.Fprintln(n.stderr)
-	separator := style.NotificationSeparator(terminal.dark).Render(strings.Repeat("─", terminal.width))
-	_, _ = fmt.Fprintln(n.stderr, separator)
-	_, _ = fmt.Fprintln(n.stderr)
-}
-
-func (n notifier) terminalInfo() terminalInfo {
-	isDark := true
-	if style.ColorEnabled() {
-		isDark = lipgloss.HasDarkBackground(n.stdin, n.stderr)
-	}
-	return terminalInfo{
-		width: notificationWidth(n.terminalWidth()),
-		dark:  isDark,
-	}
-}
-
-func (n notifier) terminalWidth() int {
-	//nolint:gosec // File descriptors are small non-negative integers.
-	fd := int(n.stderr.Fd())
-	width, _, err := term.GetSize(fd)
 	if err != nil {
-		return widthFromColumnsEnv()
+		return updateActionSkip, err
 	}
-	return width
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return updateActionSkip, nil
+	}
+	choice, err := strconv.Atoi(input)
+	if err != nil || choice < 1 || choice > len(options) {
+		return updateActionSkip, fmt.Errorf("choose a number between 1 and %d", len(options))
+	}
+	return options[choice-1].Value, nil
 }
 
 func updateActionOptions(updateCommand string) []huh.Option[updateAction] {
@@ -114,96 +81,4 @@ func updateActionOptions(updateCommand string) []huh.Option[updateAction] {
 		huh.NewOption("Skip", updateActionSkip),
 		huh.NewOption("Skip until next version", updateActionSkipUntilNextVersion),
 	}
-}
-
-func notificationWidth(terminalWidth int) int {
-	if terminalWidth <= 0 {
-		return defaultPromptWidth
-	}
-	return min(max(terminalWidth-2, minPromptWidth), defaultPromptWidth)
-}
-
-func widthFromColumnsEnv() int {
-	width, err := strconv.Atoi(os.Getenv("COLUMNS"))
-	if err != nil {
-		return defaultPromptWidth
-	}
-	return width
-}
-
-func renderNotification(release githubRelease, releaseNotesMarkdown string, width int, isDark bool) string {
-	plainReleaseNotesDisplay := displayReleaseNotesMarkdown(releaseNotesMarkdown, false)
-	hasReleaseNotes := plainReleaseNotesDisplay != ""
-	rendered := styledPlainNotification(release, plainReleaseNotesDisplay, isDark)
-	if hasReleaseNotes {
-		releaseNotesDisplay := plainReleaseNotesDisplay
-		if style.ColorEnabled() {
-			releaseNotesDisplay = displayReleaseNotesMarkdown(releaseNotesMarkdown, true)
-		}
-		markdown := strings.Join([]string{
-			"# " + releaseChangesTitle(release.TagName),
-			releaseNotesDisplay,
-			fmt.Sprintf("📜 %s", release.HTMLURL),
-		}, "\n\n")
-
-		var err error
-		rendered, err = renderMarkdownWithGlamour(markdown, width, isDark)
-		if err != nil {
-			rendered = styledPlainNotification(release, plainReleaseNotesDisplay, isDark)
-		}
-		rendered = trimTrailingLineSpace(rendered)
-	}
-	return strings.TrimSpace(rendered)
-}
-
-func renderMarkdownWithGlamour(markdown string, width int, isDark bool) (string, error) {
-	styleConfig := style.NotificationMarkdownStyle(isDark)
-	renderer, err := glamour.NewTermRenderer(
-		glamour.WithStyles(styleConfig),
-		glamour.WithWordWrap(width),
-		glamour.WithPreservedNewLines(),
-	)
-	if err != nil {
-		return "", err
-	}
-	return renderer.Render(markdown)
-}
-
-func styledPlainNotification(release githubRelease, releaseNotesDisplay string, isDark bool) string {
-	titleStyle := style.NotificationTitle(isDark)
-	linkStyle := style.NotificationLink(isDark)
-	labelStyle := style.NotificationLabel(isDark)
-	hasReleaseNotes := releaseNotesDisplay != ""
-
-	parts := []string{
-		titleStyle.Render(notificationTitle(hasReleaseNotes, release.TagName)),
-	}
-	if hasReleaseNotes {
-		parts = append(parts, releaseNotesDisplay)
-	}
-	parts = append(parts, labelStyle.Render("📜")+" "+linkStyle.Render(release.HTMLURL))
-	return strings.Join(parts, "\n\n")
-}
-
-func trimTrailingLineSpace(text string) string {
-	lines := strings.Split(text, "\n")
-	for i, line := range lines {
-		lines[i] = strings.TrimRight(line, " \t")
-	}
-	return strings.Join(lines, "\n")
-}
-
-func notificationTitle(hasReleaseNotes bool, releaseTag string) string {
-	if !hasReleaseNotes {
-		return newVersionTitle(releaseTag)
-	}
-	return releaseChangesTitle(releaseTag)
-}
-
-func newVersionTitle(releaseTag string) string {
-	return fmt.Sprintf("New sloctl version %s is available!", releaseTag)
-}
-
-func releaseChangesTitle(releaseTag string) string {
-	return fmt.Sprintf("Changes in version %s", releaseTag)
 }

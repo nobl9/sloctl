@@ -12,7 +12,6 @@ import (
 	"time"
 
 	huh "charm.land/huh/v2"
-	"github.com/charmbracelet/x/ansi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,25 +20,21 @@ func TestNotifier_promptUpdate_WithoutForm(t *testing.T) {
 	t.Setenv("SLOCTL_ACCESSIBLE_MODE", "1")
 	const goUpdateCommand = "go install github.com/nobl9/sloctl/cmd/sloctl@latest"
 	tests := map[string]struct {
-		updateCommand    updateCommand
-		showUpdateForm   bool
-		expectedGuidance string
+		updateCommand  updateCommand
+		showUpdateForm bool
 	}{
 		"detected updater": {
 			updateCommand: updateCommand{
 				display:    goUpdateCommand,
 				executable: "go",
 			},
-			expectedGuidance: "Update with: " + goUpdateCommand,
 		},
-		"installation guide": {
-			showUpdateForm:   true,
-			expectedGuidance: "Installation options: " + installationGuideURL,
+		"unknown installation": {
+			showUpdateForm: true,
 		},
 		"incomplete updater": {
-			updateCommand:    updateCommand{display: goUpdateCommand},
-			showUpdateForm:   true,
-			expectedGuidance: "Installation options: " + installationGuideURL,
+			updateCommand:  updateCommand{display: goUpdateCommand},
+			showUpdateForm: true,
 		},
 	}
 	for name, tt := range tests {
@@ -57,7 +52,6 @@ func TestNotifier_promptUpdate_WithoutForm(t *testing.T) {
 					TagName: "v1.2.3",
 					HTMLURL: "https://github.com/nobl9/sloctl/releases/tag/v1.2.3",
 				},
-				"",
 				tt.updateCommand,
 				tt.showUpdateForm,
 			)
@@ -68,11 +62,9 @@ func TestNotifier_promptUpdate_WithoutForm(t *testing.T) {
 			require.NoError(t, err)
 			output, err := io.ReadAll(stderr)
 			require.NoError(t, err)
-			plainOutput := ansi.Strip(string(output))
-			assert.Contains(t, plainOutput, "New sloctl version v1.2.3 is available!")
-			assert.Contains(t, plainOutput, "https://github.com/nobl9/sloctl/releases/tag/v1.2.3")
-			assert.Contains(t, plainOutput, tt.expectedGuidance)
-			assert.NotContains(t, plainOutput, "Choose update action")
+			assert.Equal(t,
+				"New sloctl version v1.2.3 is available!\n\n"+
+					"📜 https://github.com/nobl9/sloctl/releases/tag/v1.2.3\n\n", string(output))
 		})
 	}
 }
@@ -229,25 +221,6 @@ func Test_isReleaseNewer(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			assert.Equal(t, tt.expected, isReleaseNewer(tt.currentVersion, tt.releaseTag))
-		})
-	}
-}
-
-func Test_isReleaseNotesHeading(t *testing.T) {
-	t.Parallel()
-	tests := map[string]bool{
-		"## 🚀 Features":              true,
-		"## 🐞 Bug Fixes":             true,
-		"## ⚠️ Breaking Changes":     true,
-		"## 💻 Fixed Vulnerabilities": true,
-		"## Maintenance":             false,
-		"## Prefixes":                false,
-		"### Features":               false,
-	}
-	for heading, expected := range tests {
-		t.Run(heading, func(t *testing.T) {
-			t.Parallel()
-			assert.Equal(t, expected, isReleaseNotesHeading(heading))
 		})
 	}
 }

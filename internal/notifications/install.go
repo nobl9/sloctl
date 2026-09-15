@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const goEnvTimeout = 2 * time.Second
+const installationQueryTimeout = 2 * time.Second
 
 type updateCommand struct {
 	display    string
@@ -30,7 +30,7 @@ func detectUpdateCommand() updateCommand {
 	}
 	resolvedPath, err := filepath.EvalSymlinks(executablePath)
 	if err != nil {
-		resolvedPath = executablePath
+		return updateCommand{}
 	}
 
 	if command := homebrewUpdateCommand(resolvedPath); command.available() {
@@ -49,12 +49,12 @@ func (n notifier) runCommand(command updateCommand) error {
 }
 
 func homebrewUpdateCommand(sloctlPath string) updateCommand {
-	prefix, _, found := strings.Cut(filepath.ToSlash(sloctlPath), "/Cellar/sloctl/")
-	if !found || prefix == "" {
+	brewExecutable, err := exec.LookPath("brew")
+	if err != nil {
 		return updateCommand{}
 	}
-	brewExecutable, err := exec.LookPath(filepath.Join(filepath.FromSlash(prefix), "bin", "brew"))
-	if err != nil {
+	output, err := queryInstallation(brewExecutable, "--prefix", "--installed", "sloctl")
+	if err != nil || !isInstalledExecutable(sloctlPath, filepath.Join(strings.TrimSpace(string(output)), "bin")) {
 		return updateCommand{}
 	}
 	return updateCommand{
@@ -77,23 +77,32 @@ func goInstallUpdateCommand(sloctlPath string) updateCommand {
 }
 
 func isGoInstallExecutable(sloctlPath, goExecutable string) bool {
-	binDir := goBinDir(goExecutable)
-	if binDir == "" {
+	return isInstalledExecutable(sloctlPath, goBinDir(goExecutable))
+}
+
+func isInstalledExecutable(sloctlPath, binDir string) bool {
+	if !filepath.IsAbs(binDir) {
 		return false
 	}
 	executableName := "sloctl"
+	name := filepath.Base(sloctlPath)
 	if runtime.GOOS == "windows" {
 		executableName += ".exe"
+		name = strings.ToLower(name)
 	}
-	return isSameFile(sloctlPath, filepath.Join(binDir, executableName))
+	if name != executableName {
+		return false
+	}
+	file, err := os.Lstat(filepath.Join(binDir, executableName))
+	if err != nil || !file.Mode().IsRegular() {
+		return false
+	}
+	// Installers replace a pathname. A hard link in another directory stays outdated.
+	return isSameFile(filepath.Dir(sloctlPath), binDir)
 }
 
 func goBinDir(goExecutable string) string {
-	ctx, cancel := context.WithTimeout(context.Background(), goEnvTimeout)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, goExecutable, "env", "-json", "GOBIN", "GOPATH")
-	cmd.WaitDelay = goEnvTimeout
-	output, err := cmd.Output()
+	output, err := queryInstallation(goExecutable, "env", "-json", "GOBIN", "GOPATH")
 	if err != nil {
 		return ""
 	}
@@ -116,6 +125,14 @@ func goBinDir(goExecutable string) string {
 		return ""
 	}
 	return binDir
+}
+
+func queryInstallation(executable string, args ...string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), installationQueryTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, executable, args...)
+	cmd.WaitDelay = installationQueryTimeout
+	return cmd.Output()
 }
 
 func isSameFile(firstPath, secondPath string) bool {

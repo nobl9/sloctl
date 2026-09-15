@@ -7,57 +7,39 @@ import (
 
 var releaseMetadataPattern = regexp.MustCompile(`\s+\(#\d+\)(?:\s+@\S+)?$`)
 
-func extractReleaseNotesMarkdown(body string) string {
+func releaseHighlights(body string) string {
 	var sections []string
 	var section []string
-	inReleaseNotesSection := false
+	var includeSection, inNestedSection, hasNote bool
 	appendSection := func() {
-		markdown := strings.TrimSpace(strings.Join(section, "\n"))
-		if inReleaseNotesSection && hasTopLevelReleaseNote(markdown) {
-			sections = append(sections, markdown)
+		if includeSection && hasNote {
+			sections = append(sections, strings.TrimSpace(strings.Join(section, "\n")))
 		}
 	}
-
 	for _, line := range strings.Split(body, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if markdownHeadingLevel(trimmed) == 2 {
+		level := markdownHeadingLevel(line)
+		if level == 2 {
 			appendSection()
-			inReleaseNotesSection = isReleaseNotesHeading(trimmed)
+			includeSection = isReleaseNotesHeading(line)
+			inNestedSection, hasNote = false, false
 			section = nil
 		}
-		if inReleaseNotesSection {
-			section = append(section, line)
+		if !includeSection {
+			continue
 		}
+		if level > 2 {
+			inNestedSection = true
+		}
+		if !inNestedSection && strings.HasPrefix(line, "- ") {
+			if title := parseReleaseNote(line[2:]); title != "" {
+				line = "- " + title
+				hasNote = true
+			}
+		}
+		section = append(section, line)
 	}
 	appendSection()
-	return strings.TrimSpace(strings.Join(sections, "\n\n"))
-}
-
-func hasTopLevelReleaseNote(markdown string) bool {
-	inNestedSection := false
-	for _, line := range strings.Split(markdown, "\n") {
-		inNestedSection = updateNestedSectionState(line, inNestedSection)
-		if isTopLevelReleaseNoteLine(line, inNestedSection) {
-			return true
-		}
-	}
-	return false
-}
-
-func updateNestedSectionState(line string, current bool) bool {
-	level := markdownHeadingLevel(line)
-	switch {
-	case level == 2:
-		return false
-	case level > 2:
-		return true
-	default:
-		return current
-	}
-}
-
-func isTopLevelReleaseNoteLine(line string, inNestedSection bool) bool {
-	return !inNestedSection && strings.HasPrefix(line, "- ")
+	return strings.Join(sections, "\n\n")
 }
 
 func markdownHeadingLevel(line string) int {
@@ -75,32 +57,12 @@ func markdownHeadingLevel(line string) int {
 	return 0
 }
 
-func displayReleaseNotesMarkdown(markdown string, highlightTitles bool) string {
-	lines := strings.Split(markdown, "\n")
-	inNestedSection := false
-	for i, line := range lines {
-		inNestedSection = updateNestedSectionState(line, inNestedSection)
-		if !isTopLevelReleaseNoteLine(line, inNestedSection) {
-			continue
-		}
-		title := parseReleaseNote(line[2:])
-		if title == "" {
-			continue
-		}
-		if highlightTitles {
-			title = "**" + title + "**"
-		}
-		lines[i] = "- " + title
-	}
-	return strings.TrimSpace(strings.Join(lines, "\n"))
-}
-
 func isReleaseNotesHeading(line string) bool {
-	level := markdownHeadingLevel(line)
-	if level != 2 {
+	line = strings.TrimSpace(line)
+	if markdownHeadingLevel(line) != 2 {
 		return false
 	}
-	heading := strings.ToLower(strings.TrimSpace(line[level:]))
+	heading := strings.ToLower(strings.TrimSpace(line[2:]))
 	for _, suffix := range [...]string{
 		"features",
 		"fixes",
@@ -116,22 +78,12 @@ func isReleaseNotesHeading(line string) bool {
 }
 
 func parseReleaseNote(raw string) string {
-	title := trimReleaseNotePrefix(strings.TrimSpace(raw))
-	title = releaseMetadataPattern.ReplaceAllString(title, "")
-	return strings.TrimSpace(title)
-}
-
-func trimReleaseNotePrefix(title string) string {
-	lowerTitle := strings.ToLower(title)
-	for _, prefix := range [...]string{
-		"feat:",
-		"fix:",
-		"breaking:",
-		"sec:",
-	} {
-		if strings.HasPrefix(lowerTitle, prefix) {
-			return strings.TrimSpace(title[len(prefix):])
+	title := strings.TrimSpace(raw)
+	for _, prefix := range [...]string{"feat:", "fix:", "breaking:", "sec:"} {
+		if strings.HasPrefix(strings.ToLower(title), prefix) {
+			title = strings.TrimSpace(title[len(prefix):])
+			break
 		}
 	}
-	return title
+	return strings.TrimSpace(releaseMetadataPattern.ReplaceAllString(title, ""))
 }

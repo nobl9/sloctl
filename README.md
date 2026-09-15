@@ -100,17 +100,20 @@ brew install sloctl
 In an interactive terminal,
 sloctl checks for a newer GitHub release before running the requested command
 and caches completed checks for 24 hours.
+The notice includes release highlights when available
+and a link to the full release notes.
 It does not check in CI, for development builds,
 when standard input or standard error is not a terminal,
-or when `SLOCTL_NO_NOTIFICATIONS` is set.
+or when `SLOCTL_NO_NOTIFICATIONS` has a nonempty value.
 
 On supported terminals,
 Homebrew and `go install` installations offer to run
 their corresponding update command.
-Choosing **Update** exits after the update
-instead of running the originally requested sloctl command.
-Other installation methods show the [installation options](#install)
-and continue without an interactive prompt.
+Press **Enter** to skip the update and run the requested command.
+Choosing **Update** exits after a successful update.
+If the update or notification fails, sloctl continues with the requested command.
+Other installation methods show the same notice
+and continue without an update prompt.
 
 Choosing **Skip until next version** stores the release tag
 in the operating system's user cache.

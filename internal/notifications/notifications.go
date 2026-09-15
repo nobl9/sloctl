@@ -39,8 +39,6 @@ const (
 	ResultContinue Result = iota
 	// ResultExitSuccess exits after a successful update.
 	ResultExitSuccess
-	// ResultExitFailure exits after a failed update.
-	ResultExitFailure
 	// ResultInterrupted exits after the user cancels the update prompt.
 	ResultInterrupted
 )
@@ -48,7 +46,15 @@ const (
 // Notify checks for a newer release in eligible interactive sessions and reports
 // whether the caller should continue or exit. Checks are best-effort and cached;
 // recognized Homebrew and Go installations may offer an interactive update action.
-func Notify(currentVersion string) Result {
+func Notify(currentVersion string) (result Result) {
+	// Optional notifications must not prevent the requested command from running.
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			result = ResultContinue
+			_, _ = fmt.Fprintf(os.Stderr,
+				"failed to show update notification: %v; continuing with the requested command\n", recovered)
+		}
+	}()
 	return newNotifier(currentVersion).notify()
 }
 
@@ -108,11 +114,9 @@ func (n notifier) notify() Result {
 		return ResultContinue
 	}
 
-	releaseNotesMarkdown := extractReleaseNotesMarkdown(release.Body)
 	updateCommand := detectUpdateCommand()
 	action, err := n.promptUpdate(
 		release,
-		releaseNotesMarkdown,
 		updateCommand,
 		isUpdateFormSupported(
 			runtime.GOOS,
@@ -145,7 +149,7 @@ func (n notifier) notify() Result {
 	}
 	if err := n.runCommand(updateCommand); err != nil {
 		_, _ = fmt.Fprintf(n.stderr, "failed to update sloctl: %v\n", err)
-		return ResultExitFailure
+		return ResultContinue
 	}
 	return ResultExitSuccess
 }
