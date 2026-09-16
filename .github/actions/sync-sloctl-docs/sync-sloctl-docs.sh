@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 set -eo pipefail
 
 read_with_retry() {
@@ -44,7 +45,7 @@ view_run() {
 }
 
 existing_run="$(list_matching_run)"
-IFS=$'\t' read -r downstream_run_id run_status run_conclusion <<<"${existing_run}"
+IFS=$'\t' read -r downstream_run_id run_status run_conclusion <<< "${existing_run}"
 if [[ -n "${downstream_run_id}" && "${run_status}" == "completed" ]]; then
   if [[ "${run_conclusion}" == "success" ]]; then
     echo "Documentation workflow run ${downstream_run_id} already completed successfully."
@@ -75,7 +76,7 @@ if [[ -z "${downstream_run_id}" ]]; then
     list_exit=0
     matching_run="$(list_matching_run)" || list_exit=$?
     if ((list_exit == 0)); then
-      IFS=$'\t' read -r downstream_run_id run_status run_conclusion <<<"${matching_run}"
+      IFS=$'\t' read -r downstream_run_id run_status run_conclusion <<< "${matching_run}"
       if [[ -n "${downstream_run_id}" && "${downstream_run_id}" != "${previous_run_id}" ]]; then
         break
       fi
@@ -110,7 +111,7 @@ for watch_attempt in {1..3}; do
     echo "Could not determine the state of documentation workflow run ${downstream_run_id}. Rerun Sync sloctl docs to resume monitoring." >&2
     exit 1
   fi
-  IFS=$'\t' read -r run_status run_conclusion <<<"${run_result}"
+  IFS=$'\t' read -r run_status run_conclusion <<< "${run_result}"
   if [[ "${run_status}" == "completed" ]]; then
     if [[ "${run_conclusion}" == "success" ]]; then
       exit 0
@@ -144,7 +145,7 @@ while ((SECONDS < cancel_deadline)); do
     sleep 2
     continue
   fi
-  IFS=$'\t' read -r run_status run_conclusion <<<"${run_result}"
+  IFS=$'\t' read -r run_status run_conclusion <<< "${run_result}"
   if [[ "${run_status}" == "completed" ]]; then
     break
   fi

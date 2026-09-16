@@ -42,10 +42,8 @@ jobs:
             echo "Invalid documentation repository name: ${DOCS_REPOSITORY}" >&2
             exit 2
           fi
-
-      - name: Check out sloctl
+      - name: Checkout source
         uses: actions/checkout@v4
-
       - name: Create GitHub App token
         id: app_token
         uses: actions/create-github-app-token@v3
@@ -55,7 +53,6 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
           permission-actions: write
-
       - name: Run documentation update
         uses: ./.github/actions/sync-sloctl-docs
         with:

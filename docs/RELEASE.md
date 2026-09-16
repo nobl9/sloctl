@@ -26,62 +26,29 @@ shortcomings.
 
 ## Command reference synchronization
 
-After the complete `Release` workflow succeeds,
-the `Sync sloctl docs` workflow requests an update of the published
-command reference and waits for the documentation workflow to finish.
-If the downstream update fails,
-the synchronization workflow fails without changing the completed release.
-The release-candidate workflow does not trigger this synchronization.
-The documentation workflow validates the successful release run,
-official tag,
-and commit,
-reads the generated command-reference JSON from that exact release,
-renders the MDX in the documentation repository,
-opens a pull request,
-waits for the exact required checks,
-automatically squash-merges the update,
-and verifies that the exact merge commit's production `build-deploy` run succeeds.
+The [Sync sloctl docs](../.github/workflows/sync-sloctl-docs.yml) workflow
+runs after each successful official `Release` run.
+It updates the published command reference.
+Release candidates do not trigger synchronization.
 
-The synchronization script allows up to three attempts
-for each GitHub API read and for monitoring.
-The job has a 55-minute timeout to stay within the App token's one-hour lifetime.
-If synchronization fails, rerun `Sync sloctl docs` from GitHub Actions.
-A rerun skips a successful documentation run or resumes monitoring an active run.
-After a failed documentation run, a rerun dispatches a new update.
+The workflow uses a short-lived GitHub App token to dispatch the documentation workflow.
+It passes the release tag, commit SHA, and release run ID.
+The documentation workflow verifies the release
+and reads the command-reference JSON from that exact commit.
+It renders the MDX and opens a pull request against `production`.
+After the required checks pass, it squash-merges the update.
+It then waits for the production deployment of that merge commit.
 
-The dispatcher requires the following repository configuration:
+Synchronization succeeds only after the documentation workflow finishes successfully,
+including deployment.
+A failure in the update or deployment fails synchronization
+without changing the completed CLI release.
 
-- `DOCS_AUTOMATION_REPOSITORY` variable:
-  destination repository name without the owner.
-- `DOCS_AUTOMATION_CLIENT_ID` variable:
-  Client ID of a dedicated GitHub App installed on the destination repository.
+The [synchronization script](../.github/actions/sync-sloctl-docs/sync-sloctl-docs.sh)
+allows up to three attempts for each GitHub API read and for monitoring.
+The job has a 55-minute timeout to stay within the App token's lifetime.
+A rerun of `Sync sloctl docs` uses the release run ID to find the previous attempt:
 
-Create a `sloctl-docs-dispatch` environment in the sloctl repository.
-Under **Deployment branches and tags**, choose **Selected branches and tags**
-and add only the **branch** `main`.
-Do not add tag patterns or other branches.
-Leave required reviewers empty and set no wait timer.
-The dispatcher uses `workflow_run`, whose workflow ref is the default branch,
-even when the completed release ran from a tag.
-
-Store `DOCS_AUTOMATION_APP_PRIVATE_KEY` only as an environment secret
-in `sloctl-docs-dispatch`.
-Do not expose this key through a repository secret
-or an organization secret accessible to sloctl.
-Keep `main` protected and require review of workflow changes.
-The environment restriction prevents feature-branch workflows from reading the key.
-If the key was previously available outside the environment,
-rotate it and update both repositories before revoking the old key.
-
-The App installation needs **Actions: write**,
-**Checks: read**, **Contents: write**,
-and **Pull requests: write** permissions.
-The dispatcher requests only **Actions: write** for its short-lived token.
-This limits that token, not the authority of the private key.
-The documentation workflow separately requests the checks, content,
-and pull-request permissions when publishing the generated update.
-The App must also be listed under
-**Allow specified actors to bypass required pull requests**
-in the documentation repository's `production` branch protection rule.
-This removes the human approval requirement for the automated update
-without bypassing its required status checks.
+- If the documentation run succeeded, synchronization finishes without another update.
+- If the documentation run is active, synchronization resumes monitoring it.
+- If the documentation run failed, synchronization dispatches a new update.

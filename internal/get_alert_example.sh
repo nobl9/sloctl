@@ -1,17 +1,32 @@
 # Get active and resolved alerts from all projects.
-sloctl get alerts --all-projects
+sloctl get alert -A
 
-# Get only active alerts.
-sloctl get alerts --all-projects --triggered --resolved=false
+# Get only active (not resolved yet) alerts.
+sloctl get alert --triggered --resolved=false -A
 
 # Get only resolved alerts.
-sloctl get alerts --all-projects --resolved --triggered=false
+sloctl get alert --resolved --triggered=false -A
 
-# Match either objective while also requiring the specified SLO.
-sloctl get alerts --project my-project --slo my-slo \
-  --objective availability --objective latency
+# Get a specific alert by the alert ID.
+sloctl get alert ce1a2a10-d74d-477f-b574-b278ee54e02b -A
 
-# Filter by metric-time range.
-sloctl get alerts --all-projects \
-  --from=2025-03-22T00:00:00Z \
-  --to=2025-03-22T23:59:59Z
+# Get alerts related to the reportsapi service or usersapi service in project prod.
+sloctl get alert --service reportsapi --service usersapi -p prod
+
+# Get only resolved alerts for the specific alert policy and SLO in the specified project.
+sloctl get alert --resolved --triggered=false --alert-policy slow-burn --slo usersapi-latency -p prod
+
+# Get alerts triggered for the slo usersapi-availability AND objective objective-1 in project prod.
+sloctl get alert --slo usersapi-availability --objective objective-1 -p prod
+
+# Get alerts for slo usersapi-latency AND either objective-1 OR objective-2 in project prod.
+sloctl get alert --slo usersapi-latency --objective objective-1 --objective objective-2 -p prod
+
+# Get alerts by a time range.
+# We're assuming the current date is 2023-03-23T12:00:00Z:
+# - Alerts that were active yesterday:
+sloctl get alert --from 2023-03-22T00:00:00Z --to 2023-03-22T23:59:59Z -A
+# - Alerts that have been active since yesterday:
+sloctl get alert --from 2023-03-22T00:00:00Z -A
+# - Alerts that have been active until today:
+sloctl get alert --to 2023-03-23T00:00:00Z -A

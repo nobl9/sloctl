@@ -16,7 +16,8 @@ import (
 )
 
 func TestGenerateCommandReference_ActualSloctlIsDeterministic(t *testing.T) {
-	first, err := generateCommandReference(internal.NewRootCmd())
+	root := internal.NewRootCmd()
+	first, err := generateCommandReference(root)
 	require.NoError(t, err)
 	second, err := generateCommandReference(internal.NewRootCmd())
 	require.NoError(t, err)
@@ -48,7 +49,10 @@ func TestGenerateCommandReference_ActualSloctlIsDeterministic(t *testing.T) {
 
 	apply := requireCommandReference(t, document.Command, "sloctl apply")
 	assert.Equal(t, "sloctl apply [flags]", apply.Usage)
-	assert.Contains(t, apply.Example, "sloctl apply --file ./resources.yaml")
+	applyCommand, _, err := root.Find([]string{"apply"})
+	require.NoError(t, err)
+	assert.NotEmpty(t, applyCommand.Example)
+	assert.Equal(t, applyCommand.Example, apply.Example)
 	assert.NotEmpty(t, apply.Options)
 	assert.NotEmpty(t, apply.InheritedOptions)
 	assert.Contains(t, apply.Options, optionReference{

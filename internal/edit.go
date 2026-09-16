@@ -94,10 +94,13 @@ func getEditDescription() string {
 	if err = tpl.Execute(&b, map[string]string{
 		"EditorEnvSloctl":           editorEnvSloctl,
 		"EditorEnvSystem":           editorEnvSystem,
+		"ShellEnv":                  shellEnv,
 		"DefaultEditorWindows":      defaultEditorWindows,
 		"DefaultEditorUnixVim":      defaultEditorUnixVim,
 		"DefaultEditorUnixVi":       defaultEditorUnixVi,
 		"DefaultEditorUnixFallback": defaultEditorUnixFallback,
+		"DefaultShellUnix":          defaultShellUnix,
+		"DefaultShellWindows":       defaultShellWindows,
 	}); err != nil {
 		panic(err)
 	}

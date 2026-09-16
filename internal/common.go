@@ -90,9 +90,11 @@ func getApplyOrDeleteDescription(description string) string {
 	if err = tpl.Execute(&b, struct {
 		Description string
 		Extensions  string
+		Regex       string
 	}{
 		Description: description,
 		Extensions:  extensionsList,
+		Regex:       sdk.APIVersionRegex,
 	}); err != nil {
 		panic(err)
 	}
