@@ -54,9 +54,9 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "replay [slo-name]",
 		Short: "Replay historical SLI data for existing SLOs",
-		Long: "Create Replay jobs that retrieve historical SLI data from a specified start\n" +
-			"time until now and recalculate SLO error budgets. Replay is permanent and cannot\n" +
-			"be rolled back; a job can take several minutes to an hour.\n\n" +
+		Long: "Create Replay jobs to recalculate SLO error budgets from a specified start\n" +
+			"time until now. Replay is permanent and cannot be rolled back. A job can take\n" +
+			"several minutes to an hour.\n\n" +
 			"To replay one SLO, pass its name and `--from`. The Project defaults to the\n" +
 			"active context's Project. To replay multiple SLOs, pass one or more local YAML\n" +
 			"or JSON configuration files with `--file`. Values in a file take precedence over\n" +
