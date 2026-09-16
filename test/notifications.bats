@@ -38,6 +38,7 @@ setup() {
     SLOCTL_TEST_TTY_INPUT_WHEN_RAW \
     SLOCTL_TEST_UPGRADE_EXIT_CODE \
     SLOCTL_TEST_UPGRADE_MARKER \
+    SLOCTL_TEST_UPGRADE_STDOUT \
     SLOCTL_TEST_BREW_PREFIX \
     SLOCTL_TEST_BREW_QUERY_EXIT_CODE \
     RELEASE_SERVER_BODY_FILE \
@@ -64,6 +65,7 @@ setup() {
     'if [[ -n "${SLOCTL_TEST_UPGRADE_MARKER:-}" ]]; then' \
     '  printf "%s\n" "$*" > "${SLOCTL_TEST_UPGRADE_MARKER}"' \
     'fi' \
+    'printf "%s" "${SLOCTL_TEST_UPGRADE_STDOUT:-}"' \
     'exit "${SLOCTL_TEST_UPGRADE_EXIT_CODE:-0}"' \
     > "$tools_dir/go"
   printf '%s\n' \
@@ -76,6 +78,7 @@ setup() {
     'if [[ -n "${SLOCTL_TEST_UPGRADE_MARKER:-}" ]]; then' \
     '  printf "%s\n" "$*" > "$SLOCTL_TEST_UPGRADE_MARKER"' \
     'fi' \
+    'printf "%s" "${SLOCTL_TEST_UPGRADE_STDOUT:-}"' \
     'exit "${SLOCTL_TEST_UPGRADE_EXIT_CODE:-0}"' \
     > "$tools_dir/brew"
   chmod +x "$tools_dir/go" "$tools_dir/brew"
@@ -245,16 +248,19 @@ teardown() {
 }
 
 # bats test_tags=platform,platform:unix
-@test "sloctl reports a failed Go update and continues the requested command" {
+@test "sloctl preserves command JSON output after a failed Go update" {
   select_update_action run-upgrade
   export SLOCTL_TEST_UPGRADE_EXIT_CODE=22
+  export SLOCTL_TEST_UPGRADE_STDOUT=$'Downloading update...\n'
   local go_binary="$HOME/go/bin/sloctl"
   copy_sloctl_binary "$go_binary"
   start_release_server
 
-  run_sloctl_binary_with_tty_stderr "$go_binary" version
+  run_sloctl_binary_with_tty_stderr "$go_binary" \
+    --config "$BATS_TEST_DIRNAME/inputs/config/single-context-config.toml" \
+    config current-context -v -o json
   assert_success_joined_output
-  assert_sloctl_version_output
+  assert_output - < "$BATS_TEST_DIRNAME/outputs/config/get-current-context-minimal.json"
   assert_notification_stderr failed-go-update
   assert_release_requests 1
 }

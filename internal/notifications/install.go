@@ -43,7 +43,7 @@ func (n notifier) runCommand(command updateCommand) error {
 	//nolint:gosec // The executable and arguments come from fixed sloctl update definitions.
 	cmd := exec.Command(command.executable, command.args...)
 	cmd.Stdin = n.stdin
-	cmd.Stdout = n.stdout
+	cmd.Stdout = n.stderr
 	cmd.Stderr = n.stderr
 	return cmd.Run()
 }

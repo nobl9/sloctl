@@ -7,4 +7,5 @@ Choose update action
 2. Skip
 3. Skip until next version
 Enter a number between 1 and 3 [2]:
+Downloading update...
 failed to update sloctl: exit status 22

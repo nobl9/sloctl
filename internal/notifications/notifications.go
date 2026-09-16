@@ -61,7 +61,6 @@ func Notify(currentVersion string) (result Result) {
 type notifier struct {
 	currentVersion string
 	stdin          *os.File
-	stdout         *os.File
 	stderr         *os.File
 	releaseURL     string
 	cachePath      string
@@ -81,7 +80,6 @@ func newNotifier(currentVersion string) notifier {
 	return notifier{
 		currentVersion: strings.TrimSpace(currentVersion),
 		stdin:          os.Stdin,
-		stdout:         os.Stdout,
 		stderr:         os.Stderr,
 		releaseURL:     latestReleaseURL,
 		cachePath:      defaultCachePath(),
