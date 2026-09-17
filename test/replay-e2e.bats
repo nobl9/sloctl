@@ -58,6 +58,7 @@ teardown_file() {
       (.slo | type == "string") and
       (.project | type == "string") and
       (.createdAt | type == "string" and ((try fromdateiso8601 catch null) != null)) and
+      (.isComposite == null or (.isComposite | type == "boolean")) and
       (.status as $status |
         ["unknown", "queued", "in progress", "completed", "failed", "canceled"] |
         index($status) != null)
