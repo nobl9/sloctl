@@ -112,7 +112,7 @@ Keep source data in [test/inputs](../test/inputs/),
 and compare complete stdout or stderr messages against files in
 [test/outputs](../test/outputs/).
 For notification tests, use the local release fixture server
-and `refute_stderr` when stderr must be empty.
+and `assert_stderr ""` when stderr must be empty.
 
 ### End-to-end tests
 

@@ -383,10 +383,12 @@ teardown() {
 
   run_sloctl_with_tty_stderr version
   assert_success_joined_output
+  assert_sloctl_version_output
   assert_stderr ""
 
   run_sloctl_with_tty_stderr version
   assert_success_joined_output
+  assert_sloctl_version_output
   assert_stderr ""
   assert_release_requests 1
 }
@@ -397,6 +399,7 @@ teardown() {
 
   run_sloctl_with_tty_stderr version
   assert_success_joined_output
+  assert_sloctl_version_output
   assert_stderr ""
   assert_release_requests 1
 }
