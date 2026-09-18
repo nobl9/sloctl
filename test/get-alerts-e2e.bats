@@ -7,9 +7,22 @@
 
 # setup_file is run only once for the whole file.
 setup_file() {
+  load "test_helper/load"
+  load_lib "bats-support"
+  load_lib "bats-assert"
+
   export TEST_PROJECT="alert-test-project"
   export TEST_PROJECT_2="alert-test-project-2"
   export TEST_OUTPUTS="$BATS_TEST_DIRNAME/outputs/get-alerts-e2e"
+
+  local project
+  for project in "$TEST_PROJECT" "$TEST_PROJECT_2"; do
+    run_sloctl get alert -p "$project" -o json
+    assert_success_joined_output
+    if [[ "$output" == "No resources found"* ]]; then
+      fail "No alert fixtures returned for '$project'. Check the test organization and load its static alert data."
+    fi
+  done
 }
 
 # setup is run before each test.

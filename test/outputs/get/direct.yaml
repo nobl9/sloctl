@@ -3,7 +3,7 @@
   metadata:
     displayName: Splunk direct
     name: splunk-direct
-    project: death-star
+    project: <PROJECT>
   spec:
     description: This Direct is just for the e2e 'sloctl get' tests, it's not supposed to work!
     historicalDataRetrieval:
