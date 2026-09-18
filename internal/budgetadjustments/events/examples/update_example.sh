@@ -1,5 +1,5 @@
 # Update Adjustment Events using a file:
-cat <<EOF > ./events.yaml
+cat <<'EOF' > ./events.yaml
 - eventStart: 2024-10-24T04:07:04Z
   eventEnd: 2024-10-24T05:27:04Z
   slos:

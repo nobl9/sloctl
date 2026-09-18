@@ -30,6 +30,9 @@ var getAlertExample string
 //go:embed get_annotation_example.sh
 var getAnnotationExample string
 
+//go:embed get_example.sh
+var getExample string
+
 type GetCmd struct {
 	client    *sdk.Client
 	printer   *printer.Printer
@@ -44,9 +47,11 @@ func (r *RootCmd) NewGetCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "get",
-		Short: "Display one or more than one resource",
-		Long: `Prints a table of the most important information about the specified resources.
-To get more details in output use one of the available flags.`,
+		Short: "Get Nobl9 resources",
+		Long: "Get resources by name or filter and print them as YAML, JSON, or CSV. YAML is the default.\n\n" +
+			"Resource names can be supplied as arguments or read from standard input. Without names, each resource " +
+			"command returns all resources matching its filters. Use `--jq` to filter or transform the results.",
+		Example: getExample,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			get.client = r.GetClient()
 			if get.selection.allProjects {
@@ -83,16 +88,15 @@ To get more details in output use one of the available flags.`,
 		{Kind: manifest.KindReport},
 	} {
 		plural := pluralForKind(subCmd.Kind)
-		short := fmt.Sprintf("Displays all of the %s.", plural)
 		use := strings.ToLower(plural)
 		subCmd.Aliases = append(subCmd.Aliases, subCmd.Kind.ToLower(), subCmd.Kind.String(), plural)
 
-		sc := get.newGetObjectsCommand(subCmd.Kind, short, use, subCmd.Aliases)
+		sc := get.newGetObjectsCommand(subCmd.Kind, use, subCmd.Aliases)
 		if subCmd.Extender != nil {
 			subCmd.Extender(sc)
 		}
 		registerObjectSelectionFlags(sc, subCmd.Kind, &get.selection,
-			`List the requested object(s) across all projects.`)
+			"Select resources across all projects.")
 		cmd.AddCommand(sc)
 	}
 	cmd.AddCommand(get.newGetUserCommand())
@@ -102,14 +106,15 @@ To get more details in output use one of the available flags.`,
 
 func (g *GetCmd) newGetObjectsCommand(
 	kind manifest.Kind,
-	short, use string,
+	use string,
 	aliases []string,
 ) *cobra.Command {
+	resourceName := humanReadablePluralForKind(kind)
 	return &cobra.Command{
-		Use:     use,
+		Use:     use + " [name...]",
 		Aliases: aliases,
-		Short:   short,
-		Long:    "Resource names can be provided as positional arguments or read from stdin.",
+		Short:   fmt.Sprintf("Get %s", resourceName),
+		Long:    getObjectsLongDescription(kind, resourceName),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			names, err := readStdinArgs(cmd, args)
 			if err != nil {
@@ -124,14 +129,29 @@ func (g *GetCmd) newGetObjectsCommand(
 	}
 }
 
+func getObjectsLongDescription(kind manifest.Kind, resourceName string) string {
+	description := fmt.Sprintf(
+		"Get %s by name or available filters. Names can be supplied as arguments or read from standard input. "+
+			"Without names, all matching %s are returned.",
+		resourceName,
+		resourceName,
+	)
+	switch {
+	case objectKindSupportsProjectFlag(kind):
+		description += " Use `--project` to select a project or `--all-projects` to search all projects."
+	case kind == manifest.KindBudgetAdjustment:
+		description += " `--project` and `--slo` must be supplied together when filtering by SLO."
+	}
+	return description
+}
+
 func (g *GetCmd) newGetUserCommand() *cobra.Command {
 	limit := uint(100)
 	cmd := &cobra.Command{
-		Use:   "user",
-		Short: "Displays users by ID.",
-		Long: "Provide user IDs as arguments, when no user ID is provided, all users are returned.\n" +
-			"User IDs can also be read from stdin.\n" +
-			fmt.Sprintf("By default a maximum of %d users are returned when no IDs are provided.", limit),
+		Use:   "user [id...]",
+		Short: "Get users by ID",
+		Long: "Get users by ID. IDs can be supplied as arguments or read from standard input. " +
+			fmt.Sprintf("Without IDs, up to `--limit` users are returned; the default limit is %d.", limit),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ids, err := readStdinArgs(cmd, args)
 			if err != nil {
@@ -151,18 +171,29 @@ func (g *GetCmd) newGetUserCommand() *cobra.Command {
 			return g.printUsers(users)
 		},
 	}
-	cmd.Flags().UintVar(&limit, "limit", limit, "Maximum number of users to return.")
+	cmd.Flags().UintVar(&limit, "limit", limit,
+		"Maximum number of users to return. The default limit applies when no IDs are provided.")
 	return cmd
 }
 
 // nolint: gocognit
 func (g *GetCmd) newGetAlertCommand(cmd *cobra.Command) *cobra.Command {
+	cmd.Use = "alerts [id...]"
 	cmd.Example = getAlertExample
-	cmd.Long = "Get alerts based on search criteria. You can use specific criteria using flags to find alerts " +
-		"related to specific SLO, objective, service, alert policy, time range, or alert status.\n\n" +
-		"For example, you can use the same flag multiple times to find alerts triggered for a given SLO OR " +
-		"another SLO. Keep in mind that the different types of flags are linked by the logical AND operator.\n\n" +
-		"If you don't have permission to view SLO in a given project, alerts from that project will not be returned.\n\n"
+	cmd.Long = "Get alerts by ID or filter. Alert IDs can also be read from standard input. " +
+		"Repeat the same filter to match any supplied value; different filters are combined.\n\n" +
+		"Active and resolved alerts are both included by default. Set `--resolved=false` or `--triggered=false` " +
+		"to select only one status.\n\n" +
+		"A filter can return no alerts when a referenced Alert Policy, SLO, Service, or Objective was deleted. " +
+		"Recreating a resource with the same name does not restore its old alerts. " +
+		"Unlinking an Alert Policy from an SLO can also hide related alerts.\n\n" +
+		"Alert output includes these timing and resolution fields:\n\n" +
+		"- `spec.conditions[].status.firstMetMetricTime`: when the condition first became true.\n" +
+		"- `spec.conditions[].status.lastsForMetMetricTime`: when the required `lastsFor` duration was met.\n" +
+		"- `spec.conditions[].status.lastMetMetricTime`: the last time the condition remained true.\n" +
+		"- `spec.coolDownStartedAtMetricTime`: when the cooldown started for a resolved alert.\n" +
+		"- `spec.resolutionReason`: why the alert was resolved or canceled.\n\n" +
+		"Results may be truncated by the API. If sloctl reports truncation, use narrower filters."
 
 	params := objectsV1.GetAlertsRequest{
 		Resolved:  new(bool),
@@ -172,25 +203,25 @@ func (g *GetCmd) newGetAlertCommand(cmd *cobra.Command) *cobra.Command {
 		&params.AlertPolicyNames,
 		"alert-policy",
 		[]string{},
-		"Get alerts triggered for a given alert policy (name) only.",
+		"Filter by alert policy name. Repeat to match any of several policies.",
 	)
 	cmd.Flags().StringArrayVar(
 		&params.SLONames,
 		"slo",
 		[]string{},
-		"Get alerts triggered for a given SLO (name) only.",
+		"Filter by SLO name. Repeat to match any of several SLOs.",
 	)
 	cmd.Flags().StringArrayVar(
 		&params.ObjectiveNames,
 		"objective",
 		[]string{},
-		"Get alerts triggered for a given objective name of the SLO only.",
+		"Filter by objective name. Repeat to match any of several objectives.",
 	)
 	cmd.Flags().StringArrayVar(
 		&params.ServiceNames,
 		"service",
 		[]string{},
-		"Get alerts triggered for SLOs related to a given service only.",
+		"Filter by service name. Repeat to match any of several services.",
 	)
 	objectiveValuesFlag := flags.FloatArray{}
 	cmd.Flags().Var(
@@ -202,27 +233,25 @@ func (g *GetCmd) newGetAlertCommand(cmd *cobra.Command) *cobra.Command {
 		params.Resolved,
 		"resolved",
 		true,
-		"Get alerts that are resolved only.",
+		"Include resolved alerts. Set --resolved=false to exclude them.",
 	)
 	cmd.Flags().BoolVar(
 		params.Triggered,
 		"triggered",
 		true,
-		"Get alerts that are still active (not resolved yet) only.",
+		"Include active alerts. Set --triggered=false to exclude them.",
 	)
 	flags.RegisterTimeVar(
 		cmd,
 		&params.From,
 		"from",
-		"Get active alerts after `from` time only, based on metric timestamp (RFC3339), "+
-			"for example 2023-02-09T10:00:00Z.",
+		"Set the start of the alert metric-time range in RFC3339 format.",
 	)
 	flags.RegisterTimeVar(
 		cmd,
 		&params.To,
 		"to",
-		"Get active alerts before `to` time only, based on metric timestamp (RFC3339), "+
-			"for example 2023-02-09T10:00:00Z.",
+		"Set the end of the alert metric-time range in RFC3339 format.",
 	)
 
 	cmd.Flags().SortFlags = false
@@ -290,7 +319,10 @@ func (g *GetCmd) newGetDataExportCommand(cmd *cobra.Command) *cobra.Command {
 
 func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 	withAccessKeysFlag := cmd.Flags().BoolP("with-keys", "k", false,
-		`Displays client_secret and client_id.`)
+		"Include agent client_id and client_secret values. "+
+			"This performs one additional credential request per returned agent.")
+	cmd.Long += "\n\n`--with-keys` includes `client_id` and `client_secret` in the output and performs one " +
+		"additional credential request for every returned agent."
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		names, err := readStdinArgs(cmd, args)
@@ -322,12 +354,19 @@ func (g *GetCmd) newGetAgentCommand(cmd *cobra.Command) *cobra.Command {
 
 func (g *GetCmd) newGetAnnotationCommand(cmd *cobra.Command) *cobra.Command {
 	cmd.Example = getAnnotationExample
-	cmd.Long = fmt.Sprintf("Get annotations based on search criteria. "+
-		"You can use specific criteria using flags to find annotations "+
-		"related to specific project, SLO, time range, or categories.\n"+
-		"By default only %s categories are returned.\n\n"+
-		"Keep in mind that the different types of flags are linked by the logical AND operator.\n\n",
-		strings.Join(stringsTypeToStrings(v1alphaAnnotation.GetUserCategories()), ", "))
+	categories := stringsTypeToStrings(v1alphaAnnotation.GetUserCategories())
+	for i := range categories {
+		categories[i] = "`" + categories[i] + "`"
+	}
+	cmd.Long = fmt.Sprintf("Get annotations by name or filter. Pass names as arguments or through standard input. "+
+		"Without a category selector, this command returns only user categories (%s). "+
+		"Use `--system`, `--user`, or repeated `--category` flags to select other categories.\n\n"+
+		"Annotation category origins:\n\n"+
+		"- `Comment`: added manually to an SLO.\n"+
+		"- `ReviewNote`: created when an SLO review status changes.\n"+
+		"- `SloEdit`: created when an SLO definition changes.\n\n"+
+		"See [Annotation types](https://docs.nobl9.com/features/slo-annotations/#annotation-types).",
+		strings.Join(categories, ", "))
 
 	return cmd
 }

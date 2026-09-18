@@ -52,12 +52,20 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:   "replay",
-		Short: "Retrieve historical SLI data and recalculate their SLO error budgets.",
-		Long: "`sloctl replay` creates Replays to retrieve historical data for SLOs. " +
-			"Use it to replay SLOs one-by-one or in bulk. Historical data retrieval is time-consuming: " +
-			"replaying a single SLO can take up to an hour. Considering the number of ongoing Replays is limited, " +
-			"`sloctl` queues Replays if the limit is exceeded.",
+		Use:   "replay [slo-name]",
+		Short: "Replay historical SLI data for existing SLOs",
+		Long: "Create Replay jobs to recalculate SLO error budgets from a specified start\n" +
+			"time until now. Replay is permanent and cannot be rolled back. A job can take\n" +
+			"several minutes to an hour.\n\n" +
+			"To replay one SLO, pass its name and `--from`. The Project defaults to the\n" +
+			"active context's Project. To replay multiple SLOs, pass one or more local YAML\n" +
+			"or JSON configuration files with `--file`. Values in a file take precedence over\n" +
+			"`--project` and `--from`.\n\n" +
+			"sloctl validates every requested SLO before starting any Replay. After\n" +
+			"preflight succeeds, a failure for one entry does not stop the remaining\n" +
+			"entries. Organizations with Replay queues enqueue the jobs; otherwise sloctl\n" +
+			"waits for each Replay to finish before starting the next. Modifying an SLO\n" +
+			"after its Replay starts does not change the running Replay.",
 		Example: replayExample,
 		Args:    replay.arguments,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -71,12 +79,18 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 
 	replay.printer.MustRegisterFlags(cmd)
 	registerFileFlag(cmd, false, &replay.configPaths)
-	cmd.Flags().StringVarP(&replay.project, "project", "p", "", `Specifies the Project for the SLOs you want to Replay.`)
+	replayFileDescription := "Path to a local YAML or JSON Replay configuration file. " +
+		"Repeat this flag to use multiple files."
+	setFlagDescriptions(cmd, flagFile, replayFileDescription, replayFileDescription)
+	cmd.Flags().StringVarP(&replay.project, "project", "p", "",
+		"Project for a single SLO, or fallback Project for file entries that omit it. "+
+			"Defaults to the active context's Project.")
 	flags.RegisterTimeVar(
 		cmd,
 		&replay.from,
 		"from",
-		"Sets the start of Replay time window.",
+		"Replay start time in RFC3339 format. "+
+			"Required for a single SLO and used for file entries that omit it.",
 	)
 
 	cmd.AddCommand(replay.AddDeleteCommand())
