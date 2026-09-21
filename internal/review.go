@@ -3,6 +3,7 @@ package internal
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,13 +29,16 @@ type ReviewCmd struct {
 	sloName string
 }
 
+//go:embed review_example.sh
+var reviewExample string
+
 func (r *RootCmd) NewReviewCmd() *cobra.Command {
 	review := &ReviewCmd{}
 
 	cmd := &cobra.Command{
 		Use:   "review",
-		Short: "Manage SLO review statuses",
-		Long: `Manually manage SLO review statuses.
+		Short: "Manage SLO review",
+		Long: `Manage SLO review.
 
 This feature requires Nobl9 Enterprise Edition.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -69,64 +73,31 @@ func (r *ReviewCmd) NewSetStatusCmd() *cobra.Command {
 }
 
 func (r *ReviewCmd) NewSetStatusReviewedCmd() *cobra.Command {
-	return r.newSetStatusCmd(
-		"reviewed",
-		"reviewed",
-		"Mark an SLO as reviewed",
-		`sloctl review set-status reviewed my-slo \
-  --project my-project \
-  --note "Target met for this review cycle"`,
-		true,
-	)
+	return r.newSetStatusCmd("reviewed", "reviewed", "Mark an SLO as reviewed", true)
 }
 
 func (r *ReviewCmd) NewSetStatusSkippedCmd() *cobra.Command {
-	return r.newSetStatusCmd(
-		"skipped",
-		"skipped",
-		"Mark an SLO review as skipped",
-		`sloctl review set-status skipped my-slo \
-  --note "Insufficient data for this review cycle"`,
-		true,
-	)
+	return r.newSetStatusCmd("skipped", "skipped", "Mark an SLO review as skipped", true)
 }
 
 func (r *ReviewCmd) NewSetStatusToReviewCmd() *cobra.Command {
-	return r.newSetStatusCmd(
-		"to-review",
-		"toReview",
-		"Mark an SLO as awaiting review",
-		"sloctl review set-status to-review my-slo --project my-project",
-		false,
-	)
+	return r.newSetStatusCmd("to-review", "toReview", "Mark an SLO as awaiting review", false)
 }
 
 func (r *ReviewCmd) NewSetStatusOverdueCmd() *cobra.Command {
-	return r.newSetStatusCmd(
-		"overdue",
-		"overdue",
-		"Mark an SLO review as overdue",
-		"sloctl review set-status overdue my-slo --project my-project",
-		false,
-	)
+	return r.newSetStatusCmd("overdue", "overdue", "Mark an SLO review as overdue", false)
 }
 
 func (r *ReviewCmd) NewSetStatusNotStartedCmd() *cobra.Command {
-	return r.newSetStatusCmd(
-		"not-started",
-		"notStarted",
-		"Reset an SLO review to not started",
-		"sloctl review set-status not-started my-slo --project my-project",
-		false,
-	)
+	return r.newSetStatusCmd("not-started", "notStarted", "Reset an SLO review to not started", false)
 }
 
-func (r *ReviewCmd) newSetStatusCmd(commandName, status, short, example string, hasNote bool) *cobra.Command {
+func (r *ReviewCmd) newSetStatusCmd(commandName, status, short string, hasNote bool) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     commandName + " <slo-name>",
 		Short:   short,
 		Long:    setStatusLongDescription(status, hasNote),
-		Example: example,
+		Example: reviewExample,
 		Args:    r.reviewSetArguments,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if r.project == "" {

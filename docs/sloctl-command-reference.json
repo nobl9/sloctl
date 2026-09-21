@@ -244,7 +244,7 @@
                 "shortDescription": "Delete past budget adjustment events",
                 "descriptionMarkdown": "Delete past events for one budget adjustment. Only events that ended within the last 30 days can be deleted. Deletions recalculate affected SLO error budgets and can alter reliability reports.\n\nProvide YAML input from a local file or standard input. Separate multiple YAML documents with `---`.",
                 "usage": "sloctl budgetadjustments events delete [flags]",
-                "example": "# Delete Adjustment Events using a file:\ncat \u003c\u003c'EOF' \u003e ./events.yaml\n- eventStart: 2024-10-24T04:07:04Z\n  eventEnd: 2024-10-24T05:27:04Z\n  slos:\n  - project: test-project\n    name: sample-slo-1\n- eventStart: 2024-10-25T04:07:04Z\n  eventEnd: 2024-10-25T05:27:04Z\n  slos:\n  - project: test-project\n    name: sample-slo-2\nEOF\nsloctl budgetadjustments events delete --adjustment-name=sample-adjustment-name -f ./events.yaml\n\n# Delete Adjustment Events using stdin:\nsloctl budgetadjustments events delete --adjustment-name=sample-adjustment-name -f - \u003c./events.yaml\n",
+                "example": "# Delete Adjustment Events using a file:\ncat \u003c\u003cEOF \u003e ./events.yaml\n- eventStart: 2024-10-24T04:07:04Z\n  eventEnd: 2024-10-24T05:27:04Z\n  slos:\n  - project: test-project\n    name: sample-slo-1\n- eventStart: 2024-10-25T04:07:04Z\n  eventEnd: 2024-10-25T05:27:04Z\n  slos:\n  - project: test-project\n    name: sample-slo-2\nEOF\nsloctl budgetadjustments events delete --adjustment-name=sample-adjustment-name -f ./events.yaml\n\n# Delete Adjustment Events using stdin:\nsloctl budgetadjustments events delete --adjustment-name=sample-adjustment-name -f - \u003c./events.yaml\n",
                 "options": [
                   {
                     "syntax": "--adjustment-name string",
@@ -338,7 +338,7 @@
                 "shortDescription": "Update past budget adjustment events",
                 "descriptionMarkdown": "Update past events for one budget adjustment. Only events that ended within the last 30 days can be updated. Updates recalculate affected SLO error budgets and can alter reliability reports.\n\nProvide YAML input from a local file or standard input. Identify each event by its existing timestamps and SLOs, and provide the replacement timestamps under `update`. Separate multiple YAML documents with `---`.",
                 "usage": "sloctl budgetadjustments events update [flags]",
-                "example": "# Update Adjustment Events using a file:\ncat \u003c\u003c'EOF' \u003e ./events.yaml\n- eventStart: 2024-10-24T04:07:04Z\n  eventEnd: 2024-10-24T05:27:04Z\n  slos:\n  - project: test-project\n    name: sample-slo-1\n  update:\n    eventStart: 2024-10-24T03:07:04Z\n    eventEnd: 2024-10-24T04:27:04Z\n- eventStart: 2024-10-25T04:07:04Z\n  eventEnd: 2024-10-25T05:27:04Z\n  slos:\n  - project: test-project\n    name: sample-slo-2\n  update:\n    eventStart: 2024-10-25T03:07:04Z\n    eventEnd: 2024-10-25T04:27:04Z\nEOF\nsloctl budgetadjustments events update --adjustment-name=sample-adjustment-name -f ./events.yaml\n\n# Update Adjustment Events using stdin:\nsloctl budgetadjustments events update --adjustment-name=sample-adjustment-name -f - \u003c./events.yaml\n",
+                "example": "# Update Adjustment Events using a file:\ncat \u003c\u003cEOF \u003e ./events.yaml\n- eventStart: 2024-10-24T04:07:04Z\n  eventEnd: 2024-10-24T05:27:04Z\n  slos:\n  - project: test-project\n    name: sample-slo-1\n  update:\n    eventStart: 2024-10-24T03:07:04Z\n    eventEnd: 2024-10-24T04:27:04Z\n- eventStart: 2024-10-25T04:07:04Z\n  eventEnd: 2024-10-25T05:27:04Z\n  slos:\n  - project: test-project\n    name: sample-slo-2\n  update:\n    eventStart: 2024-10-25T03:07:04Z\n    eventEnd: 2024-10-25T04:27:04Z\nEOF\nsloctl budgetadjustments events update --adjustment-name=sample-adjustment-name -f ./events.yaml\n\n# Update Adjustment Events using stdin:\nsloctl budgetadjustments events update --adjustment-name=sample-adjustment-name -f - \u003c./events.yaml\n",
                 "options": [
                   {
                     "syntax": "--adjustment-name string",
@@ -3012,8 +3012,8 @@
       {
         "name": "review",
         "path": "sloctl review",
-        "shortDescription": "Manage SLO review statuses",
-        "descriptionMarkdown": "Manually manage SLO review statuses.\n\nThis feature requires Nobl9 Enterprise Edition.",
+        "shortDescription": "Manage SLO review",
+        "descriptionMarkdown": "Manage SLO review.\n\nThis feature requires Nobl9 Enterprise Edition.",
         "options": [],
         "inheritedOptions": [
           {
@@ -3065,7 +3065,7 @@
                 "shortDescription": "Reset an SLO review to not started",
                 "descriptionMarkdown": "Set one SLO's review status to `notStarted`.\nThe Project defaults to the active context's Project.\nAvailable only when the SLO's Service has no review schedule.\n\nThis feature requires Nobl9 Enterprise Edition.",
                 "usage": "sloctl review set-status not-started \u003cslo-name\u003e [flags]",
-                "example": "sloctl review set-status not-started my-slo --project my-project",
+                "example": "# Set \"prometheus-latency\" SLO (non-default Project) review status as \"reviewed\" and provide a review note.\nsloctl review set-status reviewed prometheus-latency -p non-default -n \"Target met, 20% error budget remaining\"\n\n# Set \"prometheus-latency\" SLO (default Project) review status as \"skipped\" and provide a note explaining the reason for skipping.\nsloctl review set-status skipped prometheus-latency --note \"Insufficient data for this period\"",
                 "options": [
                   {
                     "syntax": "-p, --project string",
@@ -3098,7 +3098,7 @@
                 "shortDescription": "Mark an SLO review as overdue",
                 "descriptionMarkdown": "Set one SLO's review status to `overdue`.\nThe Project defaults to the active context's Project.\nAvailable only when the SLO's Service has a review schedule.\n\nThis feature requires Nobl9 Enterprise Edition.",
                 "usage": "sloctl review set-status overdue \u003cslo-name\u003e [flags]",
-                "example": "sloctl review set-status overdue my-slo --project my-project",
+                "example": "# Set \"prometheus-latency\" SLO (non-default Project) review status as \"reviewed\" and provide a review note.\nsloctl review set-status reviewed prometheus-latency -p non-default -n \"Target met, 20% error budget remaining\"\n\n# Set \"prometheus-latency\" SLO (default Project) review status as \"skipped\" and provide a note explaining the reason for skipping.\nsloctl review set-status skipped prometheus-latency --note \"Insufficient data for this period\"",
                 "options": [
                   {
                     "syntax": "-p, --project string",
@@ -3131,7 +3131,7 @@
                 "shortDescription": "Mark an SLO as reviewed",
                 "descriptionMarkdown": "Set one SLO's review status to `reviewed`.\nThe Project defaults to the active context's Project.\nAvailable whether or not the SLO's Service has a review schedule.\nUse `--note` to attach context to the decision.\n\nThis feature requires Nobl9 Enterprise Edition.",
                 "usage": "sloctl review set-status reviewed \u003cslo-name\u003e [flags]",
-                "example": "sloctl review set-status reviewed my-slo \\\n  --project my-project \\\n  --note \"Target met for this review cycle\"",
+                "example": "# Set \"prometheus-latency\" SLO (non-default Project) review status as \"reviewed\" and provide a review note.\nsloctl review set-status reviewed prometheus-latency -p non-default -n \"Target met, 20% error budget remaining\"\n\n# Set \"prometheus-latency\" SLO (default Project) review status as \"skipped\" and provide a note explaining the reason for skipping.\nsloctl review set-status skipped prometheus-latency --note \"Insufficient data for this period\"",
                 "options": [
                   {
                     "syntax": "-n, --note string",
@@ -3168,7 +3168,7 @@
                 "shortDescription": "Mark an SLO review as skipped",
                 "descriptionMarkdown": "Set one SLO's review status to `skipped`.\nThe Project defaults to the active context's Project.\nAvailable only when the SLO's Service has a review schedule.\nUse `--note` to attach context to the decision.\n\nThis feature requires Nobl9 Enterprise Edition.",
                 "usage": "sloctl review set-status skipped \u003cslo-name\u003e [flags]",
-                "example": "sloctl review set-status skipped my-slo \\\n  --note \"Insufficient data for this review cycle\"",
+                "example": "# Set \"prometheus-latency\" SLO (non-default Project) review status as \"reviewed\" and provide a review note.\nsloctl review set-status reviewed prometheus-latency -p non-default -n \"Target met, 20% error budget remaining\"\n\n# Set \"prometheus-latency\" SLO (default Project) review status as \"skipped\" and provide a note explaining the reason for skipping.\nsloctl review set-status skipped prometheus-latency --note \"Insufficient data for this period\"",
                 "options": [
                   {
                     "syntax": "-n, --note string",
@@ -3205,7 +3205,7 @@
                 "shortDescription": "Mark an SLO as awaiting review",
                 "descriptionMarkdown": "Set one SLO's review status to `toReview`.\nThe Project defaults to the active context's Project.\nAvailable only when the SLO's Service has a review schedule.\n\nThis feature requires Nobl9 Enterprise Edition.",
                 "usage": "sloctl review set-status to-review \u003cslo-name\u003e [flags]",
-                "example": "sloctl review set-status to-review my-slo --project my-project",
+                "example": "# Set \"prometheus-latency\" SLO (non-default Project) review status as \"reviewed\" and provide a review note.\nsloctl review set-status reviewed prometheus-latency -p non-default -n \"Target met, 20% error budget remaining\"\n\n# Set \"prometheus-latency\" SLO (default Project) review status as \"skipped\" and provide a note explaining the reason for skipping.\nsloctl review set-status skipped prometheus-latency --note \"Insufficient data for this period\"",
                 "options": [
                   {
                     "syntax": "-p, --project string",
@@ -3268,7 +3268,7 @@
             "shortDescription": "Query data sources to validate SLI queries",
             "descriptionMarkdown": "Query the data source configured by an SLO and return the values produced by each SLI query.\n\nProvide either an existing SLO name or one or more SLO manifests with `--file`. For file input, use `--slo` and `--objective` to limit validation.\n\nThe default time range is the last 15 minutes, and a range cannot exceed one hour. At most 50 SLI queries can be validated at once. Query failures are reported and cause a non-zero exit status.",
             "usage": "sloctl validate sli [slo-name] [flags]",
-            "example": "# Validate all SLI queries for an existing SLO in the default Project.\nsloctl validate sli checkout\n\n# Validate one objective from a manifest over the last 30 minutes.\nsloctl validate sli --file ./slo.yaml --slo checkout --objective availability --last 30m\n\n# Validate an explicit time range and return JSON.\nsloctl validate sli checkout --from 2026-07-02T10:00:00Z --to 2026-07-02T10:30:00Z --output json",
+            "example": "# Validate all SLI queries for an existing SLO in the default Project.\nsloctl validate sli checkout\n\n# Validate one objective from a manifest over the last 30 minutes.\nsloctl validate sli --file ./slo.yaml --slo checkout --objective availability --last 30m\n\n# Validate an explicit time range and return JSON.\nsloctl validate sli checkout --from 2026-07-02T10:00:00Z --to 2026-07-02T10:30:00Z --output json\n",
             "options": [
               {
                 "syntax": "-f, --file stringArray",

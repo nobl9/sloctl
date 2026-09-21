@@ -3,6 +3,7 @@ package internal
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"encoding/json"
 	stderrors "errors"
 	"fmt"
@@ -58,6 +59,9 @@ type ValidateSLICmd struct {
 	now               func() time.Time
 }
 
+//go:embed validate_sli_example.sh
+var validateSLIExample string
+
 func (v *ValidateCmd) NewSLICmd(clientProvider func() *sdk.Client) *cobra.Command {
 	validateSLI := &ValidateSLICmd{
 		validate: v,
@@ -81,15 +85,8 @@ func (v *ValidateCmd) NewSLICmd(clientProvider func() *sdk.Client) *cobra.Comman
 			"For file input, use `--slo` and `--objective` to limit validation.\n\n" +
 			"The default time range is the last 15 minutes, and a range cannot exceed one hour. " +
 			"At most 50 SLI queries can be validated at once. Query failures are reported and cause a non-zero exit status.",
-		Example: `# Validate all SLI queries for an existing SLO in the default Project.
-sloctl validate sli checkout
-
-# Validate one objective from a manifest over the last 30 minutes.
-sloctl validate sli --file ./slo.yaml --slo checkout --objective availability --last 30m
-
-# Validate an explicit time range and return JSON.
-sloctl validate sli checkout --from 2026-07-02T10:00:00Z --to 2026-07-02T10:30:00Z --output json`,
-		Args: validateSLI.arguments,
+		Example: validateSLIExample,
+		Args:    validateSLI.arguments,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			validateSLI.validate.client = clientProvider()
 		},
