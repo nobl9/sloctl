@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -113,15 +112,7 @@ func (n notifier) notify() Result {
 	}
 
 	updateCommand := detectUpdateCommand()
-	action, err := n.promptUpdate(
-		release,
-		updateCommand,
-		isUpdateFormSupported(
-			runtime.GOOS,
-			os.Getenv("MSYSTEM"),
-			isatty.IsCygwinTerminal(n.stderr.Fd()),
-		),
-	)
+	action, err := n.promptUpdate(release, updateCommand)
 	if err != nil {
 		result := n.handlePromptError(err)
 		if result != ResultInterrupted {
@@ -182,16 +173,6 @@ func (n notifier) handlePromptError(err error) Result {
 		err,
 	)
 	return ResultContinue
-}
-
-func isUpdateFormSupported(goOS, msysEnvironment string, isCygwinTerminal bool) bool {
-	if goOS != "windows" {
-		return true
-	}
-	if !isCygwinTerminal {
-		return false
-	}
-	return !strings.EqualFold(strings.TrimSpace(msysEnvironment), "MSYS")
 }
 
 func (n notifier) fetchLatestRelease(ctx context.Context) (githubRelease, error) {

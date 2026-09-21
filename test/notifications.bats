@@ -51,7 +51,9 @@ setup() {
   export SLOCTL_ACCESSIBLE_MODE=1
   export HOME="$BATS_TEST_TMPDIR/home"
   export XDG_CACHE_HOME="$BATS_TEST_TMPDIR/cache"
-  export LocalAppData="$BATS_TEST_TMPDIR/cache"
+  if has_bats_tag platform:windows; then
+    export LOCALAPPDATA="$(cygpath -w "$XDG_CACHE_HOME")"
+  fi
   export RELEASE_SERVER_LOG="$BATS_TEST_TMPDIR/release-server.log"
   export SLOCTL_TEST_TTY_INPUT=$'1\n'
   local tools_dir="$BATS_TEST_TMPDIR/tools"
@@ -332,6 +334,29 @@ teardown() {
   assert_stderr --partial "New sloctl version v1.1.0 is available!"
   assert_stderr --partial "Choose update action"
   assert_release_requests 1
+}
+
+# bats test_tags=platform,platform:windows
+@test "sloctl in a legacy Windows terminal shows release highlights without waiting for input" {
+  local go_binary="$HOME/go/bin/sloctl.exe"
+  local native_path="${PATH#*:}"
+  copy_sloctl_binary "$go_binary"
+  export GOBIN="$(cygpath -w "$(dirname "$go_binary")")"
+  export MSYS=disable_pcon
+  export RELEASE_SERVER_BODY_FILE="$TEST_INPUTS/release-bodies/features-with-details.md"
+  unset SLOCTL_TEST_TTY_INPUT
+  start_release_server
+
+  local accessible_mode
+  for accessible_mode in 0 1; do
+    export SLOCTL_ACCESSIBLE_MODE="$accessible_mode"
+    rm -f "$XDG_CACHE_HOME/nobl9/sloctl/notifications.json"
+    run_sloctl_binary_with_path "$go_binary" "$native_path" version
+    assert_success_joined_output
+    assert_sloctl_version_output
+    assert_notification_stderr features-with-details-notice
+  done
+  assert_release_requests 2
 }
 
 # bats test_tags=platform,platform:windows

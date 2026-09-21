@@ -24,6 +24,10 @@ func (c updateCommand) available() bool {
 }
 
 func detectUpdateCommand() updateCommand {
+	// Windows notifications stay noninteractive because legacy terminals can hang in the form.
+	if runtime.GOOS == "windows" {
+		return updateCommand{}
+	}
 	executablePath, err := os.Executable()
 	if err != nil {
 		return updateCommand{}

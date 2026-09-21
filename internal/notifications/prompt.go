@@ -24,11 +24,7 @@ const (
 	updateActionSkipUntilNextVersion updateAction = "skip-until-next-version"
 )
 
-func (n notifier) promptUpdate(
-	release githubRelease,
-	command updateCommand,
-	showUpdateForm bool,
-) (updateAction, error) {
+func (n notifier) promptUpdate(release githubRelease, command updateCommand) (updateAction, error) {
 	tpl, err := template.New("notification").Funcs(template.FuncMap{
 		"releaseHighlights": releaseHighlights,
 		"inc":               func(i int) int { return i + 1 },
@@ -39,7 +35,7 @@ func (n notifier) promptUpdate(
 	if err := tpl.ExecuteTemplate(n.stderr, "release", release); err != nil {
 		return updateActionSkip, fmt.Errorf("render release notice: %w", err)
 	}
-	if !showUpdateForm || !command.available() {
+	if !command.available() {
 		return updateActionSkip, nil
 	}
 

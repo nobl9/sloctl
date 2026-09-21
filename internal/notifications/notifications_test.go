@@ -19,25 +19,13 @@ import (
 func TestNotifier_promptUpdate_WithoutForm(t *testing.T) {
 	t.Setenv("SLOCTL_ACCESSIBLE_MODE", "1")
 	const goUpdateCommand = "go install github.com/nobl9/sloctl/cmd/sloctl@latest"
-	tests := map[string]struct {
-		updateCommand  updateCommand
-		showUpdateForm bool
-	}{
-		"detected updater": {
-			updateCommand: updateCommand{
-				display:    goUpdateCommand,
-				executable: "go",
-			},
-		},
-		"unknown installation": {
-			showUpdateForm: true,
-		},
+	tests := map[string]updateCommand{
+		"unknown installation": {},
 		"incomplete updater": {
-			updateCommand:  updateCommand{display: goUpdateCommand},
-			showUpdateForm: true,
+			display: goUpdateCommand,
 		},
 	}
-	for name, tt := range tests {
+	for name, command := range tests {
 		t.Run(name, func(t *testing.T) {
 			stdin, err := os.CreateTemp(t.TempDir(), "stdin")
 			require.NoError(t, err)
@@ -52,8 +40,7 @@ func TestNotifier_promptUpdate_WithoutForm(t *testing.T) {
 					TagName: "v1.2.3",
 					HTMLURL: "https://github.com/nobl9/sloctl/releases/tag/v1.2.3",
 				},
-				tt.updateCommand,
-				tt.showUpdateForm,
+				command,
 			)
 			require.NoError(t, err)
 			assert.Equal(t, updateActionSkip, action)
@@ -129,54 +116,6 @@ func Test_isGoInstallExecutable_UsesFileIdentity(t *testing.T) {
 	t.Setenv("GOBIN", goBin)
 	executablePath := writeTestSloctlExecutable(t, realGoBin)
 	assert.True(t, isGoInstallExecutable(executablePath, goExecutable))
-}
-
-func Test_isUpdateFormSupported(t *testing.T) {
-	t.Parallel()
-	tests := map[string]struct {
-		goOS                string
-		msysEnvironment     string
-		isCygwinTerminal    bool
-		expectedIsSupported bool
-	}{
-		"Linux": {
-			goOS:                "linux",
-			expectedIsSupported: true,
-		},
-		"Windows MinGW": {
-			goOS:                "windows",
-			msysEnvironment:     "MINGW64",
-			isCygwinTerminal:    true,
-			expectedIsSupported: true,
-		},
-		"Windows Cygwin": {
-			goOS:                "windows",
-			isCygwinTerminal:    true,
-			expectedIsSupported: true,
-		},
-		"Windows MSYS": {
-			goOS:             "windows",
-			msysEnvironment:  "MSYS",
-			isCygwinTerminal: true,
-		},
-		"Windows native shell": {
-			goOS: "windows",
-		},
-		"Windows native shell launched from MinGW": {
-			goOS:            "windows",
-			msysEnvironment: "MINGW64",
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			assert.Equal(
-				t,
-				tt.expectedIsSupported,
-				isUpdateFormSupported(tt.goOS, tt.msysEnvironment, tt.isCygwinTerminal),
-			)
-		})
-	}
 }
 
 func Test_isReleaseNewer(t *testing.T) {
