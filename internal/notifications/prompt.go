@@ -2,14 +2,19 @@ package notifications
 
 import (
 	"bufio"
+	_ "embed"
 	"fmt"
 	"strconv"
 	"strings"
+	"text/template"
 
 	huh "charm.land/huh/v2"
 
 	"github.com/nobl9/sloctl/internal/huhform"
 )
+
+//go:embed prompt.tpl
+var promptTemplate string
 
 type updateAction string
 
@@ -24,18 +29,23 @@ func (n notifier) promptUpdate(
 	command updateCommand,
 	showUpdateForm bool,
 ) (updateAction, error) {
-	_, _ = fmt.Fprintf(n.stderr, "New sloctl version %s is available!\n\n", release.TagName)
-	if highlights := releaseHighlights(release.Body); highlights != "" {
-		_, _ = fmt.Fprintf(n.stderr, "%s\n\n", highlights)
+	tpl, err := template.New("notification").Funcs(template.FuncMap{
+		"releaseHighlights": releaseHighlights,
+		"inc":               func(i int) int { return i + 1 },
+	}).Parse(promptTemplate)
+	if err != nil {
+		return updateActionSkip, fmt.Errorf("parse notification template: %w", err)
 	}
-	_, _ = fmt.Fprintf(n.stderr, "📜 %s\n\n", release.HTMLURL)
+	if err := tpl.ExecuteTemplate(n.stderr, "release", release); err != nil {
+		return updateActionSkip, fmt.Errorf("render release notice: %w", err)
+	}
 	if !showUpdateForm || !command.available() {
 		return updateActionSkip, nil
 	}
 
 	options := updateActionOptions(command.display)
 	if huhform.AccessibleMode() {
-		return n.promptAccessibleUpdate(options)
+		return n.promptAccessibleUpdate(tpl, options)
 	}
 	action := updateActionSkip
 	form := huhform.New(
@@ -48,16 +58,17 @@ func (n notifier) promptUpdate(
 	).
 		WithInput(n.stdin).
 		WithOutput(n.stderr)
-	err := form.Run()
+	err = form.Run()
 	return action, err
 }
 
-func (n notifier) promptAccessibleUpdate(options []huh.Option[updateAction]) (updateAction, error) {
-	_, _ = fmt.Fprintln(n.stderr, "Choose update action")
-	for i, option := range options {
-		_, _ = fmt.Fprintf(n.stderr, "%d. %s\n", i+1, option.Key)
+func (n notifier) promptAccessibleUpdate(
+	tpl *template.Template,
+	options []huh.Option[updateAction],
+) (updateAction, error) {
+	if err := tpl.ExecuteTemplate(n.stderr, "actions", options); err != nil {
+		return updateActionSkip, fmt.Errorf("render update choices: %w", err)
 	}
-	_, _ = fmt.Fprintf(n.stderr, "Enter a number between 1 and %d [2]: ", len(options))
 	// Huh's accessible selector treats EOF as a choice instead of a read failure.
 	input, err := bufio.NewReader(n.stdin).ReadString('\n')
 	_, _ = fmt.Fprintln(n.stderr)

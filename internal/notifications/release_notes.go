@@ -7,7 +7,7 @@ import (
 
 var releaseMetadataPattern = regexp.MustCompile(`\s+\(#\d+\)(?:\s+@\S+)?$`)
 
-func releaseHighlights(body string) string {
+func releaseHighlights(body string) []string {
 	var sections []string
 	var section []string
 	var includeSection, inNestedSection, hasNote bool
@@ -39,7 +39,7 @@ func releaseHighlights(body string) string {
 		section = append(section, line)
 	}
 	appendSection()
-	return strings.Join(sections, "\n\n")
+	return sections
 }
 
 func markdownHeadingLevel(line string) int {
