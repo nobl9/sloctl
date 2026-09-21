@@ -1,7 +1,7 @@
 - apiVersion: n9/v1alpha
   kind: BudgetAdjustment
   metadata:
-    name: tokyo-server
+    name: <PROJECT>-tokyo-server
     displayName: Tokyo server budget adjustment
   spec:
     description: Example budget adjustment
@@ -11,11 +11,11 @@
     filters:
       slos:
         - name: splunk-raw-rolling
-          project: death-star
+          project: <PROJECT>
 - apiVersion: n9/v1alpha
   kind: BudgetAdjustment
   metadata:
-    name: newrelic
+    name: <PROJECT>-newrelic
     displayName: NewRelic budget adjustment
   spec:
     description: Example budget adjustment
@@ -25,4 +25,4 @@
     filters:
       slos:
         - name: newrelic-rolling-timeslices-threshold
-          project: death-star
+          project: <PROJECT>
