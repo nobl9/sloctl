@@ -377,19 +377,32 @@ func (r *ReplayCmd) verifySLOs(ctx context.Context, replays []ReplayConfig) ([]R
 }
 
 func matchReplaysToSLOs(replays []ReplayConfig, slos []replaySLO) (matched []ReplayConfig, missing []string) {
+	type sloKey struct{ project, name string }
+	slosByKey := make(map[sloKey]replaySLO, len(slos))
+	for _, slo := range slos {
+		slosByKey[sloKey{project: slo.project, name: slo.name}] = slo
+	}
+
 	missing = make([]string, 0)
 	matched = make([]ReplayConfig, 0, len(replays))
-outer:
 	for _, replay := range replays {
-		for _, slo := range slos {
-			if replay.SLO == slo.name && replay.Project == slo.project {
-				replay.metricSource = slo.metricSource
-				replay.isComposite = slo.hasCompositeObjectives
-				matched = append(matched, replay)
-				continue outer
+		slo, targetFound := slosByKey[sloKey{project: replay.Project, name: replay.SLO}]
+		if !targetFound {
+			missing = append(missing, fmt.Sprintf("'%s' SLO in '%s' Project", replay.SLO, replay.Project))
+		}
+		sourceFound := true
+		if source := replay.SourceSLO; source != nil {
+			_, sourceFound = slosByKey[sloKey{project: source.Project, name: source.SLO}]
+			if !sourceFound {
+				missing = append(missing, fmt.Sprintf("'%s' SLO in '%s' Project", source.SLO, source.Project))
 			}
 		}
-		missing = append(missing, fmt.Sprintf("'%s' SLO in '%s' Project", replay.SLO, replay.Project))
+		if !targetFound || !sourceFound {
+			continue
+		}
+		replay.metricSource = slo.metricSource
+		replay.isComposite = slo.hasCompositeObjectives
+		matched = append(matched, replay)
 	}
 	return matched, missing
 }

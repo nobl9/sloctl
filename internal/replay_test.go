@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -69,11 +70,11 @@ func TestGetReplaySLOsBatchesByProject(t *testing.T) {
 			}
 			for _, project := range []string{"target-project", "source-project"} {
 				assert.Equal(t, wantNames, fetched[project])
-				assert.Len(t, batchSizes[project], (count+49)/50)
+				assert.Len(t, batchSizes[project], int(math.Ceil(float64(count)/50)))
 			}
 			matched, missing := matchReplaysToSLOs(replays, slos)
 			assert.Empty(t, missing)
-			assert.Len(t, matched, len(replays))
+			assert.Equal(t, replays, matched)
 		})
 	}
 }
@@ -272,6 +273,33 @@ func TestMatchReplaysToSLOsReportsUnmatchedSLOs(t *testing.T) {
 
 	assert.Empty(t, matched)
 	assert.Equal(t, []string{"'missing-slo' SLO in 'project' Project"}, missing)
+}
+
+func BenchmarkMatchReplaysToSLOs(b *testing.B) {
+	for _, count := range []int{1000, 15000} {
+		b.Run(fmt.Sprint(count), func(b *testing.B) {
+			replays := make([]ReplayConfig, count)
+			slos := make([]replaySLO, 0, count*2)
+			for i := range count {
+				name := fmt.Sprintf("slo-%05d", i)
+				replays[i] = ReplayConfig{
+					Project: "target-project", SLO: name,
+					SourceSLO: &replayV1.SourceSLO{Project: "source-project", SLO: name},
+				}
+				slos = append(slos,
+					replaySLO{project: "target-project", name: name},
+					replaySLO{project: "source-project", name: name},
+				)
+			}
+			b.ResetTimer()
+			for range b.N {
+				matched, missing := matchReplaysToSLOs(replays, slos)
+				if len(matched) != count || len(missing) != 0 {
+					b.Fatalf("matched %d replays with %d missing SLOs", len(matched), len(missing))
+				}
+			}
+		})
+	}
 }
 
 func TestRunReplaysSendsRecalculationOnlyForCompositeSLOs(t *testing.T) {

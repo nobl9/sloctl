@@ -407,9 +407,9 @@ func (g *GetCmd) getObjects(ctx context.Context, kind manifest.Kind, args []stri
 	}
 	query := buildObjectSelectionQuery(kind, args, g.selection)
 	if kind == manifest.KindSLO && g.sloLimit > 0 {
-		query.Set("pagination.limit", strconv.Itoa(g.sloLimit))
+		query.Set(objectsV1.QueryKeyPaginationLimit, strconv.Itoa(g.sloLimit))
 		if g.sloOffset > 0 {
-			query.Set("pagination.offset", strconv.Itoa(g.sloOffset))
+			query.Set(objectsV1.QueryKeyPaginationOffset, strconv.Itoa(g.sloOffset))
 		}
 	}
 	header := http.Header{sdk.HeaderProject: []string{g.client.Config.Project}}
