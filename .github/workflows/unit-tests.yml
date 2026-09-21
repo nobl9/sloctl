@@ -43,6 +43,7 @@ jobs:
         uses: bats-core/bats-action@4.0.0
         with:
           bats-version: 1.13.0
+          assert-version: 2.2.4
       - name: Run native platform notification tests
         env:
           BATS_LIB_PATH: ${{ steps.setup-bats.outputs.lib-path }}
@@ -71,6 +72,7 @@ jobs:
         uses: bats-core/bats-action@4.0.0
         with:
           bats-version: 1.13.0
+          assert-version: 2.2.4
       - name: Set up MinGW
         uses: msys2/setup-msys2@v2
         with:

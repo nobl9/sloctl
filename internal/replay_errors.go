@@ -23,5 +23,6 @@ var (
 	errReplayMissingFromArg = errors.Errorf("when running 'sloctl replay' for a single SLO,"+
 		" you must provide Replay window start time (%s layout) with '--from' flag", flags.TimeLayoutName)
 	errProjectWildcardIsNotAllowed = errors.New(
-		"wildcard Project is not allowed, you must provide specific Project name(s)")
+		"wildcard Project is not allowed, you must provide specific Project name(s)",
+	)
 )

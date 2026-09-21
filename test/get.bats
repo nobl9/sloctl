@@ -336,6 +336,13 @@ setup() {
   done
 }
 
+@test "report configurable client timeout" {
+  SLOCTL_TIMEOUT=10ns run_sloctl get project
+
+  assert_failure
+  assert_stderr --partial - < "$TEST_OUTPUTS/client-timeout-hint.txt"
+}
+
 test_get() {
   local \
     kind="$1" \

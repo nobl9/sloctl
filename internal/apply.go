@@ -38,7 +38,8 @@ func (r *RootCmd) NewApplyCmd() *cobra.Command {
 		Use:   "apply",
 		Short: "Apply object definition in YAML or JSON format",
 		Long: getApplyOrDeleteDescription(
-			"The apply command commits the changes by sending the updates to the application."),
+			"The apply command commits the changes by sending the updates to the application.",
+		),
 		Example: applyExample,
 		Args:    noPositionalArgsCondition,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -87,7 +88,8 @@ func (a ApplyCmd) Run(cmd *cobra.Command) error {
 		cmd,
 		a.definitionPaths,
 		newFilesPrompt(a.client.Config.FilesPromptEnabled, a.autoConfirm, a.client.Config.FilesPromptThreshold),
-		a.projectFlagWasSet)
+		a.projectFlagWasSet,
+	)
 	if err != nil {
 		return err
 	}

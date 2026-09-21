@@ -2,8 +2,11 @@
 package internal
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"maps"
+	"net/url"
 	"os"
 	"runtime"
 	"slices"
@@ -18,7 +21,12 @@ import (
 	"github.com/nobl9/sloctl/internal/notifications"
 )
 
-const programName = "sloctl"
+const (
+	programName                    = "sloctl"
+	clientTimeoutConfigurationHint = "Hint: The request exceeded sloctl's client-side timeout. " +
+		`Increase the active context's "timeout" setting or set SLOCTL_TIMEOUT ` +
+		"(for example, SLOCTL_TIMEOUT=50s)."
+)
 
 // Execute may check for updates before running the requested command.
 // A successful update exits without running the requested command.
@@ -32,9 +40,25 @@ func Execute() {
 	case notifications.ResultContinue:
 	}
 
-	if err := NewRootCmd().Execute(); err != nil {
+	if err := executeRootCommand(NewRootCmd()); err != nil {
 		os.Exit(1)
 	}
+}
+
+func executeRootCommand(cmd *cobra.Command) error {
+	err := cmd.Execute()
+	if isClientTimeout(cmd.Context(), err) {
+		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), clientTimeoutConfigurationHint)
+	}
+	return err
+}
+
+func isClientTimeout(ctx context.Context, err error) bool {
+	if ctx == nil || ctx.Err() != nil {
+		return false
+	}
+	urlError, ok := errors.AsType[*url.Error](err)
+	return ok && errors.Is(urlError, context.DeadlineExceeded)
 }
 
 type globalFlags struct {

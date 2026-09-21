@@ -1,0 +1,163 @@
+- apiVersion: n9/v1alpha
+  kind: Project
+  metadata:
+    name: <PROJECT>
+  spec:
+    description: Project for Replay e2e tests
+- apiVersion: n9/v1alpha
+  kind: Project
+  metadata:
+    name: <PROJECT>-b
+  spec:
+    description: Secondary Project for Replay e2e tests
+- apiVersion: n9/v1alpha
+  kind: Project
+  metadata:
+    name: <PROJECT>-source
+  spec:
+    description: Source Project for Replay e2e tests
+- apiVersion: n9/v1alpha
+  kind: Direct
+  metadata:
+    name: replay-direct
+    project: <PROJECT>
+  spec:
+    description: Direct for Replay e2e tests
+    newRelic:
+      accountId: 1437038
+      insightsQueryKey: NRIQ-123
+    historicalDataRetrieval:
+      maxDuration:
+        value: 1
+        unit: Hour
+      defaultDuration:
+        value: 1
+        unit: Hour
+- apiVersion: n9/v1alpha
+  kind: Service
+  metadata:
+    name: replay-service-a
+    project: <PROJECT>
+  spec:
+    description: Service for the primary Replay SLO
+- apiVersion: n9/v1alpha
+  kind: Service
+  metadata:
+    name: replay-service-b
+    project: <PROJECT>-b
+  spec:
+    description: Service for the secondary Replay SLO
+- apiVersion: n9/v1alpha
+  kind: Service
+  metadata:
+    name: replay-source-service
+    project: <PROJECT>-source
+  spec:
+    description: Service for the Replay source SLO
+- apiVersion: n9/v1alpha
+  kind: SLO
+  metadata:
+    name: replay-slo-a
+    project: <PROJECT>
+  spec:
+    description: Primary SLO for Replay e2e tests
+    service: replay-service-a
+    indicator:
+      metricSource:
+        kind: Direct
+        name: replay-direct
+        project: <PROJECT>
+    timeWindows:
+      - count: 1
+        isRolling: true
+        unit: Hour
+    budgetingMethod: Timeslices
+    objectives:
+      - displayName: Acceptable
+        name: objective-1
+        op: lte
+        rawMetric:
+          query:
+            newRelic:
+              nrql: SELECT average(duration) FROM Transaction TIMESERIES
+        target: 0.99
+        timeSliceTarget: 0.99
+        value: 1.2
+      - displayName: Alarming
+        name: objective-2
+        op: lte
+        rawMetric:
+          query:
+            newRelic:
+              nrql: SELECT average(duration) FROM Transaction TIMESERIES
+        target: 0.95
+        timeSliceTarget: 0.95
+        value: 2.4
+- apiVersion: n9/v1alpha
+  kind: SLO
+  metadata:
+    name: replay-slo-b
+    project: <PROJECT>-b
+  spec:
+    description: Secondary SLO for Replay e2e tests
+    service: replay-service-b
+    indicator:
+      metricSource:
+        kind: Direct
+        name: replay-direct
+        project: <PROJECT>
+    timeWindows:
+      - count: 1
+        isRolling: true
+        unit: Hour
+    budgetingMethod: Timeslices
+    objectives:
+      - displayName: Acceptable
+        name: objective-1
+        op: lte
+        rawMetric:
+          query:
+            newRelic:
+              nrql: SELECT average(duration) FROM Transaction TIMESERIES
+        target: 0.99
+        timeSliceTarget: 0.99
+        value: 1.2
+- apiVersion: n9/v1alpha
+  kind: SLO
+  metadata:
+    name: replay-source-slo
+    project: <PROJECT>-source
+  spec:
+    description: Source SLO for Replay e2e tests
+    service: replay-source-service
+    indicator:
+      metricSource:
+        kind: Direct
+        name: replay-direct
+        project: <PROJECT>
+    timeWindows:
+      - count: 1
+        isRolling: true
+        unit: Hour
+    budgetingMethod: Timeslices
+    objectives:
+      - displayName: Acceptable
+        name: acceptable
+        op: lte
+        rawMetric:
+          query:
+            newRelic:
+              nrql: SELECT average(duration) FROM Transaction TIMESERIES
+        target: 0.99
+        timeSliceTarget: 0.99
+        value: 1.2
+      - displayName: Alarming
+        name: alarming
+        op: lte
+        rawMetric:
+          query:
+            newRelic:
+              nrql: SELECT average(duration) FROM Transaction TIMESERIES
+        target: 0.95
+        timeSliceTarget: 0.95
+        value: 2.4
