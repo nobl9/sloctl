@@ -29,7 +29,7 @@ and makes local debugging easier.
 
 ## Command-reference data
 
-Run `make generate/docs-data` to export the Cobra command tree to
+Run `make generate/docs` to export the Cobra command tree to
 `docs/sloctl-command-reference.json`.
 The versioned JSON document contains each Cobra command's short description,
 command descriptions as Markdown,
