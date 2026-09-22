@@ -88,13 +88,8 @@ func isInstalledExecutable(sloctlPath, binDir string) bool {
 	if !filepath.IsAbs(binDir) {
 		return false
 	}
-	executableName := "sloctl"
-	name := filepath.Base(sloctlPath)
-	if runtime.GOOS == "windows" {
-		executableName += ".exe"
-		name = strings.ToLower(name)
-	}
-	if name != executableName {
+	const executableName = "sloctl"
+	if filepath.Base(sloctlPath) != executableName {
 		return false
 	}
 	file, err := os.Lstat(filepath.Join(binDir, executableName))

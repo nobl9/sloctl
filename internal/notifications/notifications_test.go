@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -101,14 +100,6 @@ func Test_isGoInstallExecutable_UsesFileIdentity(t *testing.T) {
 	require.NoError(t, err)
 	t.Setenv("GOENV", "off")
 	t.Setenv("GOPATH", t.TempDir())
-
-	if runtime.GOOS == "windows" {
-		goBin := t.TempDir()
-		t.Setenv("GOBIN", goBin)
-		executablePath := writeTestSloctlExecutable(t, goBin)
-		assert.True(t, isGoInstallExecutable(strings.ToUpper(executablePath), goExecutable))
-		return
-	}
 
 	realGoBin := t.TempDir()
 	goBin := filepath.Join(t.TempDir(), "bin")
@@ -220,11 +211,7 @@ func TestNotifier_StateWritesDoNotEraseSkippedRelease(t *testing.T) {
 func writeTestSloctlExecutable(t *testing.T, directory string) string {
 	t.Helper()
 	require.NoError(t, os.MkdirAll(directory, 0o700))
-	name := "sloctl"
-	if runtime.GOOS == "windows" {
-		name += ".exe"
-	}
-	path := filepath.Join(directory, name)
+	path := filepath.Join(directory, "sloctl")
 	require.NoError(t, os.WriteFile(path, []byte("test"), 0o600))
 	return path
 }

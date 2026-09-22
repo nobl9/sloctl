@@ -574,13 +574,13 @@ teardown() {
   run_sloctl_binary_with_tty_stderr "$go_binary" version
   assert_success_joined_output
   assert_sloctl_version_output
-  assert_notification_stderr update-prompt-eof
+  assert_notification_stderr go-update-prompt
   assert [ ! -e "$SLOCTL_TEST_UPGRADE_MARKER" ]
   assert_release_requests 1
 }
 
 # bats test_tags=platform,platform:unix
-@test "sloctl rejects an update choice without a submitted line" {
+@test "sloctl runs an accessible update choice followed by EOF" {
   local go_binary="$HOME/go/bin/sloctl"
   copy_sloctl_binary "$go_binary"
   export SLOCTL_TEST_TTY_INPUT=$'1\x04\x04'
@@ -589,9 +589,25 @@ teardown() {
 
   run_sloctl_binary_with_tty_stderr "$go_binary" version
   assert_success_joined_output
-  assert_sloctl_version_output
-  assert_notification_stderr update-prompt-eof
-  assert [ ! -e "$SLOCTL_TEST_UPGRADE_MARKER" ]
+  assert_output ""
+  assert_notification_stderr go-update-prompt
+  assert_equal "$(< "$SLOCTL_TEST_UPGRADE_MARKER")" "install github.com/nobl9/sloctl/cmd/sloctl@latest"
+}
+
+# bats test_tags=platform,platform:unix
+@test "sloctl retries invalid accessible input before updating" {
+  local go_binary="$HOME/go/bin/sloctl"
+  copy_sloctl_binary "$go_binary"
+  export SLOCTL_TEST_TTY_INPUT=$'x\n1\n'
+  export SLOCTL_TEST_UPGRADE_MARKER="$BATS_TEST_TMPDIR/upgrade-ran"
+  start_release_server
+
+  run_sloctl_binary_with_tty_stderr "$go_binary" version
+  assert_success_joined_output
+  assert_output ""
+  assert_notification_stderr update-prompt-invalid
+  assert_equal "$(< "$SLOCTL_TEST_UPGRADE_MARKER")" "install github.com/nobl9/sloctl/cmd/sloctl@latest"
+  assert_release_requests 1
 }
 
 # bats test_tags=platform,platform:unix
@@ -605,7 +621,7 @@ teardown() {
   run_sloctl_binary_with_tty_stderr "$go_binary" version
   assert_success_joined_output
   assert_sloctl_version_output
-  assert_notification_stderr update-prompt-invalid
+  assert_notification_stderr update-prompt-invalid-eof
   assert [ ! -e "$SLOCTL_TEST_UPGRADE_MARKER" ]
   assert_release_requests 1
 }

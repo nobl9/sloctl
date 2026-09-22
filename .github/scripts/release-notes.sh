@@ -15,6 +15,8 @@ RELEASE_NOTES=$(gh release view "$VERSION" --json body --jq .body)
 BREAKING_CHANGES_HEADER="Breaking Changes"
 RELEASE_NOTES_HEADER="Release Notes"
 
+# Keep the release format in sync with .github/release-drafter.yml
+# and internal/notifications/release_notes.go.
 commit_message_re="-\s(.*)\s(\(#[0-9]+\)\s@.*)"
 rls_header_re="^##.*(Features|$BREAKING_CHANGES_HEADER|Bug Fixes|Fixed Vulnerabilities)"
 

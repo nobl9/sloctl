@@ -7,6 +7,8 @@ import (
 
 var releaseMetadataPattern = regexp.MustCompile(`\s+\(#\d+\)(?:\s+@\S+)?$`)
 
+// releaseHighlights parses the format from .github/release-drafter.yml and
+// .github/scripts/release-notes.sh. Keep format changes in sync with this parser.
 func releaseHighlights(body string) []string {
 	var sections []string
 	var section []string
