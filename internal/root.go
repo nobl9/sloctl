@@ -32,17 +32,30 @@ const (
 // A successful update exits without running the requested command.
 // Notification and update failures let the requested command continue.
 func Execute() {
-	switch notifications.Notify(getBuildVersion()) {
-	case notifications.ResultExitSuccess:
-		return
-	case notifications.ResultInterrupted:
-		os.Exit(130)
-	case notifications.ResultContinue:
+	if !isShellCompletion(os.Args[1:]) {
+		switch notifications.Notify(getBuildVersion()) {
+		case notifications.ResultExitSuccess:
+			return
+		case notifications.ResultInterrupted:
+			os.Exit(130)
+		case notifications.ResultContinue:
+		}
 	}
 
 	if err := executeRootCommand(NewRootCmd()); err != nil {
 		os.Exit(1)
 	}
+}
+
+func isShellCompletion(args []string) bool {
+	// Shell startup and tab completion must not fetch releases or read update choices.
+	for _, arg := range args {
+		switch arg {
+		case "completion", cobra.ShellCompRequestCmd, cobra.ShellCompNoDescRequestCmd:
+			return true
+		}
+	}
+	return false
 }
 
 func executeRootCommand(cmd *cobra.Command) error {

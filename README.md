@@ -100,6 +100,7 @@ and caches completed checks for 24 hours.
 The notice includes release highlights when available
 and a link to the full release notes.
 It does not check in CI, for development builds,
+for shell completion commands,
 when standard input or standard error is not a terminal,
 or when `SLOCTL_NO_NOTIFICATIONS` has a nonempty value.
 

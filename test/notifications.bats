@@ -697,6 +697,41 @@ teardown() {
 }
 
 # bats test_tags=platform,platform:unix
+@test "sloctl loads Bash completions without a notification or input" {
+  local go_binary="$HOME/go/bin/sloctl"
+  copy_sloctl_binary "$go_binary"
+  unset SLOCTL_TEST_TTY_INPUT
+  start_release_server
+
+  run_sloctl_binary_with_tty_stderr bash --noprofile --norc -e -c '
+    eval "$("$1" --no-config-file completion bash)"
+    complete -p sloctl > /dev/null
+    declare -F __start_sloctl
+  ' bash "$go_binary"
+  assert_success_joined_output
+  assert_output "__start_sloctl"
+  assert_stderr ""
+  assert_release_requests 0
+}
+
+# bats test_tags=platform,platform:unix
+@test "sloctl serves dynamic shell completions without notifications" {
+  local go_binary="$HOME/go/bin/sloctl"
+  copy_sloctl_binary "$go_binary"
+  unset SLOCTL_TEST_TTY_INPUT
+  start_release_server
+
+  local request
+  for request in __complete __completeNoDesc; do
+    run_sloctl_binary_with_tty_stderr "$go_binary" "$request" --no-config-file version ""
+    assert_success_joined_output
+    assert_output ":0"
+    assert_stderr "Completion ended with directive: ShellCompDirectiveDefault"
+    assert_release_requests 0
+  done
+}
+
+# bats test_tags=platform,platform:unix
 @test "sloctl defaults to Skip in the normal update form" {
   local go_binary="$HOME/go/bin/sloctl"
   copy_sloctl_binary "$go_binary"
