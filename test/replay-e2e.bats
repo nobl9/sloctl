@@ -40,6 +40,31 @@ teardown_file() {
   fi
 }
 
+@test "replay rejects a missing source SLO before checking availability" {
+  run_sloctl replay -f "$TEST_INPUTS/missing-source.yaml"
+
+  assert_failure
+  assert_stderr --partial "Some of the SLOs marked for Replay were not found"
+  assert_stderr --partial "'replay-missing-source' SLO in '${TEST_PROJECT}-source' Project"
+}
+
+@test "replay does not match a source SLO in another Project" {
+  run_sloctl replay -f "$TEST_INPUTS/source-wrong-project.yaml"
+
+  assert_failure
+  assert_stderr --partial "Some of the SLOs marked for Replay were not found"
+  assert_stderr --partial "'replay-slo-a' SLO in '${TEST_PROJECT}-source' Project"
+}
+
+@test "replay reports both missing target and source SLOs" {
+  run_sloctl replay -f "$TEST_INPUTS/missing-target-and-source.yaml"
+
+  assert_failure
+  assert_stderr --partial "Some of the SLOs marked for Replay were not found"
+  assert_stderr --partial "'replay-missing-target' SLO in '$TEST_PROJECT' Project"
+  assert_stderr --partial "'replay-missing-source' SLO in '${TEST_PROJECT}-source' Project"
+}
+
 @test "replay list returns the platform queue state" {
   run_sloctl replay list -o json
 

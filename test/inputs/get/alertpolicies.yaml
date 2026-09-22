@@ -2,7 +2,7 @@
   kind: AlertPolicy
   metadata:
     name: trigger-alert-immediately
-    project: death-star
+    project: <PROJECT>
     annotations:
       registry: docker.io
       visibility: internal
@@ -19,7 +19,7 @@
   kind: AlertPolicy
   metadata:
     name: budget-will-be-burn-in-3days
-    project: death-star
+    project: <PROJECT>
   spec:
     description: Dummy AlertPolicy for 'sloctl get' e2e tests
     severity: Medium

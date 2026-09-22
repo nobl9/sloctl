@@ -3,7 +3,7 @@
   metadata:
     displayName: Destroyer
     name: destroyer
-    project: death-star
+    project: <PROJECT>
     annotations:
       registry: docker.io
   spec:
@@ -13,6 +13,6 @@
   metadata:
     displayName: Deputy Office
     name: deputy-office
-    project: death-star
+    project: <PROJECT>
   spec:
     description: Dummy Service for 'sloctl get' e2e tests
