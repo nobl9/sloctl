@@ -61,6 +61,7 @@ func (r *ReviewCmd) NewSetStatusCmd() *cobra.Command {
 			"See [SLO review status transitions]" +
 			"(https://docs.nobl9.com/slo-oversight/reviews/#status-transitions) " +
 			"for allowed manual and automatic transitions.",
+		Example: reviewExample,
 	}
 
 	cmd.AddCommand(r.NewSetStatusReviewedCmd())
@@ -94,11 +95,10 @@ func (r *ReviewCmd) NewSetStatusNotStartedCmd() *cobra.Command {
 
 func (r *ReviewCmd) newSetStatusCmd(commandName, status, short string, hasNote bool) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     commandName + " <slo-name>",
-		Short:   short,
-		Long:    setStatusLongDescription(status, hasNote),
-		Example: reviewExample,
-		Args:    r.reviewSetArguments,
+		Use:   commandName + " <slo-name>",
+		Short: short,
+		Long:  setStatusLongDescription(status, hasNote),
+		Args:  r.reviewSetArguments,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if r.project == "" {
 				r.project = r.client.Config.Project
