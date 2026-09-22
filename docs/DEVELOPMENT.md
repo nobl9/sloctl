@@ -101,12 +101,11 @@ SLOCTL_OKTA_AUTH_SERVER=<dev_auth_server> \ # Runs against dev Okta.
 make test/e2e
 ```
 
-When any of these variables is not set, `make test/bats/e2e` reads the
+When any of these variables is not set, the end-to-end tests read the
 missing values from the current context of your sloctl configuration
 (`~/.config/nobl9/config.toml` by default,
 override it with `SLOCTL_CONFIG_FILE_PATH`).
 Variables set in the environment take precedence.
-The Go Docker tests (`make test/go/e2e-docker`) do not use this fallback.
 
 Bats unit and end-to-end tests run in containers.
 Platform compatibility tests run natively with `make test/bats/platform`.
