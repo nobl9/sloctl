@@ -7,7 +7,7 @@ setup_file() {
   ensure_installed python3
   export NOTIFICATIONS_PYTHON
   NOTIFICATIONS_PYTHON="$(command -v python3)"
-  if [ -f "/.dockerenv" ] || [ -f "/run/.containerenv" ]; then
+  if running_in_container; then
     cp /usr/bin/sloctl /usr/local/bin/sloctl
   fi
 
@@ -812,7 +812,7 @@ select_default_update_action() {
 
 run_sloctl_with_tty_stderr() {
   local binary="sloctl"
-  if has_bats_tag platform; then
+  if ! running_in_container; then
     binary="$(native_sloctl_binary)"
   fi
   run_sloctl_binary_with_tty_stderr "$binary" "$@"
@@ -852,7 +852,7 @@ run_sloctl_binary_with_path() {
 copy_sloctl_binary() {
   local target="$1"
   local source="/usr/local/bin/sloctl"
-  if has_bats_tag platform; then
+  if ! running_in_container; then
     source="$(native_sloctl_binary)"
   fi
   mkdir -p "$(dirname "$target")"
@@ -863,6 +863,10 @@ copy_sloctl_binary() {
 has_bats_tag() {
   local expected="$1"
   [[ " ${BATS_TEST_TAGS[*]} " == *" $expected "* ]]
+}
+
+running_in_container() {
+  [ -f "/.dockerenv" ] || [ -f "/run/.containerenv" ]
 }
 
 native_sloctl_binary() {

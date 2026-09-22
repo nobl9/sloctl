@@ -15,7 +15,7 @@ Section worth noting and getting familiar with is located under
 Run `make help` to display short description for each target.
 The provided Makefile will automatically install dev dependencies if they're
 missing.
-Tools, like `golangci-lint` and Bats, are placed under `bin`,
+Binaries, like `golangci-lint`, are placed under `bin`,
 and `yarn` managed dependencies are installed into `node_modules`.
 However, it does not detect if the binary you have is up to date with the
 versions declaration located in Makefile.
@@ -38,8 +38,9 @@ which need them, or the aggregate targets which include them:
 - [Docker](https://docs.docker.com/get-started/get-docker/), for `docker`,
   `test/bats/unit`, `test/bats/e2e` and `test/go/e2e-docker`.
 - [jq](https://github.com/jqlang/jq), for `test/bats/e2e`.
-- Python 3, for `test/bats/platform`.
-  See [Platform compatibility tests](#platform-compatibility-tests).
+
+`test/bats/platform` has its own requirements, see
+[Platform compatibility tests](#platform-compatibility-tests).
 
 ## CI
 
@@ -112,14 +113,16 @@ Refer to the Makefile for the exact commands.
 
 ### Platform compatibility tests
 
-`make test/bats/platform` runs Bats directly on your machine,
-so Python 3 must be installed locally.
-The target downloads the bats-core, bats-support and bats-assert versions
-pinned in the Makefile into `bin/bats` and runs the tests with them.
+`make test/bats/unit` runs the `platform:unix` tests in its Linux container,
+so you do not need Bats on your machine to check them locally.
 
+`make test/bats/platform` runs the platform tests natively and is meant for CI,
+which runs it on Linux, macOS and Windows.
+It needs bats-core, bats-support, bats-assert and Python 3 on the host,
+with `BATS_LIB_PATH` pointing at the Bats libraries.
 The `notification-platforms` and `notification-windows` jobs in
-[unit-tests.yml](../.github/workflows/unit-tests.yml) show the full setup
-for each platform, including the Windows-only `pywinpty` dependency.
+[unit-tests.yml](../.github/workflows/unit-tests.yml) show the setup for
+each platform.
 
 ### Bats output assertions
 

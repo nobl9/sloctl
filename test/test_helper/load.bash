@@ -239,10 +239,13 @@ ensure_installed() {
 #
 # Options:
 #   <name>    Name of the library to load.
-#
-# The library is looked up in BATS_LIB_PATH, which Bats defaults to /usr/lib/bats.
 load_lib() {
-  bats_load_library "$1"
+  local name="$1"
+  if [ -n "${BATS_LIB_PATH:-}" ]; then
+    bats_load_library "$name"
+    return
+  fi
+  load "/usr/lib/bats/${name}/load.bash"
 }
 
 # assert_success_joined_output

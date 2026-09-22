@@ -26,13 +26,6 @@ endif
 
 # renovate datasource=github-releases depName=golangci/golangci-lint
 GOLANGCI_LINT_VERSION := v2.13.2
-# renovate datasource=github-releases depName=bats-core/bats-core
-BATS_CORE_VERSION := v1.14.0
-# renovate datasource=github-releases depName=bats-core/bats-support
-BATS_SUPPORT_VERSION := v0.3.0
-# renovate datasource=github-releases depName=bats-core/bats-assert
-BATS_ASSERT_VERSION := v2.2.4
-BATS_DIR := $(BIN_DIR)/bats
 
 # Check if the program is present in $PATH and install otherwise.
 # ${1} - oneOf{binary,yarn}
@@ -45,17 +38,6 @@ endef
 # ${1} - repository url
 define _install_go_binary
 	GOBIN=$(realpath $(BIN_DIR)) go install "${1}"
-endef
-
-# Download a GitHub repository tag and extract it into a directory.
-# ${1} - repository in the owner/name format
-# ${2} - tag
-# ${3} - destination directory
-define _install_github_tag
-	mkdir -p "${3}"
-	curl -sSfL -o "${3}.tar.gz" "https://github.com/${1}/archive/refs/tags/${2}.tar.gz"
-	tar -xzf "${3}.tar.gz" -C "${3}" --strip-components=1
-	rm "${3}.tar.gz"
 endef
 
 # Print Makefile target step description.
@@ -131,22 +113,18 @@ test/bats/unit:
 	$(call _build_docker,sloctl-unit-test-bin,v1.0.0,PC-123-test,e2602ddc,$(NOTIFICATIONS_TEST_RELEASE_URL))
 	docker build -t sloctl-bats-unit -f $(TEST_DIR)/docker/Dockerfile.unit .
 	docker run -e RELEASE_SERVER_PORT=$(NOTIFICATIONS_TEST_RELEASE_PORT) -e TERM=linux --rm \
-		sloctl-bats-unit -F pretty --filter-tags unit,!platform $(TEST_DIR)/*
+		sloctl-bats-unit -F pretty --filter-tags unit,!platform:windows $(TEST_DIR)/*
 
-# Unlike the Docker based Bats targets, this one runs on the host, which has no
-# Bats libraries in /usr/lib/bats, the default BATS_LIB_PATH.
 ## Run native platform notification tests.
 test/bats/platform:
 	$(MAKE) VERSION=v1.0.0 NOTIFICATIONS_RELEASE_URL=$(NOTIFICATIONS_TEST_RELEASE_URL) build
 	$(call _print_step,Running native platform notification tests)
-	$(call _ensure_installed,binary,bats)
 	@set -- --filter-tags platform:unix; \
 	case "$$(uname -s)" in \
 		CYGWIN*|MINGW*|MSYS*) set -- --filter-tags platform:windows ;; \
 		Darwin*) set -- "$$@" --filter-tags platform:macos ;; \
 	esac; \
-	RELEASE_SERVER_PORT=$(NOTIFICATIONS_TEST_RELEASE_PORT) BATS_LIB_PATH="$(CURDIR)/$(BATS_DIR)/lib" \
-		$(BATS_DIR)/core/bin/bats -F pretty \
+	RELEASE_SERVER_PORT=$(NOTIFICATIONS_TEST_RELEASE_PORT) bats -F pretty \
 		--setup-suite-file $(TEST_DIR)/setup_platform_suite.bash \
 		"$$@" $(TEST_DIR)/notifications.bats
 
@@ -187,7 +165,7 @@ check/trailing:
 check/markdown:
 	$(call _print_step,Verifying Markdown files)
 	$(call _ensure_installed,yarn,markdownlint)
-	yarn --silent markdownlint '**/*.md' --ignore node_modules --ignore bin
+	yarn --silent markdownlint '**/*.md' --ignore node_modules
 
 ## Verify if the auto generated code has been committed.
 check/generate:
@@ -225,7 +203,7 @@ format/cspell:
 	$(call _ensure_installed,yarn,yaml)
 	yarn --silent format-cspell-config
 
-.PHONY: install/tools install/yarn install/golangci-lint install/bats
+.PHONY: install/tools install/yarn install/golangci-lint
 ## Install all dev dependencies.
 install/tools: install/yarn install/golangci-lint
 
@@ -239,16 +217,6 @@ install/golangci-lint:
 	echo "Installing golangci-lint..."
 	curl -sSfL https://golangci-lint.run/install.sh |\
  		sh -s -- -b $(BIN_DIR) $(GOLANGCI_LINT_VERSION)
-
-## Install bats-core and Bats libraries used by native platform tests (https://github.com/bats-core).
-install/bats:
-	echo "Installing bats-core and Bats libraries..."
-	rm -rf $(BATS_DIR) $(BATS_DIR).tmp
-	$(call _install_github_tag,bats-core/bats-core,$(BATS_CORE_VERSION),$(BATS_DIR).tmp/core)
-	$(call _install_github_tag,bats-core/bats-support,$(BATS_SUPPORT_VERSION),$(BATS_DIR).tmp/lib/bats-support)
-	$(call _install_github_tag,bats-core/bats-assert,$(BATS_ASSERT_VERSION),$(BATS_DIR).tmp/lib/bats-assert)
-	# Move into place last, so _ensure_installed retries an interrupted installation.
-	mv $(BATS_DIR).tmp $(BATS_DIR)
 
 .PHONY: help
 ## Print this help message.
