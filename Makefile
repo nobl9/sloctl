@@ -9,6 +9,7 @@ VERSION_PKG := "$(shell go list -m)/internal"
 VERSION ?= 1.0.0-test
 BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
 REVISION ?= $(shell git rev-parse --short=8 HEAD)
+GENERATED_DOCS_OUTPUT ?= ./docs/sloctl-command-reference.json
 
 LDFLAGS := -s -w \
 	-X $(VERSION_PKG).BuildVersion=$(VERSION) \
@@ -155,14 +156,19 @@ check/format:
 	$(call _print_step,Checking if files are formatted)
 	./scripts/check-formatting.sh
 
-.PHONY: generate generate/code
+.PHONY: generate generate/code generate/docs
 ## Auto generate files.
-generate: generate/code
+generate: generate/code generate/docs
 
 ## Generate Golang code.
 generate/code:
 	echo "Generating Go code..."
 	go generate ./...
+
+## Generate structured sloctl command-reference docs.
+generate/docs:
+	echo "Generating sloctl command-reference docs..."
+	go run ./internal/cmd/docgen --output "$(GENERATED_DOCS_OUTPUT)"
 
 .PHONY: format format/go format/cspell
 ## Format files.

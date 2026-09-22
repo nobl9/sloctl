@@ -27,8 +27,11 @@ func NewDeleteCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 	deleteCmd := &DeleteCmd{}
 
 	cmd := &cobra.Command{
-		Use:     "delete",
-		Short:   "Delete existing past events.",
+		Use:   "delete",
+		Short: "Delete past budget adjustment events",
+		Long: "Delete past events for one budget adjustment. Only events that ended within the last 30 days " +
+			"can be deleted. Deletions recalculate affected SLO error budgets and can alter reliability reports.\n\n" +
+			"Provide YAML input from a local file or standard input. Separate multiple YAML documents with `---`.",
 		Example: deleteExample,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			deleteCmd.client = clientProvider.GetClient()

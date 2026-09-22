@@ -14,7 +14,8 @@ func (r *RootCmd) NewValidateCmd() *cobra.Command {
 	validate := &ValidateCmd{}
 	cmd := &cobra.Command{
 		Use:   "validate",
-		Short: "Validate Nobl9 resources.",
+		Short: "Validate SLI queries",
+		Long:  "Validate the SLI queries defined by existing SLOs or local SLO manifests.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},

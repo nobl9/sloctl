@@ -1,0 +1,36 @@
+name: Sync sloctl docs
+description: Dispatch and monitor a sloctl documentation update.
+
+inputs:
+  docs-repository:
+    description: Documentation repository name without the owner.
+    required: true
+  expected-run-name:
+    description: Expected downstream workflow run name.
+    required: true
+  sloctl-sha:
+    description: Commit SHA for the official release.
+    required: true
+  sloctl-tag:
+    description: Official release tag.
+    required: true
+  source-run-id:
+    description: Successful sloctl Release workflow run ID.
+    required: true
+  token:
+    description: GitHub App token with Actions write permission.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Dispatch and monitor documentation update
+      shell: bash
+      env:
+        DOCS_REPOSITORY: ${{ inputs.docs-repository }}
+        EXPECTED_RUN_NAME: ${{ inputs.expected-run-name }}
+        GH_TOKEN: ${{ inputs.token }}
+        SLOCTL_SHA: ${{ inputs.sloctl-sha }}
+        SLOCTL_TAG: ${{ inputs.sloctl-tag }}
+        SOURCE_RUN_ID: ${{ inputs.source-run-id }}
+      run: bash "${GITHUB_ACTION_PATH}/sync-sloctl-docs.sh"
