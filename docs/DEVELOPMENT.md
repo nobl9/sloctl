@@ -14,12 +14,33 @@ Section worth noting and getting familiar with is located under
 
 Run `make help` to display short description for each target.
 The provided Makefile will automatically install dev dependencies if they're
-missing and place them under `bin`
-(this does not apply to `yarn` managed dependencies).
+missing.
+Binaries, like `golangci-lint`, and Bats libraries are placed under `bin`,
+and `yarn` managed dependencies are installed into `node_modules`.
 However, it does not detect if the binary you have is up to date with the
 versions declaration located in Makefile.
 If you see any discrepancies between CI and your local runs, remove the
 binaries from `bin` and let Makefile reinstall them with the latest version.
+
+### Prerequisites
+
+The Makefile does not install the tools listed below.
+Make sure they are available in your `PATH` before running the targets
+which need them, or the aggregate targets which include them:
+
+- [Go](https://go.dev/doc/install) and git, for most targets.
+- [Node.js](https://nodejs.org) and [Yarn](https://classic.yarnpkg.com) 1.x,
+  for `check/spell`, `check/trailing`, `check/markdown`, `check/format`
+  and `format/cspell`.
+  The Node.js version must satisfy the `engines` requirement of the
+  dependencies in [package.json](../package.json),
+  otherwise `yarn install` fails and reports the required version.
+- [Docker](https://docs.docker.com/get-started/get-docker/), for `docker`,
+  `test/bats/unit`, `test/bats/e2e` and `test/go/e2e-docker`.
+- [jq](https://github.com/jqlang/jq), for `test/bats/e2e`.
+- [bats-core](https://github.com/bats-core/bats-core) and Python 3,
+  for `test/bats/platform`.
+  See [Platform compatibility tests](#platform-compatibility-tests).
 
 ## CI
 
@@ -80,9 +101,33 @@ SLOCTL_OKTA_AUTH_SERVER=<dev_auth_server> \ # Runs against dev Okta.
 make test/e2e
 ```
 
+When any of these variables is not set, `make test/bats/e2e` reads the
+missing values from the current context of your sloctl configuration
+(`~/.config/nobl9/config.toml` by default,
+override it with `SLOCTL_CONFIG_FILE_PATH`).
+Variables set in the environment take precedence.
+The Go Docker tests (`make test/go/e2e-docker`) do not use this fallback.
+
 Bats unit and end-to-end tests run in containers.
 Platform compatibility tests run natively with `make test/bats/platform`.
 Refer to the Makefile for the exact commands.
+
+### Platform compatibility tests
+
+`make test/bats/platform` runs Bats directly on your machine,
+so bats-core and Python 3 must be installed locally.
+For example, on macOS run `brew install bats-core`.
+
+When `BATS_LIB_PATH` is not set, the target downloads the bats-support
+and bats-assert versions pinned in the Makefile into `bin/bats-lib`
+and loads them from there.
+If you set `BATS_LIB_PATH` yourself, it must point at a directory which
+contains `bats-support` and `bats-assert` 2.2.0 or newer,
+because older bats-assert versions do not provide `assert_stderr`.
+
+The `notification-platforms` and `notification-windows` jobs in
+[unit-tests.yml](../.github/workflows/unit-tests.yml) show the full setup
+for each platform, including the Windows-only `pywinpty` dependency.
 
 ### Bats output assertions
 
