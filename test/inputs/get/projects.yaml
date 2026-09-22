@@ -1,10 +1,12 @@
 - apiVersion: n9/v1alpha
   kind: Project
   metadata:
-    name: death-star
+    name: <PROJECT>
     annotations:
       registry: docker.io
     labels:
+      test-run:
+      - <PROJECT>
       purpose:
       - defensive
       - offensive
@@ -17,10 +19,12 @@
   kind: Project
   metadata:
     displayName: Hoth Base
-    name: hoth-base
+    name: <PROJECT>-hoth
     annotations:
       language: Go
     labels:
+      test-run:
+      - <PROJECT>
       purpose:
       - defensive
       team:

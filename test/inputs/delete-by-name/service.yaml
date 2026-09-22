@@ -3,6 +3,6 @@ kind: Service
 metadata:
   displayName: Destroyer
   name: destroyer
-  project: death-star
+  project: <PROJECT>
 spec:
   description: Dummy Service for 'sloctl get' e2e tests

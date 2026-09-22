@@ -2612,7 +2612,7 @@
             "name": "slos",
             "path": "sloctl get slos",
             "shortDescription": "Get SLOs",
-            "descriptionMarkdown": "Get SLOs by name or available filters. Names can be supplied as arguments or read from standard input. Without names, all matching SLOs are returned. Use `--project` to select a project or `--all-projects` to search all projects.",
+            "descriptionMarkdown": "Get SLOs by name or available filters. Names can be supplied as arguments or read from standard input. Without names, all matching SLOs are returned. Use `--project` to select a project or `--all-projects` to search all projects.\nBy default, all matching SLOs are returned. Use --limit and --offset to request a page.",
             "usage": "sloctl get slos [name...] [flags]",
             "options": [
               {
@@ -2622,6 +2622,14 @@
               {
                 "syntax": "-l, --label stringArray",
                 "description": "Filter by label. Repeat the flag or separate labels with commas, for example: team=platform,env=prod."
+              },
+              {
+                "syntax": "--limit int",
+                "description": "Maximum number of SLOs to return (1-1000)."
+              },
+              {
+                "syntax": "--offset int",
+                "description": "Number of SLOs to skip (requires --limit)."
               },
               {
                 "syntax": "-p, --project string",
