@@ -26,6 +26,11 @@ endif
 
 # renovate datasource=github-releases depName=golangci/golangci-lint
 GOLANGCI_LINT_VERSION := v2.13.2
+# renovate datasource=github-releases depName=bats-core/bats-support
+BATS_SUPPORT_VERSION := v0.3.0
+# renovate datasource=github-releases depName=bats-core/bats-assert
+BATS_ASSERT_VERSION := v2.2.4
+BATS_LIB_DIR := $(BIN_DIR)/bats-lib
 
 # Check if the program is present in $PATH and install otherwise.
 # ${1} - oneOf{binary,yarn}
@@ -119,7 +124,12 @@ test/bats/unit:
 test/bats/platform:
 	$(MAKE) VERSION=v1.0.0 NOTIFICATIONS_RELEASE_URL=$(NOTIFICATIONS_TEST_RELEASE_URL) build
 	$(call _print_step,Running native platform notification tests)
-	@set -- --filter-tags platform:unix; \
+	@if [ -z "$${BATS_LIB_PATH:-}" ]; then \
+		[ -d $(BATS_LIB_DIR) ] || $(MAKE) install/bats-lib || exit 1; \
+		BATS_LIB_PATH="$(CURDIR)/$(BATS_LIB_DIR)"; \
+		export BATS_LIB_PATH; \
+	fi; \
+	set -- --filter-tags platform:unix; \
 	case "$$(uname -s)" in \
 		CYGWIN*|MINGW*|MSYS*) set -- --filter-tags platform:windows ;; \
 		Darwin*) set -- "$$@" --filter-tags platform:macos ;; \
@@ -165,7 +175,7 @@ check/trailing:
 check/markdown:
 	$(call _print_step,Verifying Markdown files)
 	$(call _ensure_installed,yarn,markdownlint)
-	yarn --silent markdownlint '**/*.md' --ignore node_modules
+	yarn --silent markdownlint '**/*.md' --ignore node_modules --ignore bin
 
 ## Verify if the auto generated code has been committed.
 check/generate:
@@ -203,7 +213,7 @@ format/cspell:
 	$(call _ensure_installed,yarn,yaml)
 	yarn --silent format-cspell-config
 
-.PHONY: install/tools install/yarn install/golangci-lint
+.PHONY: install/tools install/yarn install/golangci-lint install/bats-lib
 ## Install all dev dependencies.
 install/tools: install/yarn install/golangci-lint
 
@@ -217,6 +227,16 @@ install/golangci-lint:
 	echo "Installing golangci-lint..."
 	curl -sSfL https://golangci-lint.run/install.sh |\
  		sh -s -- -b $(BIN_DIR) $(GOLANGCI_LINT_VERSION)
+
+## Install Bats libraries used by native platform tests (https://github.com/bats-core).
+install/bats-lib:
+	echo "Installing Bats libraries..."
+	rm -rf $(BATS_LIB_DIR)
+	mkdir -p $(BATS_LIB_DIR)/bats-support $(BATS_LIB_DIR)/bats-assert
+	curl -sSfL https://github.com/bats-core/bats-support/archive/refs/tags/$(BATS_SUPPORT_VERSION).tar.gz |\
+		tar -xz -C $(BATS_LIB_DIR)/bats-support --strip-components=1
+	curl -sSfL https://github.com/bats-core/bats-assert/archive/refs/tags/$(BATS_ASSERT_VERSION).tar.gz |\
+		tar -xz -C $(BATS_LIB_DIR)/bats-assert --strip-components=1
 
 .PHONY: help
 ## Print this help message.
