@@ -36,10 +36,11 @@ which need them, or the aggregate targets which include them:
   dependencies in [package.json](../package.json),
   otherwise `yarn install` fails and reports the required version.
 - [Docker](https://docs.docker.com/get-started/get-docker/), for `docker`,
-  `test/bats/unit`, `test/bats/e2e` and `test/go/e2e-docker`.
+  `test/bats/unit`, `test/bats/platform`, `test/bats/e2e`
+  and `test/go/e2e-docker`.
 - [jq](https://github.com/jqlang/jq), for `test/bats/e2e`.
 
-`test/bats/platform` has its own requirements, see
+`test/bats/platform-native` has its own requirements, see
 [Platform compatibility tests](#platform-compatibility-tests).
 
 ## CI
@@ -83,7 +84,7 @@ provide custom helpers which are located in `test/test_helper` directory.
 Bats tests are primarily divided into two categories: end-to-end and unit tests.
 The categorization is done through Bats tags.
 Platform compatibility tags are orthogonal to those categories and select tests
-for the native `make test/bats/platform` target.
+for the `make test/bats/platform` and `make test/bats/platform-native` targets.
 To categorize a whole file as a unit test, add
 `# bats file_tags=unit` anywhere in the file, preferably just below the shebang.
 
@@ -107,17 +108,17 @@ missing values from the current context of your sloctl configuration
 override it with `SLOCTL_CONFIG_FILE_PATH`).
 Variables set in the environment take precedence.
 
-Bats unit and end-to-end tests run in containers.
-Platform compatibility tests run natively with `make test/bats/platform`.
+Bats unit, platform compatibility and end-to-end tests run in containers.
 Refer to the Makefile for the exact commands.
 
 ### Platform compatibility tests
 
-`make test/bats/unit` runs the `platform:unix` tests in its Linux container,
-so you do not need Bats on your machine to check them locally.
+`make test/bats/platform` runs the `platform:unix` tests in a Linux container,
+so you do not need Bats on your machine to run them locally.
+The `platform:windows` tests run only natively on Windows.
 
-`make test/bats/platform` runs the platform tests natively and is meant for CI,
-which runs it on Linux, macOS and Windows.
+`make test/bats/platform-native` runs the platform tests natively and is meant
+for CI, which runs it on Linux, macOS and Windows.
 It needs bats-core, bats-support, bats-assert and Python 3 on the host,
 with `BATS_LIB_PATH` pointing at the Bats libraries.
 The `notification-platforms` and `notification-windows` jobs in
