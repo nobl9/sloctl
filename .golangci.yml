@@ -91,6 +91,7 @@ formatters:
       local-prefixes:
         - github.com/nobl9/sloctl
     gofumpt:
-      extra-rules: true
+      extra:
+        group-params: true
   exclusions:
     generated: strict
