@@ -15,7 +15,7 @@ Section worth noting and getting familiar with is located under
 Run `make help` to display short description for each target.
 The provided Makefile will automatically install dev dependencies if they're
 missing.
-Binaries, like `golangci-lint`, and Bats libraries are placed under `bin`,
+Tools, like `golangci-lint` and Bats, are placed under `bin`,
 and `yarn` managed dependencies are installed into `node_modules`.
 However, it does not detect if the binary you have is up to date with the
 versions declaration located in Makefile.
@@ -38,8 +38,7 @@ which need them, or the aggregate targets which include them:
 - [Docker](https://docs.docker.com/get-started/get-docker/), for `docker`,
   `test/bats/unit`, `test/bats/e2e` and `test/go/e2e-docker`.
 - [jq](https://github.com/jqlang/jq), for `test/bats/e2e`.
-- [bats-core](https://github.com/bats-core/bats-core) and Python 3,
-  for `test/bats/platform`.
+- Python 3, for `test/bats/platform`.
   See [Platform compatibility tests](#platform-compatibility-tests).
 
 ## CI
@@ -114,15 +113,14 @@ Refer to the Makefile for the exact commands.
 ### Platform compatibility tests
 
 `make test/bats/platform` runs Bats directly on your machine,
-so bats-core and Python 3 must be installed locally.
-For example, on macOS run `brew install bats-core`.
+so Python 3 must be installed locally.
+The target downloads the bats-core, bats-support and bats-assert versions
+pinned in the Makefile into `bin/bats` and runs the tests with them.
 
-When `BATS_LIB_PATH` is not set, the target downloads the bats-support
-and bats-assert versions pinned in the Makefile into `bin/bats-lib`
-and loads them from there.
-If you set `BATS_LIB_PATH` yourself, it must point at a directory which
-contains `bats-support` and `bats-assert` 2.2.0 or newer,
-because older bats-assert versions do not provide `assert_stderr`.
+To use your own Bats installation instead, set `BATS` to the `bats`
+executable and `BATS_LIB_PATH` to the directory which contains
+`bats-support` and `bats-assert`.
+Use versions no older than the ones pinned in the Makefile.
 
 The `notification-platforms` and `notification-windows` jobs in
 [unit-tests.yml](../.github/workflows/unit-tests.yml) show the full setup

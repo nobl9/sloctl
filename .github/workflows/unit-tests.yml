@@ -38,15 +38,8 @@ jobs:
       - uses: actions/setup-python@v6.2.0
         with:
           python-version: "3.13"
-      - name: Set up Bats
-        id: setup-bats
-        uses: bats-core/bats-action@4.0.0
-        with:
-          bats-version: 1.13.0
-          assert-version: 2.2.4
       - name: Run native platform notification tests
         env:
-          BATS_LIB_PATH: ${{ steps.setup-bats.outputs.lib-path }}
           TERM: xterm
         run: make test/bats/platform
   notification-windows:
@@ -83,6 +76,7 @@ jobs:
       - name: Run native platform notification tests
         shell: msys2 {0}
         env:
+          BATS: bats
           BATS_LIB_PATH: ${{ steps.setup-bats.outputs.lib-path }}
           TERM: xterm
         run: make test/bats/platform

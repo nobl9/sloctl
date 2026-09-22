@@ -5,7 +5,7 @@ set -e
 LOCAL_BIN_DIR="${LOCAL_BIN_DIR:-./bin}"
 
 _binary() {
-  if [ ! -f "${LOCAL_BIN_DIR}/${1}" ]; then
+  if [ ! -e "${LOCAL_BIN_DIR}/${1}" ]; then
     echo "$1 was not found in $LOCAL_BIN_DIR" >&2
     make "install/$1"
   fi

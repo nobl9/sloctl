@@ -26,11 +26,13 @@ endif
 
 # renovate datasource=github-releases depName=golangci/golangci-lint
 GOLANGCI_LINT_VERSION := v2.13.2
+# renovate datasource=github-releases depName=bats-core/bats-core
+BATS_CORE_VERSION := v1.14.0
 # renovate datasource=github-releases depName=bats-core/bats-support
 BATS_SUPPORT_VERSION := v0.3.0
 # renovate datasource=github-releases depName=bats-core/bats-assert
 BATS_ASSERT_VERSION := v2.2.4
-BATS_LIB_DIR := $(BIN_DIR)/bats-lib
+BATS_DIR := $(BIN_DIR)/bats
 
 # Check if the program is present in $PATH and install otherwise.
 # ${1} - oneOf{binary,yarn}
@@ -43,6 +45,17 @@ endef
 # ${1} - repository url
 define _install_go_binary
 	GOBIN=$(realpath $(BIN_DIR)) go install "${1}"
+endef
+
+# Download a GitHub repository tag and extract it into a directory.
+# ${1} - repository in the owner/name format
+# ${2} - tag
+# ${3} - destination directory
+define _install_github_tag
+	mkdir -p "${3}"
+	curl -sSfL -o "${3}.tar.gz" "https://github.com/${1}/archive/refs/tags/${2}.tar.gz"
+	tar -xzf "${3}.tar.gz" -C "${3}" --strip-components=1
+	rm "${3}.tar.gz"
 endef
 
 # Print Makefile target step description.
@@ -121,20 +134,21 @@ test/bats/unit:
 		sloctl-bats-unit -F pretty --filter-tags unit,!platform $(TEST_DIR)/*
 
 ## Run native platform notification tests.
+## Set BATS and BATS_LIB_PATH to use a preinstalled bats-core and Bats libraries.
 test/bats/platform:
 	$(MAKE) VERSION=v1.0.0 NOTIFICATIONS_RELEASE_URL=$(NOTIFICATIONS_TEST_RELEASE_URL) build
 	$(call _print_step,Running native platform notification tests)
-	@if [ -z "$${BATS_LIB_PATH:-}" ]; then \
-		[ -d $(BATS_LIB_DIR) ] || $(MAKE) install/bats-lib || exit 1; \
-		BATS_LIB_PATH="$(CURDIR)/$(BATS_LIB_DIR)"; \
-		export BATS_LIB_PATH; \
-	fi; \
-	set -- --filter-tags platform:unix; \
+ifeq ($(BATS),)
+	$(call _ensure_installed,binary,bats)
+endif
+	@set -- --filter-tags platform:unix; \
 	case "$$(uname -s)" in \
 		CYGWIN*|MINGW*|MSYS*) set -- --filter-tags platform:windows ;; \
 		Darwin*) set -- "$$@" --filter-tags platform:macos ;; \
 	esac; \
-	RELEASE_SERVER_PORT=$(NOTIFICATIONS_TEST_RELEASE_PORT) bats -F pretty \
+	RELEASE_SERVER_PORT=$(NOTIFICATIONS_TEST_RELEASE_PORT) \
+	BATS_LIB_PATH="$${BATS_LIB_PATH:-$(CURDIR)/$(BATS_DIR)/lib}" \
+		$(or $(BATS),$(BATS_DIR)/core/bin/bats) -F pretty \
 		--setup-suite-file $(TEST_DIR)/setup_platform_suite.bash \
 		"$$@" $(TEST_DIR)/notifications.bats
 
@@ -213,7 +227,7 @@ format/cspell:
 	$(call _ensure_installed,yarn,yaml)
 	yarn --silent format-cspell-config
 
-.PHONY: install/tools install/yarn install/golangci-lint install/bats-lib
+.PHONY: install/tools install/yarn install/golangci-lint install/bats
 ## Install all dev dependencies.
 install/tools: install/yarn install/golangci-lint
 
@@ -228,15 +242,15 @@ install/golangci-lint:
 	curl -sSfL https://golangci-lint.run/install.sh |\
  		sh -s -- -b $(BIN_DIR) $(GOLANGCI_LINT_VERSION)
 
-## Install Bats libraries used by native platform tests (https://github.com/bats-core).
-install/bats-lib:
-	echo "Installing Bats libraries..."
-	rm -rf $(BATS_LIB_DIR)
-	mkdir -p $(BATS_LIB_DIR)/bats-support $(BATS_LIB_DIR)/bats-assert
-	curl -sSfL https://github.com/bats-core/bats-support/archive/refs/tags/$(BATS_SUPPORT_VERSION).tar.gz |\
-		tar -xz -C $(BATS_LIB_DIR)/bats-support --strip-components=1
-	curl -sSfL https://github.com/bats-core/bats-assert/archive/refs/tags/$(BATS_ASSERT_VERSION).tar.gz |\
-		tar -xz -C $(BATS_LIB_DIR)/bats-assert --strip-components=1
+## Install bats-core and Bats libraries used by native platform tests (https://github.com/bats-core).
+install/bats:
+	echo "Installing bats-core and Bats libraries..."
+	rm -rf $(BATS_DIR) $(BATS_DIR).tmp
+	$(call _install_github_tag,bats-core/bats-core,$(BATS_CORE_VERSION),$(BATS_DIR).tmp/core)
+	$(call _install_github_tag,bats-core/bats-support,$(BATS_SUPPORT_VERSION),$(BATS_DIR).tmp/lib/bats-support)
+	$(call _install_github_tag,bats-core/bats-assert,$(BATS_ASSERT_VERSION),$(BATS_DIR).tmp/lib/bats-assert)
+	# Move into place last, so _ensure_installed retries an interrupted installation.
+	mv $(BATS_DIR).tmp $(BATS_DIR)
 
 .PHONY: help
 ## Print this help message.
