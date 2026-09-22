@@ -25,7 +25,8 @@ func HuhTheme(isDark bool) *huh.Styles {
 	lightDark := lipgloss.LightDark(isDark)
 	accent := lightDark(lipgloss.Color("#00819E"), lipgloss.Color("#00BAD3"))
 	muted := lightDark(lipgloss.Color("#676868"), lipgloss.Color("#BABBBB"))
-	text := lightDark(lipgloss.Color("#000000"), white)
+	// Keep ordinary text readable even when background detection is unavailable.
+	text := lipgloss.NoColor{}
 	selectedBackground := lightDark(lipgloss.Color("#00819E"), lipgloss.Color("#01465C"))
 	t.Focused.Base = t.Focused.Base.BorderForeground(accent)
 	t.Focused.Card = t.Focused.Base
