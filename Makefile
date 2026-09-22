@@ -133,22 +133,20 @@ test/bats/unit:
 	docker run -e RELEASE_SERVER_PORT=$(NOTIFICATIONS_TEST_RELEASE_PORT) -e TERM=linux --rm \
 		sloctl-bats-unit -F pretty --filter-tags unit,!platform $(TEST_DIR)/*
 
+# Unlike the Docker based Bats targets, this one runs on the host, which has no
+# Bats libraries in /usr/lib/bats, the default BATS_LIB_PATH.
 ## Run native platform notification tests.
-## Set BATS and BATS_LIB_PATH to use a preinstalled bats-core and Bats libraries.
 test/bats/platform:
 	$(MAKE) VERSION=v1.0.0 NOTIFICATIONS_RELEASE_URL=$(NOTIFICATIONS_TEST_RELEASE_URL) build
 	$(call _print_step,Running native platform notification tests)
-ifeq ($(BATS),)
 	$(call _ensure_installed,binary,bats)
-endif
 	@set -- --filter-tags platform:unix; \
 	case "$$(uname -s)" in \
 		CYGWIN*|MINGW*|MSYS*) set -- --filter-tags platform:windows ;; \
 		Darwin*) set -- "$$@" --filter-tags platform:macos ;; \
 	esac; \
-	RELEASE_SERVER_PORT=$(NOTIFICATIONS_TEST_RELEASE_PORT) \
-	BATS_LIB_PATH="$${BATS_LIB_PATH:-$(CURDIR)/$(BATS_DIR)/lib}" \
-		$(or $(BATS),$(BATS_DIR)/core/bin/bats) -F pretty \
+	RELEASE_SERVER_PORT=$(NOTIFICATIONS_TEST_RELEASE_PORT) BATS_LIB_PATH="$(CURDIR)/$(BATS_DIR)/lib" \
+		$(BATS_DIR)/core/bin/bats -F pretty \
 		--setup-suite-file $(TEST_DIR)/setup_platform_suite.bash \
 		"$$@" $(TEST_DIR)/notifications.bats
 

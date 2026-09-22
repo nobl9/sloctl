@@ -117,11 +117,6 @@ so Python 3 must be installed locally.
 The target downloads the bats-core, bats-support and bats-assert versions
 pinned in the Makefile into `bin/bats` and runs the tests with them.
 
-To use your own Bats installation instead, set `BATS` to the `bats`
-executable and `BATS_LIB_PATH` to the directory which contains
-`bats-support` and `bats-assert`.
-Use versions no older than the ones pinned in the Makefile.
-
 The `notification-platforms` and `notification-windows` jobs in
 [unit-tests.yml](../.github/workflows/unit-tests.yml) show the full setup
 for each platform, including the Windows-only `pywinpty` dependency.
