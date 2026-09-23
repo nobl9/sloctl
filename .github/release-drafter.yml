@@ -1,5 +1,7 @@
 name-template: "v$RESOLVED_VERSION"
 tag-template: "v$RESOLVED_VERSION"
+# Keep the release format in sync with internal/notifications/release_notes.go
+# and .github/scripts/release-notes.sh.
 categories:
   - title: ⚠️  Breaking Changes
     labels:

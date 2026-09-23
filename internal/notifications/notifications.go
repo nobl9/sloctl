@@ -20,6 +20,7 @@ import (
 )
 
 // latestReleaseURL can be replaced at link time for deterministic notification tests.
+// GitHub limits unauthenticated requests to 60 per hour per IP.
 var latestReleaseURL = "https://api.github.com/repos/nobl9/sloctl/releases/latest"
 
 const (
@@ -27,7 +28,7 @@ const (
 	ciEnv           = "CI"
 	checkInterval   = 24 * time.Hour
 	checkTimeout    = 750 * time.Millisecond
-	maxResponseSize = 1 << 20
+	maxResponseSize = 1 << 20 // 1 MiB
 )
 
 // Result describes what the caller should do after running the notification flow.
@@ -99,6 +100,7 @@ func (n notifier) notify() Result {
 	release, err := n.fetchLatestReleaseWithTimeout()
 	currentState.LastCheckedAt = now
 	if err != nil {
+		// Cache failed checks too to avoid repeated requests while rate limited.
 		_ = n.saveState(currentState)
 		return ResultContinue
 	}

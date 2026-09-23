@@ -9,10 +9,15 @@ import (
 )
 
 var (
-	darkGray = lipgloss.Color("#383939")
-	white    = lipgloss.Color("#FFFFFF")
-	pink     = lipgloss.Color("#DB2779")
-	red      = lipgloss.Color("#D42E56")
+	darkGray  = lipgloss.Color("#383939")
+	white     = lipgloss.Color("#FFFFFF")
+	pink      = lipgloss.Color("#DB2779")
+	red       = lipgloss.Color("#D42E56")
+	teal      = lipgloss.Color("#00819E")
+	cyan      = lipgloss.Color("#00BAD3")
+	gray      = lipgloss.Color("#676868")
+	lightGray = lipgloss.Color("#BABBBB")
+	darkTeal  = lipgloss.Color("#01465C")
 )
 
 // HuhTheme returns the shared Nobl9 terminal theme for interactive forms.
@@ -23,11 +28,11 @@ func HuhTheme(isDark bool) *huh.Styles {
 	}
 
 	lightDark := lipgloss.LightDark(isDark)
-	accent := lightDark(lipgloss.Color("#00819E"), lipgloss.Color("#00BAD3"))
-	muted := lightDark(lipgloss.Color("#676868"), lipgloss.Color("#BABBBB"))
+	accent := lightDark(teal, cyan)
+	muted := lightDark(gray, lightGray)
 	// Keep ordinary text readable even when background detection is unavailable.
 	text := lipgloss.NoColor{}
-	selectedBackground := lightDark(lipgloss.Color("#00819E"), lipgloss.Color("#01465C"))
+	selectedBackground := lightDark(teal, darkTeal)
 	t.Focused.Base = t.Focused.Base.BorderForeground(accent)
 	t.Focused.Card = t.Focused.Base
 	t.Focused.Title = t.Focused.Title.Foreground(accent)

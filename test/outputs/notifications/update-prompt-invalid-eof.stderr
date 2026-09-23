@@ -6,5 +6,6 @@ Choose update action
 1. Update (runs go install github.com/nobl9/sloctl/cmd/sloctl@latest)
 2. Skip
 3. Skip until next version
-Enter a number between 1 and 3 [2]:
-failed to read update choice: EOF; continuing with the requested command
+Enter a number between 1 and 3: Invalid: must be a number between 1 and 3
+Enter a number between 1 and 3:
+failed to show update notification: runtime error: index out of range [-1]; continuing with the requested command
