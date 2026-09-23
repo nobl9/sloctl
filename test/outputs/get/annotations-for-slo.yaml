@@ -2,7 +2,7 @@
   kind: Annotation
   metadata:
     name: sidious
-    project: death-star
+    project: <PROJECT>
   spec:
     slo: splunk-raw-rolling
     description: Dummy Annotation for 'sloctl get' e2e tests
@@ -12,7 +12,7 @@
   kind: Annotation
   metadata:
     name: vader
-    project: death-star
+    project: <PROJECT>
   spec:
     slo: splunk-raw-rolling
     description: Dummy review note for 'sloctl get' e2e tests

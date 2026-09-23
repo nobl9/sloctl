@@ -2,7 +2,7 @@
   kind: AlertMethod
   metadata:
     name: mail-notification-genius
-    project: death-star
+    project: <PROJECT>
   spec:
     description: Dummy AlertMethod for 'sloctl get' e2e tests
     email:
@@ -17,7 +17,7 @@
   kind: AlertMethod
   metadata:
     name: mail-notification-smart
-    project: death-star
+    project: <PROJECT>
   spec:
     description: Dummy AlertMethod for 'sloctl get' e2e tests
     email:

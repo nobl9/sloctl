@@ -2,7 +2,7 @@
   kind: SLO
   metadata:
     name: splunk-raw-rolling
-    project: death-star
+    project: <PROJECT>
     annotations:
       registry: docker.io
   spec:
@@ -37,7 +37,7 @@
   kind: SLO
   metadata:
     name: newrelic-rolling-timeslices-threshold
-    project: death-star
+    project: <PROJECT>
   spec:
     description: This SLO is just for the e2e 'sloctl get' tests, it's not supposed to work!
     service: destroyer
@@ -69,7 +69,7 @@
   kind: SLO
   metadata:
     name: newrelic-rolling-timeslices-threshold-deputy-office
-    project: death-star
+    project: <PROJECT>
   spec:
     description: This SLO is just for the e2e 'sloctl get' tests, it's not supposed to work!
     service: deputy-office

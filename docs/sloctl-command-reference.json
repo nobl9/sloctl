@@ -1,0 +1,3366 @@
+{
+  "schemaVersion": 2,
+  "command": {
+    "name": "sloctl",
+    "path": "sloctl",
+    "shortDescription": "Manage Nobl9 resources from the command line",
+    "descriptionMarkdown": "Manage Nobl9 resources from the command line.\n\nCommands that access Nobl9 use the active configuration context. Use `--context` to select another context for one command, or `--no-config-file` to authenticate with environment variables only.",
+    "options": [
+      {
+        "syntax": "--config string",
+        "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+      },
+      {
+        "syntax": "-c, --context string",
+        "description": "Use this context instead of the configured default for the selected command."
+      },
+      {
+        "syntax": "-h, --help",
+        "description": "Help for sloctl."
+      },
+      {
+        "syntax": "--no-config-file",
+        "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+      }
+    ],
+    "inheritedOptions": [],
+    "subcommands": [
+      {
+        "name": "apply",
+        "path": "sloctl apply",
+        "shortDescription": "Apply Nobl9 resource definitions",
+        "descriptionMarkdown": "Apply Nobl9 resource definitions from one or more YAML or JSON sources.\n\nWith `--replay`, Replay runs only for applied SLOs. Replay is skipped during `--dry-run`, and applied changes are not rolled back if Replay fails.\n\nUse `--file` for each input source.\nA source can be a local file, directory, URL, standard input (`-`), or glob pattern.\nDirectories are read one level deep; use `**` in a glob to match recursively.\n\nGlobs follow [Go's `filepath.Match` syntax](https://pkg.go.dev/path/filepath#Match) with added `**` support.\nDirectory and glob sources include only `.yaml`, `.yml` and `.json` files with a Nobl9 `apiVersion`; unrelated files are skipped.\nBefore processing file contents, sloctl checks for a Nobl9 API version with the regular expression `\"?apiVersion\"?\\s*:\\s*\"?n9`.\nAn explicit file without a Nobl9 `apiVersion` is rejected.\nQuote glob patterns so the shell does not expand them before sloctl receives them.\n",
+        "usage": "sloctl apply [flags]",
+        "example": "# Apply the configuration from slo.yaml.\nsloctl apply -f ./slo.yaml\n\n# Preview an apply without persisting changes.\nsloctl apply -f ./slo.yaml --dry-run\n\n# Apply resources from multiple different sources at once.\nsloctl apply -f ./slo.yaml -f test/config.yaml -f https://nobl9.com/slo.yaml\n\n# Apply the YAML or JSON passed directly into stdin.\nsloctl apply -f - \u003cslo.yaml\n\n# Apply the configuration from slo.yaml and set project if it is not defined in file.\nsloctl apply -f ./slo.yaml -p slo\n\n# Apply the configurations from all the files located at cwd recursively.\nsloctl apply -f '**'\n\n# Apply the configurations from files with 'annotations' name within the whole directory tree.\nsloctl apply -f '**/annotations*'\n\n# Apply the SLO(s) from slo.yaml and import its/their data from 2023-03-02T15:00:00Z until now.\nsloctl apply -f ./slo.yaml --replay --from=2023-03-02T15:00:00Z\n",
+        "options": [
+          {
+            "syntax": "--dry-run",
+            "description": "Send the request without persisting changes."
+          },
+          {
+            "syntax": "-f, --file stringArray",
+            "description": "Path, directory, URL, glob pattern, or `-` for YAML or JSON from standard input. Repeat this flag to use multiple sources."
+          },
+          {
+            "syntax": "--from time",
+            "description": "Start Replay at this RFC3339 timestamp. Must be used with --replay."
+          },
+          {
+            "syntax": "-p, --project string",
+            "description": "Use this project for project-scoped definitions that omit metadata.project; definitions specifying another project are rejected."
+          },
+          {
+            "syntax": "--replay",
+            "description": "Run Replay for each applied SLO. Applied changes are not rolled back if Replay fails."
+          },
+          {
+            "syntax": "-y, --yes",
+            "description": "Skip the file-count confirmation prompt. By default, the prompt appears when a directory or glob resolves to more than 23 files. Configure `filesPromptEnabled` and `filesPromptThreshold` in the `[sloctl]` section of `config.toml`, or set `SLOCTL_FILES_PROMPT_ENABLED` and `SLOCTL_FILES_PROMPT_THRESHOLD`."
+          }
+        ],
+        "inheritedOptions": [
+          {
+            "syntax": "--config string",
+            "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+          },
+          {
+            "syntax": "-c, --context string",
+            "description": "Use this context instead of the configured default for the selected command."
+          },
+          {
+            "syntax": "-h, --help",
+            "description": "Help for sloctl."
+          },
+          {
+            "syntax": "--no-config-file",
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+          }
+        ],
+        "subcommands": []
+      },
+      {
+        "name": "aws-iam-ids",
+        "path": "sloctl aws-iam-ids",
+        "shortDescription": "Get AWS IAM role identifiers",
+        "descriptionMarkdown": "Get the AWS identifiers used to configure IAM roles for Direct data sources and data exports.",
+        "options": [
+          {
+            "syntax": "-q, --jq string",
+            "description": "Filter or transform command output using a jq expression."
+          },
+          {
+            "syntax": "-o, --output format",
+            "description": "Output format: yaml, json, csv. (default yaml)"
+          }
+        ],
+        "inheritedOptions": [
+          {
+            "syntax": "--config string",
+            "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+          },
+          {
+            "syntax": "-c, --context string",
+            "description": "Use this context instead of the configured default for the selected command."
+          },
+          {
+            "syntax": "-h, --help",
+            "description": "Help for sloctl."
+          },
+          {
+            "syntax": "--no-config-file",
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+          }
+        ],
+        "subcommands": [
+          {
+            "name": "dataexport",
+            "path": "sloctl aws-iam-ids dataexport",
+            "shortDescription": "Get the AWS external ID for data exports",
+            "descriptionMarkdown": "Return the AWS external ID that Nobl9 uses to assume a data export IAM role.",
+            "usage": "sloctl aws-iam-ids dataexport [flags]",
+            "example": "sloctl aws-iam-ids dataexport\nsloctl aws-iam-ids dataexport --output json",
+            "options": [],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "direct",
+            "path": "sloctl aws-iam-ids direct",
+            "shortDescription": "Get IAM identifiers for a Direct data source",
+            "descriptionMarkdown": "Return the AWS external ID and Nobl9 AWS account ID for the named\nDirect data source in the active Project.\nUse these values to configure a cross-account IAM role.\nThe response contains the `externalID` and `accountID` fields.",
+            "usage": "sloctl aws-iam-ids direct \u003cdirect-name\u003e [flags]",
+            "example": "sloctl aws-iam-ids direct my-cloudwatch-source\nsloctl aws-iam-ids direct my-cloudwatch-source --output json",
+            "options": [],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
+        "name": "budgetadjustments",
+        "path": "sloctl budgetadjustments",
+        "shortDescription": "Manage budget adjustment events",
+        "descriptionMarkdown": "Manage events associated with budget adjustments.",
+        "options": [
+          {
+            "syntax": "-h, --help",
+            "description": "Help for budgetadjustments."
+          }
+        ],
+        "inheritedOptions": [
+          {
+            "syntax": "--config string",
+            "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+          },
+          {
+            "syntax": "-c, --context string",
+            "description": "Use this context instead of the configured default for the selected command."
+          },
+          {
+            "syntax": "--no-config-file",
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+          }
+        ],
+        "subcommands": [
+          {
+            "name": "events",
+            "path": "sloctl budgetadjustments events",
+            "shortDescription": "Get, update, or delete budget adjustment events",
+            "descriptionMarkdown": "Manage event occurrences associated with budget adjustments. These\ncommands do not modify budget adjustment definitions.",
+            "options": [
+              {
+                "syntax": "-h, --help",
+                "description": "Help for events."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": [
+              {
+                "name": "delete",
+                "path": "sloctl budgetadjustments events delete",
+                "shortDescription": "Delete past budget adjustment events",
+                "descriptionMarkdown": "Delete past events for one budget adjustment. Only events that ended within the last 30 days can be deleted. Deletions recalculate affected SLO error budgets and can alter reliability reports.\n\nProvide YAML input from a local file or standard input. Separate multiple YAML documents with `---`.",
+                "usage": "sloctl budgetadjustments events delete [flags]",
+                "example": "# Delete Adjustment Events using a file:\ncat \u003c\u003cEOF \u003e ./events.yaml\n- eventStart: 2024-10-24T04:07:04Z\n  eventEnd: 2024-10-24T05:27:04Z\n  slos:\n  - project: test-project\n    name: sample-slo-1\n- eventStart: 2024-10-25T04:07:04Z\n  eventEnd: 2024-10-25T05:27:04Z\n  slos:\n  - project: test-project\n    name: sample-slo-2\nEOF\nsloctl budgetadjustments events delete --adjustment-name=sample-adjustment-name -f ./events.yaml\n\n# Delete Adjustment Events using stdin:\nsloctl budgetadjustments events delete --adjustment-name=sample-adjustment-name -f - \u003c./events.yaml\n",
+                "options": [
+                  {
+                    "syntax": "--adjustment-name string",
+                    "description": "Name of the budget adjustment."
+                  },
+                  {
+                    "syntax": "-f, --file string",
+                    "description": "Path to a YAML event definition file, or - to read from standard input."
+                  }
+                ],
+                "inheritedOptions": [
+                  {
+                    "syntax": "--config string",
+                    "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+                  },
+                  {
+                    "syntax": "-c, --context string",
+                    "description": "Use this context instead of the configured default for the selected command."
+                  },
+                  {
+                    "syntax": "-h, --help",
+                    "description": "Help for events."
+                  },
+                  {
+                    "syntax": "--no-config-file",
+                    "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "get",
+                "path": "sloctl budgetadjustments events get",
+                "shortDescription": "Get budget adjustment events",
+                "descriptionMarkdown": "Get past and ongoing events for one budget adjustment in a required RFC3339 time range. Results are ordered by event start time and limited to 250 events.\n\nUse `--slo-name` together with `--slo-project` to filter by one SLO. Each matching\nevent includes its associated SLOs.",
+                "usage": "sloctl budgetadjustments events get [flags]",
+                "example": "# Get Adjustment Events for 'sample-adjustment-name' from 2024-09-23T00:45:00 UTC to 2024-09-23T20:46:00 UTC.\nsloctl budgetadjustments events get --adjustment-name=sample-adjustment-name --from=2024-09-23T00:45:00Z --to=2024-09-23T20:46:00Z\n\n\n# Get Adjustment Events for 'sample-adjustment-name' from 2024-09-23T00:45:00 UTC to 2024-09-23T20:46:00 UTC\n# only for one slo with sloName and project filters.\nsloctl budgetadjustments events get \\\n  --adjustment-name=sample-adjustment-name \\\n  --from=2024-09-23T00:45:00Z \\\n  --to=2024-09-23T20:46:00Z \\\n  --slo-project=sample-project-name \\\n  --slo-name=sample-slo-name\n",
+                "options": [
+                  {
+                    "syntax": "--adjustment-name string",
+                    "description": "Name of the budget adjustment."
+                  },
+                  {
+                    "syntax": "--from time",
+                    "description": "Start of the query range in RFC3339 format."
+                  },
+                  {
+                    "syntax": "-q, --jq string",
+                    "description": "Filter or transform command output using a jq expression."
+                  },
+                  {
+                    "syntax": "-o, --output format",
+                    "description": "Output format: yaml, json, csv. (default yaml)"
+                  },
+                  {
+                    "syntax": "--slo-name string",
+                    "description": "SLO name to filter by. Must be used with --slo-project."
+                  },
+                  {
+                    "syntax": "--slo-project string",
+                    "description": "Project of the SLO to filter by. Must be used with --slo-name."
+                  },
+                  {
+                    "syntax": "--to time",
+                    "description": "End of the query range in RFC3339 format."
+                  }
+                ],
+                "inheritedOptions": [
+                  {
+                    "syntax": "--config string",
+                    "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+                  },
+                  {
+                    "syntax": "-c, --context string",
+                    "description": "Use this context instead of the configured default for the selected command."
+                  },
+                  {
+                    "syntax": "-h, --help",
+                    "description": "Help for events."
+                  },
+                  {
+                    "syntax": "--no-config-file",
+                    "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "update",
+                "path": "sloctl budgetadjustments events update",
+                "shortDescription": "Update past budget adjustment events",
+                "descriptionMarkdown": "Update past events for one budget adjustment. Only events that ended within the last 30 days can be updated. Updates recalculate affected SLO error budgets and can alter reliability reports.\n\nProvide YAML input from a local file or standard input. Identify each event by its existing timestamps and SLOs, and provide the replacement timestamps under `update`. Separate multiple YAML documents with `---`.",
+                "usage": "sloctl budgetadjustments events update [flags]",
+                "example": "# Update Adjustment Events using a file:\ncat \u003c\u003cEOF \u003e ./events.yaml\n- eventStart: 2024-10-24T04:07:04Z\n  eventEnd: 2024-10-24T05:27:04Z\n  slos:\n  - project: test-project\n    name: sample-slo-1\n  update:\n    eventStart: 2024-10-24T03:07:04Z\n    eventEnd: 2024-10-24T04:27:04Z\n- eventStart: 2024-10-25T04:07:04Z\n  eventEnd: 2024-10-25T05:27:04Z\n  slos:\n  - project: test-project\n    name: sample-slo-2\n  update:\n    eventStart: 2024-10-25T03:07:04Z\n    eventEnd: 2024-10-25T04:27:04Z\nEOF\nsloctl budgetadjustments events update --adjustment-name=sample-adjustment-name -f ./events.yaml\n\n# Update Adjustment Events using stdin:\nsloctl budgetadjustments events update --adjustment-name=sample-adjustment-name -f - \u003c./events.yaml\n",
+                "options": [
+                  {
+                    "syntax": "--adjustment-name string",
+                    "description": "Name of the budget adjustment."
+                  },
+                  {
+                    "syntax": "-f, --file string",
+                    "description": "Path to a YAML event definition file, or - to read from standard input."
+                  }
+                ],
+                "inheritedOptions": [
+                  {
+                    "syntax": "--config string",
+                    "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+                  },
+                  {
+                    "syntax": "-c, --context string",
+                    "description": "Use this context instead of the configured default for the selected command."
+                  },
+                  {
+                    "syntax": "-h, --help",
+                    "description": "Help for events."
+                  },
+                  {
+                    "syntax": "--no-config-file",
+                    "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+                  }
+                ],
+                "subcommands": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "completion",
+        "path": "sloctl completion",
+        "shortDescription": "Generate shell completion scripts",
+        "descriptionMarkdown": "Generate a completion script for Bash, fish, PowerShell, or Zsh. Choose a shell subcommand for loading and installation instructions.",
+        "options": [],
+        "inheritedOptions": [
+          {
+            "syntax": "--config string",
+            "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+          },
+          {
+            "syntax": "-c, --context string",
+            "description": "Use this context instead of the configured default for the selected command."
+          },
+          {
+            "syntax": "-h, --help",
+            "description": "Help for sloctl."
+          },
+          {
+            "syntax": "--no-config-file",
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+          }
+        ],
+        "subcommands": [
+          {
+            "name": "bash",
+            "path": "sloctl completion bash",
+            "shortDescription": "Generate the autocompletion script for bash",
+            "descriptionMarkdown": "Generate a Bash completion script. Install the `bash-completion` package first.\n\n**Load completions in the current shell:**\n\n~~~bash\nsource \u003c(sloctl completion bash)\n~~~\n\n**Install completions for future sessions on Linux:**\n\n~~~bash\nsloctl completion bash \u003e /etc/bash_completion.d/sloctl\n~~~\n\n**With Homebrew on macOS:**\n\n~~~bash\nsloctl completion bash \u003e \"$(brew --prefix)/etc/bash_completion.d/sloctl\"\n~~~",
+            "usage": "sloctl completion bash",
+            "options": [
+              {
+                "syntax": "--no-descriptions",
+                "description": "disable completion descriptions"
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "fish",
+            "path": "sloctl completion fish",
+            "shortDescription": "Generate the autocompletion script for fish",
+            "descriptionMarkdown": "Generate a fish completion script.\n\n**Load completions in the current shell:**\n\n~~~fish\nsloctl completion fish | source\n~~~\n\n**Install completions for future sessions:**\n\n~~~fish\nsloctl completion fish \u003e ~/.config/fish/completions/sloctl.fish\n~~~",
+            "usage": "sloctl completion fish [flags]",
+            "options": [
+              {
+                "syntax": "--no-descriptions",
+                "description": "disable completion descriptions"
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "powershell",
+            "path": "sloctl completion powershell",
+            "shortDescription": "Generate the autocompletion script for powershell",
+            "descriptionMarkdown": "Generate a PowerShell completion script.\n\n**Load completions in the current shell:**\n\n~~~powershell\nsloctl completion powershell | Out-String | Invoke-Expression\n~~~\n\nTo persist completions, add that command to your PowerShell profile.",
+            "usage": "sloctl completion powershell [flags]",
+            "options": [
+              {
+                "syntax": "--no-descriptions",
+                "description": "disable completion descriptions"
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "zsh",
+            "path": "sloctl completion zsh",
+            "shortDescription": "Generate the autocompletion script for zsh",
+            "descriptionMarkdown": "Generate a Zsh completion script.\n\n**Enable completion in `~/.zshrc` if needed:**\n\n~~~zsh\nautoload -U compinit\ncompinit\n~~~\n\n**Load completions in the current shell:**\n\n~~~zsh\nsource \u003c(sloctl completion zsh)\n~~~\n\n**Install completions for future sessions on Linux:**\n\n~~~zsh\nsloctl completion zsh \u003e \"${fpath[1]}/_sloctl\"\n~~~\n\n**With Homebrew on macOS:**\n\n~~~zsh\nsloctl completion zsh \u003e \"$(brew --prefix)/share/zsh/site-functions/_sloctl\"\n~~~",
+            "usage": "sloctl completion zsh [flags]",
+            "options": [
+              {
+                "syntax": "--no-descriptions",
+                "description": "disable completion descriptions"
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
+        "name": "config",
+        "path": "sloctl config",
+        "shortDescription": "Manage sloctl configuration contexts",
+        "descriptionMarkdown": "Manage authentication contexts stored in the sloctl configuration file.",
+        "options": [],
+        "inheritedOptions": [
+          {
+            "syntax": "--config string",
+            "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+          },
+          {
+            "syntax": "-c, --context string",
+            "description": "Use this context instead of the configured default for the selected command."
+          },
+          {
+            "syntax": "-h, --help",
+            "description": "Help for sloctl."
+          },
+          {
+            "syntax": "--no-config-file",
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+          }
+        ],
+        "subcommands": [
+          {
+            "name": "add-context",
+            "path": "sloctl config add-context",
+            "shortDescription": "Add a configuration context",
+            "descriptionMarkdown": "Add a context through an interactive form.\nThe form collects credentials, the Nobl9 instance, and a default Project.\nIf the configuration contains no contexts, the new context becomes the default.\nOtherwise, choose whether to make it the default.",
+            "usage": "sloctl config add-context [flags]",
+            "example": "# Add a context interactively.\nsloctl config add-context",
+            "options": [],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "current-context",
+            "path": "sloctl config current-context",
+            "shortDescription": "Display the default context",
+            "descriptionMarkdown": "Print the default context name.\nWith `--verbose`, print its configuration.\nBy default, the client secret is masked and the access token is omitted.\n`--show-secret` prints configured credentials without masking.\n\n`--output` and `--jq` apply only to verbose output.",
+            "usage": "sloctl config current-context [flags]",
+            "example": "# Print the default context name.\nsloctl config current-context\n\n# Print its masked configuration as JSON.\nsloctl config current-context --verbose --output json\n\n# Print unmasked credentials. Treat the output as sensitive.\nsloctl config current-context --verbose --show-secret",
+            "options": [
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: toml, yaml, json, csv. (default yaml)"
+              },
+              {
+                "syntax": "--show-secret",
+                "description": "Display unmasked credentials (requires --verbose)."
+              },
+              {
+                "syntax": "-v, --verbose",
+                "description": "Display the current context configuration."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "current-user",
+            "path": "sloctl config current-user",
+            "shortDescription": "Display the current user ID",
+            "descriptionMarkdown": "Print the user ID associated with the active credentials.\nWith `--verbose`, print the complete user record.\n`--output` and `--jq` apply only to verbose output.",
+            "usage": "sloctl config current-user [flags]",
+            "example": "# Print the current user ID.\nsloctl config current-user\n\n# Print the complete user record as JSON.\nsloctl config current-user --verbose --output json",
+            "options": [
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: toml, yaml, json, csv. (default yaml)"
+              },
+              {
+                "syntax": "-v, --verbose",
+                "description": "Display the complete user record."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "delete-context",
+            "path": "sloctl config delete-context",
+            "shortDescription": "Delete configuration contexts",
+            "descriptionMarkdown": "Delete one or more contexts by name,\nor omit the names to use an interactive multi-select.\nThe default context cannot be deleted; select another default context first.",
+            "usage": "sloctl config delete-context [context-name...] [flags]",
+            "example": "# Delete contexts directly.\nsloctl config delete-context old-context backup-context\n\n# Delete contexts interactively.\nsloctl config delete-context",
+            "options": [],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "get-contexts",
+            "path": "sloctl config get-contexts",
+            "shortDescription": "List configuration contexts",
+            "descriptionMarkdown": "List every context name, or only the names supplied as arguments.\nWith `--verbose`, print the selected context configurations.\nClient secrets are masked and access tokens are omitted.",
+            "usage": "sloctl config get-contexts [context-name...] [flags]",
+            "example": "# List all context names.\nsloctl config get-contexts\n\n# Print selected contexts as TOML.\nsloctl config get-contexts development production --verbose --output toml",
+            "options": [
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: toml, yaml, json, csv. (default yaml)"
+              },
+              {
+                "syntax": "-v, --verbose",
+                "description": "Display context configuration details."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "rename-context",
+            "path": "sloctl config rename-context",
+            "shortDescription": "Rename a configuration context",
+            "descriptionMarkdown": "Rename one context by providing its existing and new names,\nor omit both names to use an interactive form.\nIf the renamed context is the default, the new name remains the default.",
+            "usage": "sloctl config rename-context [old-name new-name] [flags]",
+            "example": "# Rename a context directly.\nsloctl config rename-context old-context new-context\n\n# Rename a context interactively.\nsloctl config rename-context",
+            "options": [],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "use-context",
+            "path": "sloctl config use-context",
+            "shortDescription": "Set the default context",
+            "descriptionMarkdown": "Set the default context by name, or omit the name to select a context interactively.",
+            "usage": "sloctl config use-context [context-name] [flags]",
+            "example": "# Select a context interactively.\nsloctl config use-context\n\n# Set a context directly.\nsloctl config use-context my-context",
+            "options": [],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
+        "name": "convert",
+        "path": "sloctl convert",
+        "shortDescription": "Convert external definitions to Nobl9 resources",
+        "descriptionMarkdown": "Convert supported external resource definitions with a format-specific subcommand.",
+        "options": [],
+        "inheritedOptions": [
+          {
+            "syntax": "--config string",
+            "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+          },
+          {
+            "syntax": "-c, --context string",
+            "description": "Use this context instead of the configured default for the selected command."
+          },
+          {
+            "syntax": "-h, --help",
+            "description": "Help for sloctl."
+          },
+          {
+            "syntax": "--no-config-file",
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+          }
+        ],
+        "subcommands": [
+          {
+            "name": "openslo",
+            "path": "sloctl convert openslo",
+            "shortDescription": "Convert OpenSLO resources to Nobl9 configuration",
+            "descriptionMarkdown": "Convert OpenSLO YAML or JSON from files, directories, URLs,\nglob patterns, or standard input.\nRepeat `--file` to combine sources. Quote glob patterns to prevent shell expansion.\nConverted Nobl9 resources are written to standard output and can be piped to `sloctl apply`.\n\nSee [nobl9-openslo](https://github.com/nobl9/nobl9-openslo) for conversion rules and supported resources.",
+            "usage": "sloctl convert openslo [flags]",
+            "example": "# Convert the OpenSLO definitions from service.yaml.\ncat \u003c\u003c'EOF' \u003e ./service.yaml\napiVersion: openslo/v1\nkind: Service\nmetadata:\n  annotations:\n    nobl9.com/metadata.project: my-project\n  name: example-service\nspec:\n  description: Example service description\nEOF\nsloctl convert openslo -f ./service.yaml\n\n# Convert definitions from multiple different sources at once.\nsloctl convert openslo -f ./service.yaml -f test/config.yaml\n\n# Convert the YAML or JSON passed directly into stdin.\nsloctl convert openslo -f - \u003cservice.yaml\n\n# Convert definitions from all the files located at cwd recursively.\nsloctl convert openslo -f '**'\n\n# Convert definitions from files with 'data-sources' name within the whole directory tree.\nsloctl convert openslo -f '**/data-sources*'\n\n# Apply converted definitions in one step.\nsloctl convert openslo -f ./service.yaml | sloctl apply -f -\n",
+            "options": [
+              {
+                "syntax": "-f, --file stringArray",
+                "description": "OpenSLO YAML or JSON source: file, directory, URL, glob pattern, or `-` for standard input. Repeat this flag to use multiple sources."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
+        "name": "delete",
+        "path": "sloctl delete",
+        "shortDescription": "Delete Nobl9 resources by name or definition file",
+        "descriptionMarkdown": "Delete resources described by one or more YAML or JSON sources. To delete resources by name, use a resource subcommand such as `sloctl delete slos \u003cname\u003e`.\n\nUse `--file` for each input source.\nA source can be a local file, directory, URL, standard input (`-`), or glob pattern.\nDirectories are read one level deep; use `**` in a glob to match recursively.\n\nGlobs follow [Go's `filepath.Match` syntax](https://pkg.go.dev/path/filepath#Match) with added `**` support.\nDirectory and glob sources include only `.yaml`, `.yml` and `.json` files with a Nobl9 `apiVersion`; unrelated files are skipped.\nBefore processing file contents, sloctl checks for a Nobl9 API version with the regular expression `\"?apiVersion\"?\\s*:\\s*\"?n9`.\nAn explicit file without a Nobl9 `apiVersion` is rejected.\nQuote glob patterns so the shell does not expand them before sloctl receives them.\n",
+        "usage": "sloctl delete [flags]",
+        "example": "# Delete the configuration from slo.yaml.\nsloctl delete -f ./slo.yaml\n\n# Preview deletion without persisting changes.\nsloctl delete -f ./slo.yaml --dry-run\n\n# Delete resources from multiple different sources at once.\nsloctl delete -f ./slo.yaml -f test/config.yaml -f https://nobl9.com/slo.yaml\n\n# Delete the YAML or JSON passed directly into stdin.\nsloctl delete -f - \u003cslo.yaml\n\n# Delete by passing in one or more resource names.\nsloctl delete slo my-slo-name another-slo-name\n\n# Delete the configuration from slo.yaml and set project context if it is not defined in file.\nsloctl delete -f ./slo.yaml -p slo\n\n# Delete the configurations from all the files located at cwd recursively.\nsloctl delete -f '**'\n\n# Delete the configurations from files with 'annotations' name within the whole directory tree.\nsloctl delete -f '**/annotations*'\n",
+        "options": [
+          {
+            "syntax": "--dry-run",
+            "description": "Send the request without persisting changes."
+          },
+          {
+            "syntax": "-f, --file stringArray",
+            "description": "Path, directory, URL, glob pattern, or `-` for YAML or JSON from standard input. Repeat this flag to use multiple sources."
+          },
+          {
+            "syntax": "-p, --project string",
+            "description": "Use this project for project-scoped definitions that omit metadata.project; definitions specifying another project are rejected."
+          },
+          {
+            "syntax": "-y, --yes",
+            "description": "Skip the file-count confirmation prompt. By default, the prompt appears when a directory or glob resolves to more than 23 files. Configure `filesPromptEnabled` and `filesPromptThreshold` in the `[sloctl]` section of `config.toml`, or set `SLOCTL_FILES_PROMPT_ENABLED` and `SLOCTL_FILES_PROMPT_THRESHOLD`."
+          }
+        ],
+        "inheritedOptions": [
+          {
+            "syntax": "--config string",
+            "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+          },
+          {
+            "syntax": "-c, --context string",
+            "description": "Use this context instead of the configured default for the selected command."
+          },
+          {
+            "syntax": "-h, --help",
+            "description": "Help for sloctl."
+          },
+          {
+            "syntax": "--no-config-file",
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+          }
+        ],
+        "subcommands": [
+          {
+            "name": "agents",
+            "path": "sloctl delete agents",
+            "shortDescription": "Delete agents by name",
+            "descriptionMarkdown": "Delete one or more agents by name. At least one name is required. Use `--project` to override the configured default project.",
+            "usage": "sloctl delete agents \u003cname\u003e [name...] [flags]",
+            "options": [
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Delete resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "alertmethods",
+            "path": "sloctl delete alertmethods",
+            "shortDescription": "Delete alert methods by name",
+            "descriptionMarkdown": "Delete one or more alert methods by name. At least one name is required. Use `--project` to override the configured default project.",
+            "usage": "sloctl delete alertmethods \u003cname\u003e [name...] [flags]",
+            "options": [
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Delete resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "alertpolicies",
+            "path": "sloctl delete alertpolicies",
+            "shortDescription": "Delete alert policies by name",
+            "descriptionMarkdown": "Delete one or more alert policies by name. At least one name is required. Use `--project` to override the configured default project.",
+            "usage": "sloctl delete alertpolicies \u003cname\u003e [name...] [flags]",
+            "options": [
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Delete resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "alertsilences",
+            "path": "sloctl delete alertsilences",
+            "shortDescription": "Delete alert silences by name",
+            "descriptionMarkdown": "Delete one or more alert silences by name. At least one name is required. Use `--project` to override the configured default project.",
+            "usage": "sloctl delete alertsilences \u003cname\u003e [name...] [flags]",
+            "options": [
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Delete resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "annotations",
+            "path": "sloctl delete annotations",
+            "shortDescription": "Delete annotations by name",
+            "descriptionMarkdown": "Delete one or more annotations by name. At least one name is required. Use `--project` to override the configured default project.",
+            "usage": "sloctl delete annotations \u003cname\u003e [name...] [flags]",
+            "options": [
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Delete resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "budgetadjustments",
+            "path": "sloctl delete budgetadjustments",
+            "shortDescription": "Delete budget adjustments by name",
+            "descriptionMarkdown": "Delete one or more budget adjustments by name. At least one name is required.",
+            "usage": "sloctl delete budgetadjustments \u003cname\u003e [name...] [flags]",
+            "options": [
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "dataexports",
+            "path": "sloctl delete dataexports",
+            "shortDescription": "Delete data exports by name",
+            "descriptionMarkdown": "Delete one or more data exports by name. At least one name is required. Use `--project` to override the configured default project.",
+            "usage": "sloctl delete dataexports \u003cname\u003e [name...] [flags]",
+            "options": [
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Delete resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "directs",
+            "path": "sloctl delete directs",
+            "shortDescription": "Delete direct data sources by name",
+            "descriptionMarkdown": "Delete one or more direct data sources by name. At least one name is required. Use `--project` to override the configured default project.",
+            "usage": "sloctl delete directs \u003cname\u003e [name...] [flags]",
+            "options": [
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Delete resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "projects",
+            "path": "sloctl delete projects",
+            "shortDescription": "Delete projects by name",
+            "descriptionMarkdown": "Delete one or more projects by name. At least one name is required.",
+            "usage": "sloctl delete projects \u003cname\u003e [name...] [flags]",
+            "options": [
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "reports",
+            "path": "sloctl delete reports",
+            "shortDescription": "Delete reports by name",
+            "descriptionMarkdown": "Delete one or more reports by name. At least one name is required.",
+            "usage": "sloctl delete reports \u003cname\u003e [name...] [flags]",
+            "options": [
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "rolebindings",
+            "path": "sloctl delete rolebindings",
+            "shortDescription": "Delete role bindings by name",
+            "descriptionMarkdown": "Delete one or more role bindings by name. At least one name is required. Use `--project` to override the configured default project.",
+            "usage": "sloctl delete rolebindings \u003cname\u003e [name...] [flags]",
+            "options": [
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Delete resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "services",
+            "path": "sloctl delete services",
+            "shortDescription": "Delete services by name",
+            "descriptionMarkdown": "Delete one or more services by name. At least one name is required. Use `--project` to override the configured default project.",
+            "usage": "sloctl delete services \u003cname\u003e [name...] [flags]",
+            "options": [
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Delete resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "slos",
+            "path": "sloctl delete slos",
+            "shortDescription": "Delete SLOs by name",
+            "descriptionMarkdown": "Delete one or more SLOs by name. At least one name is required. Use `--project` to override the configured default project.",
+            "usage": "sloctl delete slos \u003cname\u003e [name...] [flags]",
+            "options": [
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Delete resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
+        "name": "edit",
+        "path": "sloctl edit",
+        "shortDescription": "Edit Nobl9 resources in the configured editor",
+        "descriptionMarkdown": "Edit resources from the default editor.\n\nThe edit command allows you to directly edit Nobl9 resources like SLOs or Alert Policies.\nSelected resources are written to a temporary YAML file before the editor opens.\nIt will open the editor defined by your `SLOCTL_EDITOR` or `EDITOR` environment variables.\n`SLOCTL_EDITOR` takes precedence over `EDITOR`.\nIf neither is defined, it falls back to:\n\n- `notepad` for Windows\n- The first available editor from `vim`, `vi`, `nano` for Unix systems, including macOS\n\nWhen opening the editor, sloctl first uses the shell defined in the `SHELL` environment variable.\nIf this is not defined, the default shell is `/bin/bash` for Unix systems or `cmd` for Windows.\n\nSaving an empty or unchanged file cancels the operation.\nRemoving a resource from the file does not delete it.\nYou cannot change its kind, name, or project.\nInvalid YAML or server errors reopen the editor with error details.\n\nIf the editor fails, sloctl preserves the temporary file and prints its path.\nIt also preserves the file and prints its path if you abandon invalid changes without fixing or reverting them.\n",
+        "example": "# Edit one SLO from your default Project.\nsloctl edit slo my-slo\n\n# Use an alternative editor.\nSLOCTL_EDITOR=\"nano\" sloctl edit project default\n\n# Edit one Service from a specific Project.\nsloctl edit service my-service -p my-project\n\n# Edit multiple Alert Policies in one session.\nsloctl edit alertpolicy policy-a policy-b\n\n# Preview edited changes without persisting them.\nsloctl edit service my-service -p my-project --dry-run\n",
+        "options": [
+          {
+            "syntax": "--dry-run",
+            "description": "Send the request without persisting changes."
+          }
+        ],
+        "inheritedOptions": [
+          {
+            "syntax": "--config string",
+            "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+          },
+          {
+            "syntax": "-c, --context string",
+            "description": "Use this context instead of the configured default for the selected command."
+          },
+          {
+            "syntax": "-h, --help",
+            "description": "Help for sloctl."
+          },
+          {
+            "syntax": "--no-config-file",
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+          }
+        ],
+        "subcommands": [
+          {
+            "name": "agents",
+            "path": "sloctl edit agents",
+            "shortDescription": "Edit one agent",
+            "descriptionMarkdown": "Select one agent by name and open it for editing. If the selection resolves to more than one agent, the command fails. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "usage": "sloctl edit agents [name] [flags]",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources to edit across all projects."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "alertmethods",
+            "path": "sloctl edit alertmethods",
+            "shortDescription": "Edit alert methods",
+            "descriptionMarkdown": "Select alert methods by name or available filters and open them for editing. Without names, all matching alert methods are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "usage": "sloctl edit alertmethods [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources to edit across all projects."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "alertpolicies",
+            "path": "sloctl edit alertpolicies",
+            "shortDescription": "Edit alert policies",
+            "descriptionMarkdown": "Select alert policies by name or available filters and open them for editing. Without names, all matching alert policies are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "usage": "sloctl edit alertpolicies [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources to edit across all projects."
+              },
+              {
+                "syntax": "-l, --label stringArray",
+                "description": "Filter by label. Repeat the flag or separate labels with commas, for example: team=platform,env=prod."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "alertsilences",
+            "path": "sloctl edit alertsilences",
+            "shortDescription": "Edit alert silences",
+            "descriptionMarkdown": "Select alert silences by name or available filters and open them for editing. Without names, all matching alert silences are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "usage": "sloctl edit alertsilences [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources to edit across all projects."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "annotations",
+            "path": "sloctl edit annotations",
+            "shortDescription": "Edit annotations",
+            "descriptionMarkdown": "Select annotations by name or available filters and open them for editing. Without names, all matching annotations are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "usage": "sloctl edit annotations [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources to edit across all projects."
+              },
+              {
+                "syntax": "--category stringArray",
+                "description": "Filter by annotation category (one of: Comment, ReviewNote, SloEdit, Alert, Adjustment, NoDataAnomaly, IncrementalMismatchAnomaly, NoBurnAnomaly, ConstantBurnAnomaly, GoodOverTotalAnomaly, Replay). Repeat to select multiple categories."
+              },
+              {
+                "syntax": "--from time",
+                "description": "Filter annotations whose spec.startTime is at or after this RFC3339 timestamp."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              },
+              {
+                "syntax": "--slo string",
+                "description": "Filter annotations by SLO name."
+              },
+              {
+                "syntax": "--system",
+                "description": "Include annotations in system categories."
+              },
+              {
+                "syntax": "--to time",
+                "description": "Filter annotations whose spec.endTime is at or before this RFC3339 timestamp."
+              },
+              {
+                "syntax": "--user",
+                "description": "Include annotations in user categories."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "budgetadjustments",
+            "path": "sloctl edit budgetadjustments",
+            "shortDescription": "Edit budget adjustments",
+            "descriptionMarkdown": "Select budget adjustments by name or available filters and open them for editing. Without names, all matching budget adjustments are opened. `--project` and `--slo` must be supplied together when filtering by SLO. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "usage": "sloctl edit budgetadjustments [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-p, --project string",
+                "description": "Filter budget adjustments by SLO project. Must be used with --slo."
+              },
+              {
+                "syntax": "--slo string",
+                "description": "Filter budget adjustments by SLO name. Must be used with --project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "dataexports",
+            "path": "sloctl edit dataexports",
+            "shortDescription": "Edit data exports",
+            "descriptionMarkdown": "Select data exports by name or available filters and open them for editing. Without names, all matching data exports are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "usage": "sloctl edit dataexports [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources to edit across all projects."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "directs",
+            "path": "sloctl edit directs",
+            "shortDescription": "Edit direct data sources",
+            "descriptionMarkdown": "Select direct data sources by name or available filters and open them for editing. Without names, all matching direct data sources are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "usage": "sloctl edit directs [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources to edit across all projects."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "projects",
+            "path": "sloctl edit projects",
+            "shortDescription": "Edit projects",
+            "descriptionMarkdown": "Select projects by name or available filters and open them for editing. Without names, all matching projects are opened. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "usage": "sloctl edit projects [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-l, --label stringArray",
+                "description": "Filter by label. Repeat the flag or separate labels with commas, for example: team=platform,env=prod."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "reports",
+            "path": "sloctl edit reports",
+            "shortDescription": "Edit reports",
+            "descriptionMarkdown": "Select reports by name or available filters and open them for editing. Without names, all matching reports are opened. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "usage": "sloctl edit reports [name...] [flags]",
+            "options": [],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "rolebindings",
+            "path": "sloctl edit rolebindings",
+            "shortDescription": "Edit role bindings",
+            "descriptionMarkdown": "Select role bindings by name or available filters and open them for editing. Without names, all matching role bindings are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "usage": "sloctl edit rolebindings [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources to edit across all projects."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "services",
+            "path": "sloctl edit services",
+            "shortDescription": "Edit services",
+            "descriptionMarkdown": "Select services by name or available filters and open them for editing. Without names, all matching services are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "usage": "sloctl edit services [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources to edit across all projects."
+              },
+              {
+                "syntax": "-l, --label stringArray",
+                "description": "Filter by label. Repeat the flag or separate labels with commas, for example: team=platform,env=prod."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "slos",
+            "path": "sloctl edit slos",
+            "shortDescription": "Edit SLOs",
+            "descriptionMarkdown": "Select SLOs by name or available filters and open them for editing. Without names, all matching SLOs are opened. Use `--project` to select a project or `--all-projects` to select across projects. Run `sloctl edit --help` for editor selection and failure safeguards.",
+            "usage": "sloctl edit slos [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources to edit across all projects."
+              },
+              {
+                "syntax": "-l, --label stringArray",
+                "description": "Filter by label. Repeat the flag or separate labels with commas, for example: team=platform,env=prod."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              },
+              {
+                "syntax": "-s, --service stringArray",
+                "description": "Filter SLOs by service name. Repeat to select multiple services."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "--dry-run",
+                "description": "Send the request without persisting changes."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
+        "name": "get",
+        "path": "sloctl get",
+        "shortDescription": "Get Nobl9 resources",
+        "descriptionMarkdown": "Get resources by name or filter and print them as YAML, JSON, or CSV. YAML is the default.\n\nResource names can be supplied as arguments or read from standard input. Without names, each resource command returns all resources matching its filters. Use `--jq` to filter or transform the results.",
+        "example": "# Get every SLO in the configured default project.\nsloctl get slos\n\n# Get selected SLOs as JSON.\nsloctl get slos availability latency --project my-project --output json\n\n# Read resource names from standard input.\nprintf '%s\\n' availability latency | sloctl get slos --project my-project\n",
+        "options": [
+          {
+            "syntax": "-q, --jq string",
+            "description": "Filter or transform command output using a jq expression."
+          },
+          {
+            "syntax": "-o, --output format",
+            "description": "Output format: yaml, json, csv. (default yaml)"
+          }
+        ],
+        "inheritedOptions": [
+          {
+            "syntax": "--config string",
+            "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+          },
+          {
+            "syntax": "-c, --context string",
+            "description": "Use this context instead of the configured default for the selected command."
+          },
+          {
+            "syntax": "-h, --help",
+            "description": "Help for sloctl."
+          },
+          {
+            "syntax": "--no-config-file",
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+          }
+        ],
+        "subcommands": [
+          {
+            "name": "agents",
+            "path": "sloctl get agents",
+            "shortDescription": "Get agents",
+            "descriptionMarkdown": "Get agents by name or available filters. Names can be supplied as arguments or read from standard input. Without names, all matching agents are returned. Use `--project` to select a project or `--all-projects` to search all projects.\n\n`--with-keys` includes `client_id` and `client_secret` in the output and performs one additional credential request for every returned agent.",
+            "usage": "sloctl get agents [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources across all projects."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              },
+              {
+                "syntax": "-k, --with-keys",
+                "description": "Include agent client_id and client_secret values. This performs one additional credential request per returned agent."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "alertmethods",
+            "path": "sloctl get alertmethods",
+            "shortDescription": "Get alert methods",
+            "descriptionMarkdown": "Get alert methods by name or available filters. Names can be supplied as arguments or read from standard input. Without names, all matching alert methods are returned. Use `--project` to select a project or `--all-projects` to search all projects.",
+            "usage": "sloctl get alertmethods [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources across all projects."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "alertpolicies",
+            "path": "sloctl get alertpolicies",
+            "shortDescription": "Get alert policies",
+            "descriptionMarkdown": "Get alert policies by name or available filters. Names can be supplied as arguments or read from standard input. Without names, all matching alert policies are returned. Use `--project` to select a project or `--all-projects` to search all projects.",
+            "usage": "sloctl get alertpolicies [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources across all projects."
+              },
+              {
+                "syntax": "-l, --label stringArray",
+                "description": "Filter by label. Repeat the flag or separate labels with commas, for example: team=platform,env=prod."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "alerts",
+            "path": "sloctl get alerts",
+            "shortDescription": "Get alerts",
+            "descriptionMarkdown": "Get alerts by ID or filter. Alert IDs can also be read from standard input. Repeat the same filter to match any supplied value; different filters are combined.\n\nActive and resolved alerts are both included by default. Set `--resolved=false` or `--triggered=false` to select only one status.\n\nA filter can return no alerts when a referenced Alert Policy, SLO, Service, or Objective was deleted. Recreating a resource with the same name does not restore its old alerts. Unlinking an Alert Policy from an SLO can also hide related alerts.\n\nAlert output includes these timing and resolution fields:\n\n- `spec.conditions[].status.firstMetMetricTime`: when the condition first became true.\n- `spec.conditions[].status.lastsForMetMetricTime`: when the required `lastsFor` duration was met.\n- `spec.conditions[].status.lastMetMetricTime`: the last time the condition remained true.\n- `spec.coolDownStartedAtMetricTime`: when the cooldown started for a resolved alert.\n- `spec.resolutionReason`: why the alert was resolved or canceled.\n\nResults may be truncated by the API. If sloctl reports truncation, use narrower filters.",
+            "usage": "sloctl get alerts [id...] [flags]",
+            "example": "# Get active and resolved alerts from all projects.\nsloctl get alert -A\n\n# Get only active (not resolved yet) alerts.\nsloctl get alert --triggered --resolved=false -A\n\n# Get only resolved alerts.\nsloctl get alert --resolved --triggered=false -A\n\n# Get a specific alert by the alert ID.\nsloctl get alert ce1a2a10-d74d-477f-b574-b278ee54e02b -A\n\n# Get alerts related to the reportsapi service or usersapi service in project prod.\nsloctl get alert --service reportsapi --service usersapi -p prod\n\n# Get only resolved alerts for the specific alert policy and SLO in the specified project.\nsloctl get alert --resolved --triggered=false --alert-policy slow-burn --slo usersapi-latency -p prod\n\n# Get alerts triggered for the slo usersapi-availability AND objective objective-1 in project prod.\nsloctl get alert --slo usersapi-availability --objective objective-1 -p prod\n\n# Get alerts for slo usersapi-latency AND either objective-1 OR objective-2 in project prod.\nsloctl get alert --slo usersapi-latency --objective objective-1 --objective objective-2 -p prod\n\n# Get alerts by a time range.\n# We're assuming the current date is 2023-03-23T12:00:00Z:\n# - Alerts that were active yesterday:\nsloctl get alert --from 2023-03-22T00:00:00Z --to 2023-03-22T23:59:59Z -A\n# - Alerts that have been active since yesterday:\nsloctl get alert --from 2023-03-22T00:00:00Z -A\n# - Alerts that have been active until today:\nsloctl get alert --to 2023-03-23T00:00:00Z -A\n",
+            "options": [
+              {
+                "syntax": "--alert-policy stringArray",
+                "description": "Filter by alert policy name. Repeat to match any of several policies."
+              },
+              {
+                "syntax": "--slo stringArray",
+                "description": "Filter by SLO name. Repeat to match any of several SLOs."
+              },
+              {
+                "syntax": "--objective stringArray",
+                "description": "Filter by objective name. Repeat to match any of several objectives."
+              },
+              {
+                "syntax": "--service stringArray",
+                "description": "Filter by service name. Repeat to match any of several services."
+              },
+              {
+                "syntax": "--resolved",
+                "description": "Include resolved alerts. Set --resolved=false to exclude them. (default true)"
+              },
+              {
+                "syntax": "--triggered",
+                "description": "Include active alerts. Set --triggered=false to exclude them. (default true)"
+              },
+              {
+                "syntax": "--from time",
+                "description": "Set the start of the alert metric-time range in RFC3339 format."
+              },
+              {
+                "syntax": "--to time",
+                "description": "Set the end of the alert metric-time range in RFC3339 format."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              },
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources across all projects."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "alertsilences",
+            "path": "sloctl get alertsilences",
+            "shortDescription": "Get alert silences",
+            "descriptionMarkdown": "Get alert silences by name or available filters. Names can be supplied as arguments or read from standard input. Without names, all matching alert silences are returned. Use `--project` to select a project or `--all-projects` to search all projects.",
+            "usage": "sloctl get alertsilences [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources across all projects."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "annotations",
+            "path": "sloctl get annotations",
+            "shortDescription": "Get annotations",
+            "descriptionMarkdown": "Get annotations by name or filter. Pass names as arguments or through standard input. Without a category selector, this command returns only user categories (`Comment`, `ReviewNote`, `Replay`). Use `--system`, `--user`, or repeated `--category` flags to select other categories.\n\nAnnotation category origins:\n\n- `Comment`: added manually to an SLO.\n- `ReviewNote`: created when an SLO review status changes.\n- `SloEdit`: created when an SLO definition changes.\n\nSee [Annotation types](https://docs.nobl9.com/features/slo-annotations/#annotation-types).",
+            "usage": "sloctl get annotations [name...] [flags]",
+            "example": "# Get all user annotations from all projects.\nsloctl get annotations -A\n\n# Get a specific annotation by the annotation name in 'non-default' project.\nsloctl get annotation ce1a2a10-d74d-477f-b574-b278ee54e02b -p non-default\n\n# Get all user annotations for 'my-slo' SLO in 'custom' project.\nsloctl get annotation -p custom --slo=my-slo\n\n# Get annotations from your default project which mark SLO edits and reviews.\nsloctl get annotations --category=SloEdit --category=ReviewNote\n\n# Get all system annotations from all projects.\nsloctl get annotations -A --system\n\n# Get all annotations (both system and user) from all projects.\nsloctl get annotations -A --system --user\n\n# Filter user annotations by their start and end times.\n# `--from` requires `spec.startTime` at or after the specified timestamp.\n# `--to` requires `spec.endTime` at or before the specified timestamp.\n#\n# We're assuming the current date is 2023-03-23T12:00:00Z.\n# - Annotations that apply only to yesterday:\nsloctl get annotation --from 2023-03-22T00:00:00Z --to 2023-03-22T23:59:59Z -A\n# - Annotations that start at or after yesterday (no upper bound):\nsloctl get annotation --from 2023-03-22T00:00:00Z -A\n# - Annotations that end at or before today (no lower bound):\nsloctl get annotation --to 2023-03-23T00:00:00Z -A\n",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources across all projects."
+              },
+              {
+                "syntax": "--category stringArray",
+                "description": "Filter by annotation category (one of: Comment, ReviewNote, SloEdit, Alert, Adjustment, NoDataAnomaly, IncrementalMismatchAnomaly, NoBurnAnomaly, ConstantBurnAnomaly, GoodOverTotalAnomaly, Replay). Repeat to select multiple categories."
+              },
+              {
+                "syntax": "--from time",
+                "description": "Filter annotations whose spec.startTime is at or after this RFC3339 timestamp."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              },
+              {
+                "syntax": "--slo string",
+                "description": "Filter annotations by SLO name."
+              },
+              {
+                "syntax": "--system",
+                "description": "Include annotations in system categories."
+              },
+              {
+                "syntax": "--to time",
+                "description": "Filter annotations whose spec.endTime is at or before this RFC3339 timestamp."
+              },
+              {
+                "syntax": "--user",
+                "description": "Include annotations in user categories."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "budgetadjustments",
+            "path": "sloctl get budgetadjustments",
+            "shortDescription": "Get budget adjustments",
+            "descriptionMarkdown": "Get budget adjustments by name or available filters. Names can be supplied as arguments or read from standard input. Without names, all matching budget adjustments are returned. `--project` and `--slo` must be supplied together when filtering by SLO.",
+            "usage": "sloctl get budgetadjustments [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-p, --project string",
+                "description": "Filter budget adjustments by SLO project. Must be used with --slo."
+              },
+              {
+                "syntax": "--slo string",
+                "description": "Filter budget adjustments by SLO name. Must be used with --project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "dataexports",
+            "path": "sloctl get dataexports",
+            "shortDescription": "Get data exports",
+            "descriptionMarkdown": "Get data exports by name or available filters. Names can be supplied as arguments or read from standard input. Without names, all matching data exports are returned. Use `--project` to select a project or `--all-projects` to search all projects.",
+            "usage": "sloctl get dataexports [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources across all projects."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "directs",
+            "path": "sloctl get directs",
+            "shortDescription": "Get direct data sources",
+            "descriptionMarkdown": "Get direct data sources by name or available filters. Names can be supplied as arguments or read from standard input. Without names, all matching direct data sources are returned. Use `--project` to select a project or `--all-projects` to search all projects.",
+            "usage": "sloctl get directs [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources across all projects."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "projects",
+            "path": "sloctl get projects",
+            "shortDescription": "Get projects",
+            "descriptionMarkdown": "Get projects by name or available filters. Names can be supplied as arguments or read from standard input. Without names, all matching projects are returned.",
+            "usage": "sloctl get projects [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-l, --label stringArray",
+                "description": "Filter by label. Repeat the flag or separate labels with commas, for example: team=platform,env=prod."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "reports",
+            "path": "sloctl get reports",
+            "shortDescription": "Get reports",
+            "descriptionMarkdown": "Get reports by name or available filters. Names can be supplied as arguments or read from standard input. Without names, all matching reports are returned.",
+            "usage": "sloctl get reports [name...] [flags]",
+            "options": [],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "rolebindings",
+            "path": "sloctl get rolebindings",
+            "shortDescription": "Get role bindings",
+            "descriptionMarkdown": "Get role bindings by name or available filters. Names can be supplied as arguments or read from standard input. Without names, all matching role bindings are returned. Use `--project` to select a project or `--all-projects` to search all projects.",
+            "usage": "sloctl get rolebindings [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources across all projects."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "services",
+            "path": "sloctl get services",
+            "shortDescription": "Get services",
+            "descriptionMarkdown": "Get services by name or available filters. Names can be supplied as arguments or read from standard input. Without names, all matching services are returned. Use `--project` to select a project or `--all-projects` to search all projects.",
+            "usage": "sloctl get services [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources across all projects."
+              },
+              {
+                "syntax": "-l, --label stringArray",
+                "description": "Filter by label. Repeat the flag or separate labels with commas, for example: team=platform,env=prod."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "slos",
+            "path": "sloctl get slos",
+            "shortDescription": "Get SLOs",
+            "descriptionMarkdown": "Get SLOs by name or available filters. Names can be supplied as arguments or read from standard input. Without names, all matching SLOs are returned. Use `--project` to select a project or `--all-projects` to search all projects.\nBy default, all matching SLOs are returned. Use --limit and --offset to request a page.",
+            "usage": "sloctl get slos [name...] [flags]",
+            "options": [
+              {
+                "syntax": "-A, --all-projects",
+                "description": "Select resources across all projects."
+              },
+              {
+                "syntax": "-l, --label stringArray",
+                "description": "Filter by label. Repeat the flag or separate labels with commas, for example: team=platform,env=prod."
+              },
+              {
+                "syntax": "--limit int",
+                "description": "Maximum number of SLOs to return (1-1000)."
+              },
+              {
+                "syntax": "--offset int",
+                "description": "Number of SLOs to skip (requires --limit)."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Select resources from this project instead of the configured default project."
+              },
+              {
+                "syntax": "-s, --service stringArray",
+                "description": "Filter SLOs by service name. Repeat to select multiple services."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "user",
+            "path": "sloctl get user",
+            "shortDescription": "Get users by ID",
+            "descriptionMarkdown": "Get users by ID. IDs can be supplied as arguments or read from standard input. Without IDs, up to `--limit` users are returned; the default limit is 100.",
+            "usage": "sloctl get user [id...] [flags]",
+            "options": [
+              {
+                "syntax": "--limit uint",
+                "description": "Maximum number of users to return. The default limit applies when no IDs are provided. (default 100)"
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "usergroups",
+            "path": "sloctl get usergroups",
+            "shortDescription": "Get user groups",
+            "descriptionMarkdown": "Get user groups by name or available filters. Names can be supplied as arguments or read from standard input. Without names, all matching user groups are returned.",
+            "usage": "sloctl get usergroups [name...] [flags]",
+            "options": [],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
+        "name": "mcp",
+        "path": "sloctl mcp",
+        "shortDescription": "Start the Nobl9 MCP proxy over stdio",
+        "descriptionMarkdown": "Start a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) proxy over standard input and output. The proxy uses the active sloctl context to authenticate and forwards requests to Nobl9.\n\nUse this proxy instead of a direct HTTP connection when the MCP client communicates over stdio, requires dynamic client registration, or should reuse credentials from the active sloctl context. See [Nobl9 MCP server](https://docs.nobl9.com/tools-and-utilities/mcp-server).",
+        "usage": "sloctl mcp [flags]",
+        "example": "sloctl mcp",
+        "options": [],
+        "inheritedOptions": [
+          {
+            "syntax": "--config string",
+            "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+          },
+          {
+            "syntax": "-c, --context string",
+            "description": "Use this context instead of the configured default for the selected command."
+          },
+          {
+            "syntax": "-h, --help",
+            "description": "Help for sloctl."
+          },
+          {
+            "syntax": "--no-config-file",
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+          }
+        ],
+        "subcommands": []
+      },
+      {
+        "name": "move",
+        "path": "sloctl move",
+        "shortDescription": "Move SLOs between Projects or Services",
+        "descriptionMarkdown": "Move SLOs to another Project or assign them to another Service within the same Project.",
+        "options": [],
+        "inheritedOptions": [
+          {
+            "syntax": "--config string",
+            "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+          },
+          {
+            "syntax": "-c, --context string",
+            "description": "Use this context instead of the configured default for the selected command."
+          },
+          {
+            "syntax": "-h, --help",
+            "description": "Help for sloctl."
+          },
+          {
+            "syntax": "--no-config-file",
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+          }
+        ],
+        "subcommands": [
+          {
+            "name": "slo",
+            "path": "sloctl move slo",
+            "shortDescription": "Move SLOs to another Project or Service",
+            "descriptionMarkdown": "Move the named SLOs from the Project selected by `--project` or the active configuration.\nIf no SLO names are provided, every SLO in the source Project is moved.\n\nUse `--to-project` for a cross-Project move.\nUse `--to-service` without `--to-project` to reassign SLOs within the source Project.\nMissing target Projects and Services are created.\nFor a cross-Project move without `--to-service`, each SLO retains its source Service name.\n\n**Cross-Project moves:**\n\n- Change SLO links, so previous links no longer work.\n- Remove SLOs from reports filtered by their previous paths.\n- Fail when SLOs have attached Alert Policies unless you detach the policies\n  manually or with `--detach-alert-policies`.\n- Can make moved SLOs inaccessible to users without access to the target Project.\n\nNobl9 updates references to moved SLOs.\nUpdate local SLO-as-code definitions that reference moved SLOs in composite SLOs\nor Budget Adjustment filters.",
+            "usage": "sloctl move slo [slo-name...] [flags]",
+            "example": "# Move 'slo-1' and 'slo-2' from your default Project to 'new-project'.\nsloctl move slo slo-1 slo-2 --to-project=new-project\n\n# Move 'slo-1' and 'slo-2' from 'old-project' to 'new-project'.\nsloctl move slo slo-1 slo-2 -p old-project --to-project=new-project\n\n# Move all SLOs from 'old-project' to 'new-project'.\nsloctl move slo -p old-project --to-project=new-project\n\n# Move 'slo-1' and 'slo-2' from 'old-project' to 'new-project' and\n# assign 'my-service' in 'new-project' Project for the moved SLOs.\nsloctl move slo slo-1 slo-2 -p old-project --to-service=my-service --to-project=new-project\n\n# Move 'slo-1' and 'slo-2' from 'old-project' to 'new-project' and\n# detach Alert Policies from both SLOs.\nsloctl move slo slo-1 slo-2 -p old-project --detach-alert-policies --to-project=new-project\n\n# Move 'slo-1' and 'slo-2' to 'new-service' within your default Project.\nsloctl move slo slo-1 slo-2 --to-service=new-service\n\n# Move 'slo-1' to 'my-service', both the SLO and Service are in 'my-project'.\nsloctl move slo slo-1 -p my-project --to-service=my-service\n\n# Move all SLOs in 'my-project' to 'new-service' within the same Project.\nsloctl move slo -p my-project --to-service=new-service\n",
+            "options": [
+              {
+                "syntax": "--detach-alert-policies",
+                "description": "Detach all Alert Policies from moved SLOs during a cross-Project move."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Source Project. Defaults to the Project in the active configuration."
+              },
+              {
+                "syntax": "--to-project string",
+                "description": "Target Project for a cross-Project move. Omit when moving within the source Project."
+              },
+              {
+                "syntax": "--to-service string",
+                "description": "Target Service. Required for same-Project moves; for cross-Project moves, the source Service name is used when omitted."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
+        "name": "replay",
+        "path": "sloctl replay",
+        "shortDescription": "Replay historical SLI data for existing SLOs",
+        "descriptionMarkdown": "Create Replay jobs to recalculate SLO error budgets from a specified start\ntime until now. Replay is permanent and cannot be rolled back. A job can take\nseveral minutes to an hour.\n\nTo replay one SLO, pass its name and `--from`. The Project defaults to the\nactive context's Project. To replay multiple SLOs, pass one or more local YAML\nor JSON configuration files with `--file`. Values in a file take precedence over\n`--project` and `--from`.\n\nsloctl validates every requested SLO before starting any Replay. After\npreflight succeeds, a failure for one entry does not stop the remaining\nentries. Organizations with Replay queues enqueue the jobs; otherwise sloctl\nwaits for each Replay to finish before starting the next. Modifying an SLO\nafter its Replay starts does not change the running Replay.",
+        "usage": "sloctl replay [slo-name] [flags]",
+        "example": "# Replay SLO 'my-slo' in Project 'my-project' data from 2023-03-02 15:00:00 UTC until now.\nsloctl replay -p my-project --from=2023-03-02T15:00:00Z my-slo\n\n# Replay SLOs using file configuration from replay.yaml\nsloctl replay -f ./replay.yaml\n\n# If the project is not set, it is inferred from Nobl9 config.toml for the current context.\n# If 'from' is not provided in the config file, you must specify it with '--from' flag.\n# Setting 'project' or 'from' via flags does not take precedence over the values set in config.\ncat \u003c\u003c'EOF' \u003e ./replay.yaml\n- slo: prometheus-latency\n  from: 2023-03-02T16:00:00Z\n- slo: datadog-latency\n  project: default\n- slo: dynatrace-latency\n  project: default\n  from: 2023-03-02T16:00:00Z\nEOF\nsloctl replay -f ./replay.yaml --from=2023-03-02T15:00:00Z\n\n# Minimal config with project and from set via flags.\ncat \u003c\u003c'EOF' \u003e ./replay.yaml\n- slo: prometheus-latency\n- slo: datadog-latency\nEOF\nsloctl replay -f ./replay.yaml -p my-project --from 2023-03-02T15:00:00Z\n\n# Replay SLOs using SLI data from other SLOs.\ncat \u003c\u003c'EOF' \u003e ./replay.yaml\n- slo: prometheus-latency\n  project: default\n  from: 2023-03-02T16:00:00Z\n  sourceSLO:\n    slo: my-service-latency\n    project: my-service-test-project\n    objectivesMap:\n      - source: acceptable\n        target: objective-1\n      - source: alarming\n        target: objective-2\n- slo: datadog-latency\n  project: default\n  from: 2023-03-02T16:00:00Z\n  sourceSLO:\n    slo: my-service-latency\n    project: my-service-test-project\n    objectivesMap:\n      - source: alarming\n        target: objective-1\n      - source: alarming\n        target: objective-2\nEOF\nsloctl replay -f ./replay.yaml\n",
+        "options": [
+          {
+            "syntax": "-f, --file stringArray",
+            "description": "Path to a local YAML or JSON Replay configuration file. Repeat this flag to use multiple files."
+          },
+          {
+            "syntax": "--from time",
+            "description": "Replay start time in RFC3339 format. Required for a single SLO and used for file entries that omit it."
+          },
+          {
+            "syntax": "-q, --jq string",
+            "description": "Filter or transform command output using a jq expression."
+          },
+          {
+            "syntax": "-o, --output format",
+            "description": "Output format: yaml, json, csv. (default yaml)"
+          },
+          {
+            "syntax": "-p, --project string",
+            "description": "Project for a single SLO, or fallback Project for file entries that omit it. Defaults to the active context's Project."
+          }
+        ],
+        "inheritedOptions": [
+          {
+            "syntax": "--config string",
+            "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+          },
+          {
+            "syntax": "-c, --context string",
+            "description": "Use this context instead of the configured default for the selected command."
+          },
+          {
+            "syntax": "-h, --help",
+            "description": "Help for sloctl."
+          },
+          {
+            "syntax": "--no-config-file",
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+          }
+        ],
+        "subcommands": [
+          {
+            "name": "cancel",
+            "path": "sloctl replay cancel",
+            "shortDescription": "Cancel a Replay data import",
+            "descriptionMarkdown": "Request cancellation of the data-import phase of the Replay for one SLO.\nThe Project defaults to the active context's Project. This command does not\nremove a Replay that is still queued.",
+            "usage": "sloctl replay cancel \u003cslo-name\u003e [flags]",
+            "example": "sloctl replay cancel my-slo --project my-project",
+            "options": [
+              {
+                "syntax": "-p, --project string",
+                "description": "Project containing the SLO. Defaults to the active context's Project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "delete",
+            "path": "sloctl replay delete",
+            "shortDescription": "Remove queued Replays",
+            "descriptionMarkdown": "Remove one queued Replay, or remove every queued Replay across all Projects\nwith `--all`. When an SLO name is provided, the Project defaults to the\nactive context's Project. This command does not cancel a Replay that is already\nimporting data.",
+            "usage": "sloctl replay delete [slo-name] [flags]",
+            "example": "sloctl replay delete my-slo --project my-project\nsloctl replay delete --all",
+            "options": [
+              {
+                "syntax": "--all",
+                "description": "Remove all queued Replays across all Projects."
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Project containing the SLO. Defaults to the active context's Project."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "list",
+            "path": "sloctl replay list",
+            "shortDescription": "List Replay queue entries",
+            "descriptionMarkdown": "List Replay queue entries and their current status across Projects. Use\n`--output` or `--jq` to format or filter the result.",
+            "usage": "sloctl replay list [flags]",
+            "example": "sloctl replay list\nsloctl replay list --output json",
+            "options": [],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
+        "name": "review",
+        "path": "sloctl review",
+        "shortDescription": "Manage SLO review",
+        "descriptionMarkdown": "Manage SLO review.\n\nThis feature requires Nobl9 Enterprise Edition.",
+        "options": [],
+        "inheritedOptions": [
+          {
+            "syntax": "--config string",
+            "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+          },
+          {
+            "syntax": "-c, --context string",
+            "description": "Use this context instead of the configured default for the selected command."
+          },
+          {
+            "syntax": "-h, --help",
+            "description": "Help for sloctl."
+          },
+          {
+            "syntax": "--no-config-file",
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+          }
+        ],
+        "subcommands": [
+          {
+            "name": "set-status",
+            "path": "sloctl review set-status",
+            "shortDescription": "Change an SLO review status",
+            "descriptionMarkdown": "Change the review status of one SLO by selecting a status subcommand.\nThe Project defaults to the active context's Project. The `reviewed` and `skipped`\nstatuses accept an optional `--note`.\n\nSee [SLO review status transitions](https://docs.nobl9.com/slo-oversight/reviews/#status-transitions) for allowed manual and automatic transitions.",
+            "example": "# Set \"prometheus-latency\" SLO (non-default Project) review status as \"reviewed\" and provide a review note.\nsloctl review set-status reviewed prometheus-latency -p non-default -n \"Target met, 20% error budget remaining\"\n\n# Set \"prometheus-latency\" SLO (default Project) review status as \"skipped\" and provide a note explaining the reason for skipping.\nsloctl review set-status skipped prometheus-latency --note \"Insufficient data for this period\"",
+            "options": [],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": [
+              {
+                "name": "not-started",
+                "path": "sloctl review set-status not-started",
+                "shortDescription": "Reset an SLO review to not started",
+                "descriptionMarkdown": "Set one SLO's review status to `notStarted`.\nThe Project defaults to the active context's Project.\nAvailable only when the SLO's Service has no review schedule.\n\nThis feature requires Nobl9 Enterprise Edition.",
+                "usage": "sloctl review set-status not-started \u003cslo-name\u003e [flags]",
+                "options": [
+                  {
+                    "syntax": "-p, --project string",
+                    "description": "Project containing the SLO. Defaults to the active context's Project."
+                  }
+                ],
+                "inheritedOptions": [
+                  {
+                    "syntax": "--config string",
+                    "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+                  },
+                  {
+                    "syntax": "-c, --context string",
+                    "description": "Use this context instead of the configured default for the selected command."
+                  },
+                  {
+                    "syntax": "-h, --help",
+                    "description": "Help for sloctl."
+                  },
+                  {
+                    "syntax": "--no-config-file",
+                    "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "overdue",
+                "path": "sloctl review set-status overdue",
+                "shortDescription": "Mark an SLO review as overdue",
+                "descriptionMarkdown": "Set one SLO's review status to `overdue`.\nThe Project defaults to the active context's Project.\nAvailable only when the SLO's Service has a review schedule.\n\nThis feature requires Nobl9 Enterprise Edition.",
+                "usage": "sloctl review set-status overdue \u003cslo-name\u003e [flags]",
+                "options": [
+                  {
+                    "syntax": "-p, --project string",
+                    "description": "Project containing the SLO. Defaults to the active context's Project."
+                  }
+                ],
+                "inheritedOptions": [
+                  {
+                    "syntax": "--config string",
+                    "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+                  },
+                  {
+                    "syntax": "-c, --context string",
+                    "description": "Use this context instead of the configured default for the selected command."
+                  },
+                  {
+                    "syntax": "-h, --help",
+                    "description": "Help for sloctl."
+                  },
+                  {
+                    "syntax": "--no-config-file",
+                    "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "reviewed",
+                "path": "sloctl review set-status reviewed",
+                "shortDescription": "Mark an SLO as reviewed",
+                "descriptionMarkdown": "Set one SLO's review status to `reviewed`.\nThe Project defaults to the active context's Project.\nAvailable whether or not the SLO's Service has a review schedule.\nUse `--note` to attach context to the decision.\n\nThis feature requires Nobl9 Enterprise Edition.",
+                "usage": "sloctl review set-status reviewed \u003cslo-name\u003e [flags]",
+                "options": [
+                  {
+                    "syntax": "-n, --note string",
+                    "description": "Note to attach to the review decision."
+                  },
+                  {
+                    "syntax": "-p, --project string",
+                    "description": "Project containing the SLO. Defaults to the active context's Project."
+                  }
+                ],
+                "inheritedOptions": [
+                  {
+                    "syntax": "--config string",
+                    "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+                  },
+                  {
+                    "syntax": "-c, --context string",
+                    "description": "Use this context instead of the configured default for the selected command."
+                  },
+                  {
+                    "syntax": "-h, --help",
+                    "description": "Help for sloctl."
+                  },
+                  {
+                    "syntax": "--no-config-file",
+                    "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "skipped",
+                "path": "sloctl review set-status skipped",
+                "shortDescription": "Mark an SLO review as skipped",
+                "descriptionMarkdown": "Set one SLO's review status to `skipped`.\nThe Project defaults to the active context's Project.\nAvailable only when the SLO's Service has a review schedule.\nUse `--note` to attach context to the decision.\n\nThis feature requires Nobl9 Enterprise Edition.",
+                "usage": "sloctl review set-status skipped \u003cslo-name\u003e [flags]",
+                "options": [
+                  {
+                    "syntax": "-n, --note string",
+                    "description": "Note to attach to the review decision."
+                  },
+                  {
+                    "syntax": "-p, --project string",
+                    "description": "Project containing the SLO. Defaults to the active context's Project."
+                  }
+                ],
+                "inheritedOptions": [
+                  {
+                    "syntax": "--config string",
+                    "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+                  },
+                  {
+                    "syntax": "-c, --context string",
+                    "description": "Use this context instead of the configured default for the selected command."
+                  },
+                  {
+                    "syntax": "-h, --help",
+                    "description": "Help for sloctl."
+                  },
+                  {
+                    "syntax": "--no-config-file",
+                    "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "to-review",
+                "path": "sloctl review set-status to-review",
+                "shortDescription": "Mark an SLO as awaiting review",
+                "descriptionMarkdown": "Set one SLO's review status to `toReview`.\nThe Project defaults to the active context's Project.\nAvailable only when the SLO's Service has a review schedule.\n\nThis feature requires Nobl9 Enterprise Edition.",
+                "usage": "sloctl review set-status to-review \u003cslo-name\u003e [flags]",
+                "options": [
+                  {
+                    "syntax": "-p, --project string",
+                    "description": "Project containing the SLO. Defaults to the active context's Project."
+                  }
+                ],
+                "inheritedOptions": [
+                  {
+                    "syntax": "--config string",
+                    "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+                  },
+                  {
+                    "syntax": "-c, --context string",
+                    "description": "Use this context instead of the configured default for the selected command."
+                  },
+                  {
+                    "syntax": "-h, --help",
+                    "description": "Help for sloctl."
+                  },
+                  {
+                    "syntax": "--no-config-file",
+                    "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+                  }
+                ],
+                "subcommands": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "validate",
+        "path": "sloctl validate",
+        "shortDescription": "Validate SLI queries",
+        "descriptionMarkdown": "Validate the SLI queries defined by existing SLOs or local SLO manifests.",
+        "usage": "sloctl validate [flags]",
+        "options": [],
+        "inheritedOptions": [
+          {
+            "syntax": "--config string",
+            "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+          },
+          {
+            "syntax": "-c, --context string",
+            "description": "Use this context instead of the configured default for the selected command."
+          },
+          {
+            "syntax": "-h, --help",
+            "description": "Help for sloctl."
+          },
+          {
+            "syntax": "--no-config-file",
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+          }
+        ],
+        "subcommands": [
+          {
+            "name": "sli",
+            "path": "sloctl validate sli",
+            "shortDescription": "Query data sources to validate SLI queries",
+            "descriptionMarkdown": "Query the data source configured by an SLO and return the values produced by each SLI query.\n\nProvide either an existing SLO name or one or more SLO manifests with `--file`. For file input, use `--slo` and `--objective` to limit validation.\n\nThe default time range is the last 15 minutes, and a range cannot exceed one hour. At most 50 SLI queries can be validated at once. Query failures are reported and cause a non-zero exit status.",
+            "usage": "sloctl validate sli [slo-name] [flags]",
+            "example": "# Validate all SLI queries for an existing SLO in the default Project.\nsloctl validate sli checkout\n\n# Validate one objective from a manifest over the last 30 minutes.\nsloctl validate sli --file ./slo.yaml --slo checkout --objective availability --last 30m\n\n# Validate an explicit time range and return JSON.\nsloctl validate sli checkout --from 2026-07-02T10:00:00Z --to 2026-07-02T10:30:00Z --output json\n",
+            "options": [
+              {
+                "syntax": "-f, --file stringArray",
+                "description": "Path, directory, URL, glob pattern, or `-` for YAML or JSON from standard input. Repeat this flag to use multiple sources."
+              },
+              {
+                "syntax": "--from time",
+                "description": "Start of the validation time range."
+              },
+              {
+                "syntax": "-q, --jq string",
+                "description": "Filter or transform command output using a jq expression."
+              },
+              {
+                "syntax": "--last duration",
+                "description": "Validation time range ending now. Maximum value is 1h. (default 15m0s)"
+              },
+              {
+                "syntax": "--objective string",
+                "description": "Validate only the named objective."
+              },
+              {
+                "syntax": "-o, --output format",
+                "description": "Output format: yaml, json, csv. (default yaml)"
+              },
+              {
+                "syntax": "-p, --project string",
+                "description": "Project of an SLO selected by name, or the default Project for file definitions that omit one. Project names specified in file definitions must match this value."
+              },
+              {
+                "syntax": "--slo string",
+                "description": "Select one SLO by name from file input."
+              },
+              {
+                "syntax": "--to time",
+                "description": "End of the validation time range."
+              }
+            ],
+            "inheritedOptions": [
+              {
+                "syntax": "--config string",
+                "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+              },
+              {
+                "syntax": "-c, --context string",
+                "description": "Use this context instead of the configured default for the selected command."
+              },
+              {
+                "syntax": "-h, --help",
+                "description": "Help for sloctl."
+              },
+              {
+                "syntax": "--no-config-file",
+                "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
+        "name": "version",
+        "path": "sloctl version",
+        "shortDescription": "Print build and runtime version information",
+        "descriptionMarkdown": "Print the sloctl version, Git branch and revision, operating system, architecture, and Go runtime version.",
+        "usage": "sloctl version [flags]",
+        "example": "sloctl version",
+        "options": [],
+        "inheritedOptions": [
+          {
+            "syntax": "--config string",
+            "description": "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default."
+          },
+          {
+            "syntax": "-c, --context string",
+            "description": "Use this context instead of the configured default for the selected command."
+          },
+          {
+            "syntax": "-h, --help",
+            "description": "Help for sloctl."
+          },
+          {
+            "syntax": "--no-config-file",
+            "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
+          }
+        ],
+        "subcommands": []
+      }
+    ]
+  }
+}

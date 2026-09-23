@@ -2,7 +2,7 @@ apiVersion: n9/v1alpha
 kind: Annotation
 metadata:
   name: anakin
-  project: death-star
+  project: <PROJECT>
 spec:
   slo: newrelic-rolling-timeslices-threshold
   description: Dummy Annotation for 'sloctl get' e2e tests

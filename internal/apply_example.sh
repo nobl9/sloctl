@@ -1,6 +1,9 @@
 # Apply the configuration from slo.yaml.
 sloctl apply -f ./slo.yaml
 
+# Preview an apply without persisting changes.
+sloctl apply -f ./slo.yaml --dry-run
+
 # Apply resources from multiple different sources at once.
 sloctl apply -f ./slo.yaml -f test/config.yaml -f https://nobl9.com/slo.yaml
 
