@@ -39,6 +39,10 @@ which need them, or the aggregate targets which include them:
   `test/bats/unit`, `test/bats/platform`, `test/bats/e2e`
   and `test/go/e2e-docker`.
 - [jq](https://github.com/jqlang/jq), for `test/bats/e2e`.
+  [run-e2e-tests.sh](../scripts/run-e2e-tests.sh) uses it to read the
+  credentials which are not set in the environment from the current sloctl
+  context.
+  The tests themselves use the `jq` and `yq` installed in the test image.
 
 `test/bats/platform-native` has its own requirements, see
 [Platform compatibility tests](#platform-compatibility-tests).
