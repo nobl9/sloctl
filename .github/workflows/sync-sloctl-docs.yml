@@ -43,10 +43,10 @@ jobs:
             exit 2
           fi
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.4.0
       - name: Create GitHub App token
         id: app_token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@v3.2.0
         with:
           client-id: ${{ vars.DOCS_AUTOMATION_CLIENT_ID }}
           private-key: ${{ secrets.DOCS_AUTOMATION_APP_PRIVATE_KEY }}
