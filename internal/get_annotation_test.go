@@ -1,5 +1,3 @@
-//go:build unit_test
-
 package internal
 
 import (
@@ -116,6 +114,12 @@ func TestBuildGetAnnotationsRequest_Categories(t *testing.T) {
 			assert.ElementsMatch(t, test.want, params.Categories)
 		})
 	}
+
+	t.Run("the default set includes Replay", func(t *testing.T) {
+		params, err := buildGetAnnotationsRequest(nil, objectSelectionFlags{})
+		require.NoError(t, err)
+		assert.Contains(t, params.Categories, v1alphaAnnotation.CategoryReplay)
+	})
 
 	t.Run("Replay is a valid --category value", func(t *testing.T) {
 		assert.Contains(t, v1alphaAnnotation.CategoryValues(), v1alphaAnnotation.CategoryReplay)
