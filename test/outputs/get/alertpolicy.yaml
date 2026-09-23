@@ -2,7 +2,7 @@
   kind: AlertPolicy
   metadata:
     name: trigger-alert-immediately
-    project: death-star
+    project: <PROJECT>
     annotations:
       registry: docker.io
       visibility: internal

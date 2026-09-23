@@ -37,10 +37,10 @@ func (r *RootCmd) NewReviewCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "review",
-		Short: "Manage SLO review (Enterprise Edition only)",
+		Short: "Manage SLO review",
 		Long: `Manage SLO review.
 
-Note: This feature is only available in Enterprise Edition tier.`,
+This feature requires Nobl9 Enterprise Edition.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			review.client = r.GetClient()
 		},
@@ -54,12 +54,14 @@ Note: This feature is only available in Enterprise Edition tier.`,
 func (r *ReviewCmd) NewSetStatusCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set-status",
-		Short: "Set SLO review status",
-		Long: `Set SLO review status.
-
-This command allows you to update the review status of a specific SLO.
-
-Note: This feature is only available in Enterprise Edition tier.`,
+		Short: "Change an SLO review status",
+		Long: "Change the review status of one SLO by selecting a status subcommand.\n" +
+			"The Project defaults to the active context's Project. The `reviewed` and `skipped`\n" +
+			"statuses accept an optional `--note`.\n\n" +
+			"See [SLO review status transitions]" +
+			"(https://docs.nobl9.com/slo-oversight/reviews/#status-transitions) " +
+			"for allowed manual and automatic transitions.",
+		Example: reviewExample,
 	}
 
 	cmd.AddCommand(r.NewSetStatusReviewedCmd())
@@ -72,32 +74,31 @@ Note: This feature is only available in Enterprise Edition tier.`,
 }
 
 func (r *ReviewCmd) NewSetStatusReviewedCmd() *cobra.Command {
-	return r.newSetStatusCmd("reviewed", "reviewed", true)
+	return r.newSetStatusCmd("reviewed", "reviewed", "Mark an SLO as reviewed", true)
 }
 
 func (r *ReviewCmd) NewSetStatusSkippedCmd() *cobra.Command {
-	return r.newSetStatusCmd("skipped", "skipped", true)
+	return r.newSetStatusCmd("skipped", "skipped", "Mark an SLO review as skipped", true)
 }
 
 func (r *ReviewCmd) NewSetStatusToReviewCmd() *cobra.Command {
-	return r.newSetStatusCmd("to-review", "toReview", false)
+	return r.newSetStatusCmd("to-review", "toReview", "Mark an SLO as awaiting review", false)
 }
 
 func (r *ReviewCmd) NewSetStatusOverdueCmd() *cobra.Command {
-	return r.newSetStatusCmd("overdue", "overdue", false)
+	return r.newSetStatusCmd("overdue", "overdue", "Mark an SLO review as overdue", false)
 }
 
 func (r *ReviewCmd) NewSetStatusNotStartedCmd() *cobra.Command {
-	return r.newSetStatusCmd("not-started", "notStarted", false)
+	return r.newSetStatusCmd("not-started", "notStarted", "Reset an SLO review to not started", false)
 }
 
-func (r *ReviewCmd) newSetStatusCmd(commandName, status string, hasNote bool) *cobra.Command {
+func (r *ReviewCmd) newSetStatusCmd(commandName, status, short string, hasNote bool) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     commandName + " <slo-name>",
-		Short:   setStatusShortDescription(status),
-		Long:    setStatusLongDescription(status, hasNote),
-		Example: reviewExample,
-		Args:    r.reviewSetArguments,
+		Use:   commandName + " <slo-name>",
+		Short: short,
+		Long:  setStatusLongDescription(status, hasNote),
+		Args:  r.reviewSetArguments,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if r.project == "" {
 				r.project = r.client.Config.Project
@@ -108,41 +109,33 @@ func (r *ReviewCmd) newSetStatusCmd(commandName, status string, hasNote bool) *c
 	}
 
 	cmd.Flags().StringVarP(&r.project, "project", "p", "",
-		"Project name. Optional, fall backs to your default Project.")
+		"Project containing the SLO. Defaults to the active context's Project.")
 
 	if hasNote {
 		cmd.Flags().StringVarP(&r.note, "note", "n", "",
-			"Optional note annotation")
+			"Note to attach to the review decision.")
 	}
 
 	return cmd
 }
 
-func setStatusShortDescription(status string) string {
-	return fmt.Sprintf("Set SLO review status to %s", status)
-}
-
 func setStatusLongDescription(status string, includeNote bool) string {
-	const (
-		noteLongDescription = `
-You can optionally include a note using the --note flag to provide additional
-context or reasoning for the review decision.
-`
-		projectLongDescription = `
-
-The SLO name must be provided as an argument, and the project can be specified
-using the --project flag or will default to the configured project in your client.
-
-Note: This feature is only available in Enterprise Edition tier.
-`
+	desc := fmt.Sprintf(
+		"Set one SLO's review status to `%s`.\nThe Project defaults to the active context's Project.",
+		status,
 	)
-
-	desc := setStatusShortDescription(status)
-	if includeNote {
-		desc += noteLongDescription
+	switch status {
+	case "notStarted":
+		desc += "\nAvailable only when the SLO's Service has no review schedule."
+	case "reviewed":
+		desc += "\nAvailable whether or not the SLO's Service has a review schedule."
+	case "toReview", "skipped", "overdue":
+		desc += "\nAvailable only when the SLO's Service has a review schedule."
 	}
-	desc += projectLongDescription
-	return desc
+	if includeNote {
+		desc += "\nUse `--note` to attach context to the decision."
+	}
+	return desc + "\n\nThis feature requires Nobl9 Enterprise Edition."
 }
 
 func (r *ReviewCmd) reviewSetArguments(cmd *cobra.Command, args []string) error {

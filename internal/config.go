@@ -52,8 +52,8 @@ func (r *RootCmd) NewConfigCmd() *cobra.Command {
 	}
 	cmd := &cobra.Command{
 		Use:   "config",
-		Short: "Configuration management",
-		Long:  `Manage configurations stored in configuration file.`,
+		Short: "Manage sloctl configuration contexts",
+		Long:  `Manage authentication contexts stored in the sloctl configuration file.`,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return configCmd.loadFileConfig(r.Flags.ConfigFile)
 		},
@@ -73,9 +73,12 @@ func (r *RootCmd) NewConfigCmd() *cobra.Command {
 func (c *ConfigCmd) AddContextCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "add-context",
-		Short: "Add new sloctl configuration context",
-		Long:  "Add new sloctl configuration context, an interactive command which collects parameters in wizard mode.",
-		Example: `# Run interactive form which adds a new context to your config.toml file.
+		Short: "Add a configuration context",
+		Long: `Add a context through an interactive form.
+The form collects credentials, the Nobl9 instance, and a default Project.
+If the configuration contains no contexts, the new context becomes the default.
+Otherwise, choose whether to make it the default.`,
+		Example: `# Add a context interactively.
 sloctl config add-context`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
@@ -185,13 +188,13 @@ sloctl config add-context`,
 
 func (c *ConfigCmd) UseContextCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "use-context [context name]",
+		Use:   "use-context [context-name]",
 		Short: "Set the default context",
-		Long:  "Set a default context in the existing configuration file.",
-		Example: `# Display interactive selection of contexts to use as default.
+		Long:  "Set the default context by name, or omit the name to select a context interactively.",
+		Example: `# Select a context interactively.
 sloctl config use-context
 
-# Use "my-context" as a default context.
+# Set a context directly.
 sloctl config use-context my-context`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(c.config.Contexts) == 0 {
@@ -233,15 +236,19 @@ sloctl config use-context my-context`,
 func (c *ConfigCmd) CurrentContextCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "current-context",
-		Short: "Display current context name",
-		Long:  "In verbose mode, display configuration for the current context set in the configuration file.",
-		Example: `# Fetch the current context name.
+		Short: "Display the default context",
+		Long: "Print the default context name.\n" +
+			"With `--verbose`, print its configuration.\n" +
+			"By default, the client secret is masked and the access token is omitted.\n" +
+			"`--show-secret` prints configured credentials without masking.\n\n" +
+			"`--output` and `--jq` apply only to verbose output.",
+		Example: `# Print the default context name.
 sloctl config current-context
 
-# Display detailed information about the current context in YAML format.
-sloctl config current-context --verbose
+# Print its masked configuration as JSON.
+sloctl config current-context --verbose --output json
 
-# Display detailed information with the client secret visible.
+# Print unmasked credentials. Treat the output as sensitive.
 sloctl config current-context --verbose --show-secret`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			if err := requireFlagsIfFlagIsSet(
@@ -275,8 +282,9 @@ sloctl config current-context --verbose --show-secret`,
 	}
 
 	registerVerboseFlag(cmd, &c.verbose)
+	cmd.Flags().Lookup(flagVerbose).Usage = "Display the current context configuration."
 	cmd.Flags().BoolVar(&c.showSecret, flagShowSecret, false,
-		"Display the client secret in plain text (requires --verbose)")
+		"Display unmasked credentials (requires --verbose).")
 	c.printer.MustRegisterFlags(cmd)
 	return cmd
 }
@@ -284,13 +292,15 @@ sloctl config current-context --verbose --show-secret`,
 func (c *ConfigCmd) CurrentUserCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "current-user",
-		Short: "Display current user ID",
-		Long:  "In verbose mode, display extended details for the user associated with the current context's access key.",
-		Example: `# Fetch the current user ID.
+		Short: "Display the current user ID",
+		Long: "Print the user ID associated with the active credentials.\n" +
+			"With `--verbose`, print the complete user record.\n" +
+			"`--output` and `--jq` apply only to verbose output.",
+		Example: `# Print the current user ID.
 sloctl config current-user
 
-# Display detailed information about the current user in YAML format.
-sloctl config current-user --verbose`,
+# Print the complete user record as JSON.
+sloctl config current-user --verbose --output json`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			return requireFlagsIfFlagIsSet(
 				cmd,
@@ -324,20 +334,23 @@ sloctl config current-user --verbose`,
 	}
 
 	registerVerboseFlag(cmd, &c.verbose)
+	cmd.Flags().Lookup(flagVerbose).Usage = "Display the complete user record."
 	c.printer.MustRegisterFlags(cmd)
 	return cmd
 }
 
 func (c *ConfigCmd) GetContextsCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "get-contexts",
-		Short: "Display all available context names",
-		Long:  "In verbose mode, display configuration for all available contexts set in the configuration file.",
+		Use:   "get-contexts [context-name...]",
+		Short: "List configuration contexts",
+		Long: "List every context name, or only the names supplied as arguments.\n" +
+			"With `--verbose`, print the selected context configurations.\n" +
+			"Client secrets are masked and access tokens are omitted.",
 		Example: `# List all context names.
 sloctl config get-contexts
 
-# Display detailed information about every context in TOML format.
-sloctl config get-contexts --verbose --output=toml`,
+# Print selected contexts as TOML.
+sloctl config get-contexts development production --verbose --output toml`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			return requireFlagsIfFlagIsSet(
 				cmd,
@@ -377,21 +390,23 @@ sloctl config get-contexts --verbose --output=toml`,
 	}
 
 	registerVerboseFlag(cmd, &c.verbose)
+	cmd.Flags().Lookup(flagVerbose).Usage = "Display context configuration details."
 	c.printer.MustRegisterFlags(cmd)
 	return cmd
 }
 
 func (c *ConfigCmd) RenameContextCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "rename-context",
-		Short: "Rename chosen context",
-		Long: "Rename one of the contexts in the configuration file.\n" +
-			"If no arguments are provided, the command displays an interactive prompt.",
-		Example: `# Display interactive form which lets you select the old context name and type in the new one.
-sloctl config rename-context
+		Use:   "rename-context [old-name new-name]",
+		Short: "Rename a configuration context",
+		Long: `Rename one context by providing its existing and new names,
+or omit both names to use an interactive form.
+If the renamed context is the default, the new name remains the default.`,
+		Example: `# Rename a context directly.
+sloctl config rename-context old-context new-context
 
-# Rename "old-ctx" to "new-ctx".
-sloctl config rename-context old-ctx new-ctx`,
+# Rename a context interactively.
+sloctl config rename-context`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(c.config.Contexts) == 0 {
 				return errors.New("there are no contexts defined in your configuration file")
@@ -457,16 +472,16 @@ sloctl config rename-context old-ctx new-ctx`,
 
 func (c *ConfigCmd) DeleteContextCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "delete-context",
-		Short: "Delete chosen context(s)",
-		Long: "Delete one or more of the contexts from the configuration file.\n" +
-			"Each argument is treated as a context name, " +
-			"when no arguments are provided a multi-selection prompt is displayed.",
-		Example: `# Display interactive selection of context to delete (multiple choice).
-sloctl config delete-context
+		Use:   "delete-context [context-name...]",
+		Short: "Delete configuration contexts",
+		Long: `Delete one or more contexts by name,
+or omit the names to use an interactive multi-select.
+The default context cannot be deleted; select another default context first.`,
+		Example: `# Delete contexts directly.
+sloctl config delete-context old-context backup-context
 
-# Delete "context-1" and "context-2" from your configuration file.
-sloctl config delete-context context-1 context-2`,
+# Delete contexts interactively.
+sloctl config delete-context`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var contextNames []string
 			switch len(args) {

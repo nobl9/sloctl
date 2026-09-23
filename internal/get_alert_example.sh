@@ -1,8 +1,11 @@
-# Get all alerts triggered (max 1000).
+# Get active and resolved alerts from all projects.
 sloctl get alert -A
 
 # Get only active (not resolved yet) alerts.
-sloctl get alert --triggered -A
+sloctl get alert --triggered --resolved=false -A
+
+# Get only resolved alerts.
+sloctl get alert --resolved --triggered=false -A
 
 # Get a specific alert by the alert ID.
 sloctl get alert ce1a2a10-d74d-477f-b574-b278ee54e02b -A
@@ -11,12 +14,12 @@ sloctl get alert ce1a2a10-d74d-477f-b574-b278ee54e02b -A
 sloctl get alert --service reportsapi --service usersapi -p prod
 
 # Get only resolved alerts for the specific alert policy and SLO in the specified project.
-sloctl get alert --resolved --alert-policy slow-burn --slo usersapi-latency -p prod
+sloctl get alert --resolved --triggered=false --alert-policy slow-burn --slo usersapi-latency -p prod
 
 # Get alerts triggered for the slo usersapi-availability AND objective objective-1 in project prod.
 sloctl get alert --slo usersapi-availability --objective objective-1 -p prod
 
-# Get alerts triggered for slo usersapi-latency AND objective objective-1 OR objective-2 in project prod.
+# Get alerts for slo usersapi-latency AND either objective-1 OR objective-2 in project prod.
 sloctl get alert --slo usersapi-latency --objective objective-1 --objective objective-2 -p prod
 
 # Get alerts by a time range.

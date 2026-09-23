@@ -1,12 +1,21 @@
 Edit resources from the default editor.
 
 The edit command allows you to directly edit Nobl9 resources like SLOs or Alert Policies.
-It will open the editor defined by your {{ .EditorEnvSloctl }} or {{ .EditorEnvSystem }} environment variables.
+Selected resources are written to a temporary YAML file before the editor opens.
+It will open the editor defined by your `{{ .EditorEnvSloctl }}` or `{{ .EditorEnvSystem }}` environment variables.
+`{{ .EditorEnvSloctl }}` takes precedence over `{{ .EditorEnvSystem }}`.
 If neither is defined, it falls back to:
-- {{ .DefaultEditorWindows }} for Windows
-- or the first available editor from: {{ .DefaultEditorUnixVim }}, {{ .DefaultEditorUnixVi }}, {{ .DefaultEditorUnixFallback }} for Unix systems, including macOS
 
-When attempting to open the editor, sloctl will first attempt to use the shell defined in the {{ .ShellEnv }} environment variable.
-If this is not defined, the default shell will be used, which is {{ .DefaultShellUnix }} for Unix systems or {{ .DefaultShellWindows }} for Windows.
+- `{{ .DefaultEditorWindows }}` for Windows
+- The first available editor from `{{ .DefaultEditorUnixVim }}`, `{{ .DefaultEditorUnixVi }}`, `{{ .DefaultEditorUnixFallback }}` for Unix systems, including macOS
 
-In the event an error occurs while applying your changes, a temporary file will be preserved on disk with your unapplied changes.
+When opening the editor, sloctl first uses the shell defined in the `{{ .ShellEnv }}` environment variable.
+If this is not defined, the default shell is `{{ .DefaultShellUnix }}` for Unix systems or `{{ .DefaultShellWindows }}` for Windows.
+
+Saving an empty or unchanged file cancels the operation.
+Removing a resource from the file does not delete it.
+You cannot change its kind, name, or project.
+Invalid YAML or server errors reopen the editor with error details.
+
+If the editor fails, sloctl preserves the temporary file and prints its path.
+It also preserves the file and prints its path if you abandon invalid changes without fixing or reverting them.

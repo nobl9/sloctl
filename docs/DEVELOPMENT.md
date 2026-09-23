@@ -27,6 +27,16 @@ Continuous integration pipelines utilize the same Makefile commands which
 you run locally. This ensures consistent behavior of the executed checks
 and makes local debugging easier.
 
+## Command-reference data
+
+Run `make generate/docs` to export the Cobra command tree to
+`docs/sloctl-command-reference.json`.
+The versioned JSON document contains each Cobra command's short description,
+command descriptions as Markdown,
+usage and example text,
+visible local and inherited options,
+and the nested command hierarchy.
+
 ## Object model caveat
 
 Sloctl configures the v1alpha parser to use [v1alpha.GenericObject].

@@ -57,7 +57,7 @@ func (r *RootCmd) NewEditCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "edit",
-		Short:   "Edit resources",
+		Short:   "Edit Nobl9 resources in the configured editor",
 		Long:    getEditDescription(),
 		Example: editExample,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -65,23 +65,19 @@ func (r *RootCmd) NewEditCmd() *cobra.Command {
 		},
 	}
 	cmd.PersistentFlags().BoolVarP(&edit.dryRun, flagDryRun, "", false,
-		"Submit server-side request without persisting the configured resources.")
+		"Send the request without persisting changes.")
 
 	for _, kind := range manifest.KindValues() {
 		if !kind.Applicable() {
 			continue
 		}
 		plural := pluralForKind(kind)
-		short := fmt.Sprintf("Edits one or more than one of the %s.", plural)
-		if kind == manifest.KindAgent {
-			short = "Edits a single Agent."
-		}
 		use := strings.ToLower(plural)
 		aliases := append(aliasesForKind(kind), kind.ToLower(), kind.String(), plural)
 
-		sc := edit.newEditObjectsCommand(kind, short, use, aliases)
+		sc := edit.newEditObjectsCommand(kind, use, aliases)
 		registerObjectSelectionFlags(sc, kind, &edit.selection,
-			`Edit the requested object(s) across all projects.`)
+			"Select resources to edit across all projects.")
 		cmd.AddCommand(sc)
 	}
 
@@ -113,17 +109,46 @@ func getEditDescription() string {
 
 func (e *EditCmd) newEditObjectsCommand(
 	kind manifest.Kind,
-	short, use string,
+	use string,
 	aliases []string,
 ) *cobra.Command {
+	resourceName := humanReadablePluralForKind(kind)
+	short := fmt.Sprintf("Edit %s", resourceName)
+	useArgs := " [name...]"
+	if kind == manifest.KindAgent {
+		short = "Edit one agent"
+		useArgs = " [name]"
+	}
 	return &cobra.Command{
-		Use:     use,
+		Use:     use + useArgs,
 		Aliases: aliases,
 		Short:   short,
+		Long:    editObjectsLongDescription(kind, resourceName),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return e.run(cmd, kind, args)
 		},
 	}
+}
+
+func editObjectsLongDescription(kind manifest.Kind, resourceName string) string {
+	if kind == manifest.KindAgent {
+		return "Select one agent by name and open it for editing. If the selection resolves to more " +
+			"than one agent, the command fails. Use `--project` to select a project or `--all-projects` to select " +
+			"across projects. Run `sloctl edit --help` for editor selection and failure safeguards."
+	}
+	description := fmt.Sprintf(
+		"Select %s by name or available filters and open them for editing. Without names, all matching "+
+			"%s are opened.",
+		resourceName,
+		resourceName,
+	)
+	switch {
+	case objectKindSupportsProjectFlag(kind):
+		description += " Use `--project` to select a project or `--all-projects` to select across projects."
+	case kind == manifest.KindBudgetAdjustment:
+		description += " `--project` and `--slo` must be supplied together when filtering by SLO."
+	}
+	return description + " Run `sloctl edit --help` for editor selection and failure safeguards."
 }
 
 func (e *EditCmd) run(cmd *cobra.Command, kind manifest.Kind, names []string) error {

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -28,6 +29,7 @@ import (
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
 	replayV1 "github.com/nobl9/nobl9-go/sdk/endpoints/replay/v1"
 
+	"github.com/nobl9/sloctl/internal/collections"
 	"github.com/nobl9/sloctl/internal/flags"
 	"github.com/nobl9/sloctl/internal/printer"
 )
@@ -52,12 +54,20 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:   "replay",
-		Short: "Retrieve historical SLI data and recalculate their SLO error budgets.",
-		Long: "`sloctl replay` creates Replays to retrieve historical data for SLOs. " +
-			"Use it to replay SLOs one-by-one or in bulk. Historical data retrieval is time-consuming: " +
-			"replaying a single SLO can take up to an hour. Considering the number of ongoing Replays is limited, " +
-			"`sloctl` queues Replays if the limit is exceeded.",
+		Use:   "replay [slo-name]",
+		Short: "Replay historical SLI data for existing SLOs",
+		Long: "Create Replay jobs to recalculate SLO error budgets from a specified start\n" +
+			"time until now. Replay is permanent and cannot be rolled back. A job can take\n" +
+			"several minutes to an hour.\n\n" +
+			"To replay one SLO, pass its name and `--from`. The Project defaults to the\n" +
+			"active context's Project. To replay multiple SLOs, pass one or more local YAML\n" +
+			"or JSON configuration files with `--file`. Values in a file take precedence over\n" +
+			"`--project` and `--from`.\n\n" +
+			"sloctl validates every requested SLO before starting any Replay. After\n" +
+			"preflight succeeds, a failure for one entry does not stop the remaining\n" +
+			"entries. Organizations with Replay queues enqueue the jobs; otherwise sloctl\n" +
+			"waits for each Replay to finish before starting the next. Modifying an SLO\n" +
+			"after its Replay starts does not change the running Replay.",
 		Example: replayExample,
 		Args:    replay.arguments,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -71,12 +81,18 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 
 	replay.printer.MustRegisterFlags(cmd)
 	registerFileFlag(cmd, false, &replay.configPaths)
-	cmd.Flags().StringVarP(&replay.project, "project", "p", "", `Specifies the Project for the SLOs you want to Replay.`)
+	replayFileDescription := "Path to a local YAML or JSON Replay configuration file. " +
+		"Repeat this flag to use multiple files."
+	setFlagDescriptions(cmd, flagFile, replayFileDescription, replayFileDescription)
+	cmd.Flags().StringVarP(&replay.project, "project", "p", "",
+		"Project for a single SLO, or fallback Project for file entries that omit it. "+
+			"Defaults to the active context's Project.")
 	flags.RegisterTimeVar(
 		cmd,
 		&replay.from,
 		"from",
-		"Sets the start of Replay time window.",
+		"Replay start time in RFC3339 format. "+
+			"Required for a single SLO and used for file entries that omit it.",
 	)
 
 	cmd.AddCommand(replay.AddDeleteCommand())
@@ -297,6 +313,8 @@ func (r *ReplayCmd) readConfigFile(path string) ([]ReplayConfig, error) {
 // averageReplayDuration is used to calculate when running bulk Replay to calculate time offset for each SLO.
 const averageReplayDuration = 20 * time.Minute
 
+const replaySLOBatchSize = 50
+
 func (r *ReplayCmd) getReplaySLOs(ctx context.Context, replays []ReplayConfig) ([]replaySLO, error) {
 	sloNamesByProject := make(map[string][]string)
 	for _, replay := range replays {
@@ -311,21 +329,23 @@ func (r *ReplayCmd) getReplaySLOs(ctx context.Context, replays []ReplayConfig) (
 
 	slos := make([]replaySLO, 0, len(replays))
 	for project, names := range sloNamesByProject {
-		objects, err := r.client.Objects().V1().Get(
-			ctx,
-			manifest.KindSLO,
-			http.Header{sdk.HeaderProject: []string{project}},
-			url.Values{objectsV1.QueryKeyName: names},
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get SLOs in '%s' Project: %w", project, err)
-		}
-		for _, object := range objects {
-			slo, err := decodeReplaySLO(object)
+		for batch := range slices.Chunk(collections.RemoveDuplicates(names), replaySLOBatchSize) {
+			objects, err := r.client.Objects().V1().Get(
+				ctx,
+				manifest.KindSLO,
+				http.Header{sdk.HeaderProject: []string{project}},
+				url.Values{objectsV1.QueryKeyName: batch},
+			)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to get SLOs in '%s' Project: %w", project, err)
 			}
-			slos = append(slos, slo)
+			for _, object := range objects {
+				slo, err := decodeReplaySLO(object)
+				if err != nil {
+					return nil, err
+				}
+				slos = append(slos, slo)
+			}
 		}
 	}
 	return slos, nil
@@ -371,19 +391,32 @@ func (r *ReplayCmd) verifySLOs(ctx context.Context, replays []ReplayConfig) ([]R
 }
 
 func matchReplaysToSLOs(replays []ReplayConfig, slos []replaySLO) (matched []ReplayConfig, missing []string) {
+	type sloKey struct{ project, name string }
+	slosByKey := make(map[sloKey]replaySLO, len(slos))
+	for _, slo := range slos {
+		slosByKey[sloKey{project: slo.project, name: slo.name}] = slo
+	}
+
 	missing = make([]string, 0)
 	matched = make([]ReplayConfig, 0, len(replays))
-outer:
 	for _, replay := range replays {
-		for _, slo := range slos {
-			if replay.SLO == slo.name && replay.Project == slo.project {
-				replay.metricSource = slo.metricSource
-				replay.isComposite = slo.hasCompositeObjectives
-				matched = append(matched, replay)
-				continue outer
+		slo, targetFound := slosByKey[sloKey{project: replay.Project, name: replay.SLO}]
+		if !targetFound {
+			missing = append(missing, fmt.Sprintf("'%s' SLO in '%s' Project", replay.SLO, replay.Project))
+		}
+		sourceFound := true
+		if source := replay.SourceSLO; source != nil {
+			_, sourceFound = slosByKey[sloKey{project: source.Project, name: source.SLO}]
+			if !sourceFound {
+				missing = append(missing, fmt.Sprintf("'%s' SLO in '%s' Project", source.SLO, source.Project))
 			}
 		}
-		missing = append(missing, fmt.Sprintf("'%s' SLO in '%s' Project", replay.SLO, replay.Project))
+		if !targetFound || !sourceFound {
+			continue
+		}
+		replay.metricSource = slo.metricSource
+		replay.isComposite = slo.hasCompositeObjectives
+		matched = append(matched, replay)
 	}
 	return matched, missing
 }

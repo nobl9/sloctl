@@ -4,13 +4,10 @@ sloctl replay -p my-project --from=2023-03-02T15:00:00Z my-slo
 # Replay SLOs using file configuration from replay.yaml
 sloctl replay -f ./replay.yaml
 
-# Read the configuration from stdin.
-sloctl replay <./replay.yaml
-
 # If the project is not set, it is inferred from Nobl9 config.toml for the current context.
 # If 'from' is not provided in the config file, you must specify it with '--from' flag.
 # Setting 'project' or 'from' via flags does not take precedence over the values set in config.
-cat <<EOF > ./replay.yaml
+cat <<'EOF' > ./replay.yaml
 - slo: prometheus-latency
   from: 2023-03-02T16:00:00Z
 - slo: datadog-latency
@@ -19,17 +16,17 @@ cat <<EOF > ./replay.yaml
   project: default
   from: 2023-03-02T16:00:00Z
 EOF
-sloctl -f ./replay.yaml replay --from=2023-03-02T15:00:00Z
+sloctl replay -f ./replay.yaml --from=2023-03-02T15:00:00Z
 
 # Minimal config with project and from set via flags.
-cat <<EOF > ./replay.yaml
+cat <<'EOF' > ./replay.yaml
 - slo: prometheus-latency
 - slo: datadog-latency
 EOF
 sloctl replay -f ./replay.yaml -p my-project --from 2023-03-02T15:00:00Z
 
 # Replay SLOs using SLI data from other SLOs.
-cat <<EOF > ./replay.yaml
+cat <<'EOF' > ./replay.yaml
 - slo: prometheus-latency
   project: default
   from: 2023-03-02T16:00:00Z
@@ -53,4 +50,4 @@ cat <<EOF > ./replay.yaml
       - source: alarming
         target: objective-2
 EOF
-sloctl -f ./replay.yaml replay
+sloctl replay -f ./replay.yaml
