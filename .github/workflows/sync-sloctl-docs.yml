@@ -53,6 +53,7 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
           permission-actions: write
+          permission-checks: read
       - name: Run documentation update
         uses: ./.github/actions/sync-sloctl-docs
         with:
