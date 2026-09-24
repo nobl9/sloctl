@@ -1,0 +1,17 @@
+New sloctl version v1.1.0 is available!
+
+## 🚀 Features
+
+- Add workflow insights
+  > Extra release-note detail.
+
+### Details
+
+- Preserves nested feature details.
+
+## 🐞 Bug Fixes
+
+- Fix output formatting
+
+📜 https://github.com/nobl9/sloctl/releases/tag/v1.1.0
+

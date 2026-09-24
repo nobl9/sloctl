@@ -1,0 +1,5 @@
+Choose update action
+1. Update (runs go install github.com/nobl9/sloctl/cmd/sloctl@latest)
+2. Skip
+3. Skip until next version
+Enter a number between 1 and 3:
