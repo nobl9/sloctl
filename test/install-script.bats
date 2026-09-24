@@ -7,6 +7,13 @@ setup_file() {
 
   ensure_installed openssl
 
+  case "$(uname -m)" in
+  x86_64) EXPECTED_ARCH="amd64" ;;
+  aarch64) EXPECTED_ARCH="arm64" ;;
+  *) fail "Unsupported architecture: $(uname -m)" ;;
+  esac
+  export EXPECTED_ARCH
+
   run cp /usr/bin/sloctl /usr/bin/sloctl-backup
 }
 
@@ -35,7 +42,7 @@ setup() {
 
   run /usr/local/bin/sloctl version
   assert_success
-  assert_output 'sloctl/0.11.0-rc1-HEAD-bc9f5fd (linux amd64 go1.23.6)'
+  assert_output "sloctl/0.11.0-rc1-HEAD-bc9f5fd (linux ${EXPECTED_ARCH} go1.23.6)"
 }
 
 @test "install in custom location in the PATH" {
@@ -44,5 +51,5 @@ setup() {
 
   run /usr/bin/sloctl version
   assert_success
-  assert_output 'sloctl/0.11.0-rc1-HEAD-bc9f5fd (linux amd64 go1.23.6)'
+  assert_output "sloctl/0.11.0-rc1-HEAD-bc9f5fd (linux ${EXPECTED_ARCH} go1.23.6)"
 }

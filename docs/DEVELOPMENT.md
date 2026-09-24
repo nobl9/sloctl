@@ -14,12 +14,38 @@ Section worth noting and getting familiar with is located under
 
 Run `make help` to display short description for each target.
 The provided Makefile will automatically install dev dependencies if they're
-missing and place them under `bin`
-(this does not apply to `yarn` managed dependencies).
+missing.
+Binaries, like `golangci-lint`, are placed under `bin`,
+and `yarn` managed dependencies are installed into `node_modules`.
 However, it does not detect if the binary you have is up to date with the
 versions declaration located in Makefile.
 If you see any discrepancies between CI and your local runs, remove the
 binaries from `bin` and let Makefile reinstall them with the latest version.
+
+### Prerequisites
+
+The Makefile does not install the tools listed below.
+Make sure they are available in your `PATH` before running the targets
+which need them, or the aggregate targets which include them:
+
+- [Go](https://go.dev/doc/install) and git, for most targets.
+- [Node.js](https://nodejs.org) and [Yarn](https://classic.yarnpkg.com) 1.x,
+  for `check/spell`, `check/trailing`, `check/markdown`, `check/format`
+  and `format/cspell`.
+  The Node.js version must satisfy the `engines` requirement of the
+  dependencies in [package.json](../package.json),
+  otherwise `yarn install` fails and reports the required version.
+- [Docker](https://docs.docker.com/get-started/get-docker/), for `docker`,
+  `test/bats/unit`, `test/bats/platform`, `test/bats/e2e`
+  and `test/go/e2e-docker`.
+- [jq](https://github.com/jqlang/jq), for `test/bats/e2e`.
+  [run-e2e-tests.sh](../scripts/run-e2e-tests.sh) uses it to read the
+  credentials which are not set in the environment from the current sloctl
+  context.
+  The tests themselves use the `jq` and `yq` installed in the test image.
+
+`test/bats/platform-native` has its own requirements, see
+[Platform compatibility tests](#platform-compatibility-tests).
 
 ## CI
 
@@ -69,10 +95,12 @@ Each test file ends with `.bats` suffix.
 In addition to helper test utilities which are part of the framework we also
 provide custom helpers which are located in `test/test_helper` directory.
 
-Bats tests are currently divided into 2 categories, end-to-end and unit tests.
-The categorization is done through Bats tags. In order to categorize a whole
-file as a unit test, add this comment: `# bats file_tags=unit` anywhere in the
-file, preferably just below shebang.
+Bats tests are primarily divided into two categories: end-to-end and unit tests.
+The categorization is done through Bats tags.
+Platform compatibility tags are orthogonal to those categories and select tests
+for the `make test/bats/platform` and `make test/bats/platform-native` targets.
+To categorize a whole file as a unit test, add
+`# bats file_tags=unit` anywhere in the file, preferably just below the shebang.
 
 The end-to-end tests are only run automatically for releases, be it official
 version or pre-release (release candidate).
@@ -88,8 +116,58 @@ SLOCTL_OKTA_AUTH_SERVER=<dev_auth_server> \ # Runs against dev Okta.
 make test/e2e
 ```
 
-Bats tests are fully containerized, refer to Makefile for more details on
-how they're executed.
+When any of these variables is not set, the end-to-end tests read the
+missing values from the current context of your sloctl configuration
+(`~/.config/nobl9/config.toml` by default,
+override it with `SLOCTL_CONFIG_FILE_PATH`).
+Variables set in the environment take precedence.
+
+Bats unit, platform compatibility and end-to-end tests run in containers.
+Refer to the Makefile for the exact commands.
+
+### Platform compatibility tests
+
+`make test/bats/platform` runs the `platform:unix` tests in a Linux container,
+so you do not need Bats on your machine to run them locally.
+The `platform:windows` tests run only natively on Windows.
+
+`make test/bats/platform-native` runs the platform tests natively and is meant
+for CI, which runs it on Linux, macOS and Windows.
+It needs bats-core, bats-support, bats-assert and Python 3 on the host,
+with `BATS_LIB_PATH` pointing at the Bats libraries.
+The `notification-platforms` and `notification-windows` jobs in
+[unit-tests.yml](../.github/workflows/unit-tests.yml) show the setup for
+each platform.
+
+### Bats output assertions
+
+Prefer exact stdout and stderr assertions for complete CLI messages.
+Store input fixtures, such as request payloads and release bodies, under
+[test/inputs](../test/inputs/), and store expected output fixtures under
+[test/outputs](../test/outputs/).
+When a test file needs a narrower fixture root, set `TEST_INPUTS` or
+`TEST_OUTPUTS` in `setup_file` and compare against files from there.
+
+Use file-backed assertions for expected output:
+
+```bash
+assert_output - < "$TEST_OUTPUTS/result.stdout"
+assert_stderr - < "$TEST_OUTPUTS/error.stderr"
+```
+
+Use `--partial` only as a last resort when exact output would be unstable for
+reasons unrelated to the behavior under test, such as nondeterministic fields
+that cannot be normalized.
+If `--partial` is necessary, keep the assertion narrow and leave nearby context
+explaining why a full output fixture would be brittle.
+
+Interactive terminal tests should prefer deterministic plain-text fixtures.
+Set `NO_COLOR=1` and use accessible form mode when the command supports it.
+Keep source data in [test/inputs](../test/inputs/),
+and compare complete stdout or stderr messages against files in
+[test/outputs](../test/outputs/).
+For notification tests, use the local release fixture server
+and `assert_stderr ""` when stderr must be empty.
 
 ### End-to-end tests
 
@@ -98,8 +176,6 @@ and use [test helper utility functions](../test/test_helper/load.bash).
 The helper functions are documented inline in that file; read them before
 adding a new test, especially if you need fixture generation or output
 assertion helpers.
-Prefer asserting entire outputs with predefined _INPUTS_ and _OUTPUTS_ read
-from files and NOT redirected in the test's code via _heredoc_.
 
 Input fixtures for e2e tests live under [test/inputs](../test/inputs/).
 The fixture directory name must match the test filename without the `.bats`
