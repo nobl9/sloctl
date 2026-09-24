@@ -1,6 +1,9 @@
 # Delete the configuration from slo.yaml.
 sloctl delete -f ./slo.yaml
 
+# Preview deletion without persisting changes.
+sloctl delete -f ./slo.yaml --dry-run
+
 # Delete resources from multiple different sources at once.
 sloctl delete -f ./slo.yaml -f test/config.yaml -f https://nobl9.com/slo.yaml
 
@@ -8,7 +11,7 @@ sloctl delete -f ./slo.yaml -f test/config.yaml -f https://nobl9.com/slo.yaml
 sloctl delete -f - <slo.yaml
 
 # Delete by passing in one or more resource names.
-sloctl delete slo my-slo-name
+sloctl delete slo my-slo-name another-slo-name
 
 # Delete the configuration from slo.yaml and set project context if it is not defined in file.
 sloctl delete -f ./slo.yaml -p slo

@@ -84,21 +84,28 @@ type globalFlags struct {
 func NewRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   programName,
-		Short: "Create, get and delete SLO definitions from command line easily.",
-		Long: `All available commands for execution are listed below.
-Use this tool to work with Nobl9 YAML configuration files (including, but not limited to SLOs).
-More detailed help is available for each command.`,
+		Short: "Manage Nobl9 resources from the command line",
+		Long: "Manage Nobl9 resources from the command line.\n\n" +
+			"Commands that access Nobl9 use the active configuration context. Use `--context` to select another " +
+			"context for one command, or `--no-config-file` to authenticate with environment variables only.",
 		SilenceUsage: true,
 	}
 
 	root := RootCmd{}
 	rootCmd.PersistentFlags().BoolP("help", "h", false, fmt.Sprintf("Help for %s.", rootCmd.Name()))
-	rootCmd.PersistentFlags().StringVar(&root.Flags.ConfigFile, "config", "", "Config file path.")
+	configUsage := "Path to config.toml. If unset, use SLOCTL_CONFIG_FILE_PATH or the platform default."
+	rootCmd.PersistentFlags().StringVar(&root.Flags.ConfigFile, "config", "", configUsage)
+	setFlagDescriptions(rootCmd, "config", configUsage,
+		"Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default.")
 	rootCmd.PersistentFlags().StringVarP(&root.Flags.Context, "context", "c", "",
-		`Overrides the default context for the duration of the selected command.`)
+		"Use this context instead of the configured default for the selected command.")
 	_ = rootCmd.RegisterFlagCompletionFunc("context", root.completeContextFlag)
-	rootCmd.PersistentFlags().BoolVarP(&root.Flags.NoConfigFile, "no-config-file", "", false,
-		`Don't create config.toml, operate only on env variables.`)
+	noConfigFileUsage := "For API authentication, use SLOCTL_CLIENT_ID and SLOCTL_CLIENT_SECRET without reading or " +
+		"creating config.toml. Configuration commands still access the file."
+	rootCmd.PersistentFlags().BoolVarP(&root.Flags.NoConfigFile, "no-config-file", "", false, noConfigFileUsage)
+	setFlagDescriptions(rootCmd, "no-config-file", noConfigFileUsage,
+		"For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or "+
+			"creating `config.toml`. Configuration commands still access the file.")
 
 	rootCmd.AddCommand(root.NewApplyCmd())
 	rootCmd.AddCommand(root.NewDeleteCmd())
@@ -114,6 +121,7 @@ More detailed help is available for each command.`,
 	rootCmd.AddCommand(root.NewMCPCmd())
 	rootCmd.AddCommand(root.NewReviewCmd())
 	rootCmd.AddCommand(root.NewValidateCmd())
+	customizeCompletionHelp(rootCmd)
 
 	return rootCmd
 }

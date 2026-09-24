@@ -22,15 +22,20 @@ func (r *RootCmd) NewAwsIamIds() *cobra.Command {
 
 	cobraCmd := &cobra.Command{
 		Use:   "aws-iam-ids",
-		Short: "Returns IAM IDs used in AWS integrations",
+		Short: "Get AWS IAM role identifiers",
+		Long:  "Get the AWS identifiers used to configure IAM roles for Direct data sources and data exports.",
 	}
 	awsIamIds.printer.MustRegisterFlags(cobraCmd)
 
 	directCmd := &cobra.Command{
-		Use:   "direct [direct-name]",
-		Short: "Returns external ID and AWS account ID for given direct name",
-		Long: "Returns external ID and AWS account ID that can be used to create cross-account IAM roles." +
-			"\nMore details available at: https://docs.nobl9.com/Sources/Amazon_CloudWatch/#cross-account-iam-roles-new.",
+		Use:   "direct <direct-name>",
+		Short: "Get IAM identifiers for a Direct data source",
+		Long: "Return the AWS external ID and Nobl9 AWS account ID for the named\n" +
+			"Direct data source in the active Project.\n" +
+			"Use these values to configure a cross-account IAM role.\n" +
+			"The response contains the `externalID` and `accountID` fields.",
+		Example: `sloctl aws-iam-ids direct my-cloudwatch-source
+sloctl aws-iam-ids direct my-cloudwatch-source --output json`,
 		Args:             awsIamIds.arguments,
 		PersistentPreRun: func(iamIdsCmd *cobra.Command, args []string) { awsIamIds.client = r.GetClient() },
 		RunE:             func(iamIdsCmd *cobra.Command, args []string) error { return awsIamIds.Direct(iamIdsCmd) },
@@ -38,9 +43,11 @@ func (r *RootCmd) NewAwsIamIds() *cobra.Command {
 	cobraCmd.AddCommand(directCmd)
 
 	dataExportCmd := &cobra.Command{
-		Use: "dataexport",
-		Short: "Returns AWS external ID, which will be used by Nobl9 to assume the IAM role when" +
-			" performing data export",
+		Use:   "dataexport",
+		Short: "Get the AWS external ID for data exports",
+		Long:  "Return the AWS external ID that Nobl9 uses to assume a data export IAM role.",
+		Example: "sloctl aws-iam-ids dataexport\n" +
+			"sloctl aws-iam-ids dataexport --output json",
 		PersistentPreRun: func(iamIdsCmd *cobra.Command, args []string) { awsIamIds.client = r.GetClient() },
 		RunE:             func(iamIdsCmd *cobra.Command, args []string) error { return awsIamIds.DataExport(iamIdsCmd) },
 	}

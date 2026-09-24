@@ -3,7 +3,7 @@ kind: Agent
 metadata:
   displayName: cloudwatch-agent
   name: cloudwatch-agent
-  project: death-star
+  project: <PROJECT>
 spec:
   cloudwatch: {}
   sourceOf:

@@ -17,7 +17,7 @@ func (o *Printer) MustRegisterFlags(cmd *cobra.Command) {
 		&o.config.OutputFormat,
 		OutputFlagName,
 		"o",
-		fmt.Sprintf(`Output format: one of %s.`, strings.Join(toStringSlice(o.config.SupportedFromats), "|")),
+		fmt.Sprintf("Output format: %s.", strings.Join(toStringSlice(o.config.SupportedFromats), ", ")),
 	)
 
 	cmd.PersistentFlags().StringVarP(

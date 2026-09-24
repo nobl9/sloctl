@@ -1,5 +1,5 @@
 # Convert the OpenSLO definitions from service.yaml.
-cat <<EOF > ./service.yaml
+cat <<'EOF' > ./service.yaml
 apiVersion: openslo/v1
 kind: Service
 metadata:

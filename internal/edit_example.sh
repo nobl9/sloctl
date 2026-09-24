@@ -9,3 +9,6 @@ sloctl edit service my-service -p my-project
 
 # Edit multiple Alert Policies in one session.
 sloctl edit alertpolicy policy-a policy-b
+
+# Preview edited changes without persisting them.
+sloctl edit service my-service -p my-project --dry-run

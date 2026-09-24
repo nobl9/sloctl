@@ -35,7 +35,8 @@ func (r *RootCmd) NewMoveCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "move",
-		Short: "Move objects between Projects.",
+		Short: "Move SLOs between Projects or Services",
+		Long:  "Move SLOs to another Project or assign them to another Service within the same Project.",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			move.client = r.GetClient()
 		},
@@ -47,22 +48,23 @@ func (r *RootCmd) NewMoveCmd() *cobra.Command {
 
 func (m *MoveCmd) newMoveSLOCmd() *cobra.Command {
 	moveSubCmd := &cobra.Command{
-		Use:   "slo",
-		Short: "Move SLOs between Projects or to a different Service within the same Project.",
-		Long: `Moves one or more SLOs to a different project or to a different Service within the same project.
-The command will also create a new Project and/or Service if the specified target objects do not yet exist.
-
-For cross-project moves, use --to-project flag. For same-project service moves, use --to-service without --to-project.
-
-Moving an SLO between Projects updates references of this SLO in other objects.
-If you've adopted SLOs as Code approach, ensure you update these references in your configuration:
-  - Component SLO's project in the composite SLO definition.
-  - Budget Adjustment filters.
-
-Furthermore, cross-project move operations:
-  - Update SLO links — former links won't work anymore.
-  - Remove SLOs from reports filtered by their previous path.
-  - Unlink Alert Policies (only if --detach-alert-policies flag is provided).`,
+		Use:   "slo [slo-name...]",
+		Short: "Move SLOs to another Project or Service",
+		Long: "Move the named SLOs from the Project selected by `--project` or the active configuration.\n" +
+			"If no SLO names are provided, every SLO in the source Project is moved.\n\n" +
+			"Use `--to-project` for a cross-Project move.\n" +
+			"Use `--to-service` without `--to-project` to reassign SLOs within the source Project.\n" +
+			"Missing target Projects and Services are created.\n" +
+			"For a cross-Project move without `--to-service`, each SLO retains its source Service name.\n\n" +
+			"**Cross-Project moves:**\n\n" +
+			"- Change SLO links, so previous links no longer work.\n" +
+			"- Remove SLOs from reports filtered by their previous paths.\n" +
+			"- Fail when SLOs have attached Alert Policies unless you detach the policies\n" +
+			"  manually or with `--detach-alert-policies`.\n" +
+			"- Can make moved SLOs inaccessible to users without access to the target Project.\n\n" +
+			"Nobl9 updates references to moved SLOs.\n" +
+			"Update local SLO-as-code definitions that reference moved SLOs in composite SLOs\n" +
+			"or Budget Adjustment filters.",
 		Example: moveSLOExample,
 		RunE:    m.moveSLO,
 	}
@@ -73,29 +75,29 @@ Furthermore, cross-project move operations:
 		"project",
 		"p",
 		"",
-		`Source Project of the moved SLOs.`,
+		"Source Project. Defaults to the Project in the active configuration.",
 	)
 	moveSubCmd.Flags().StringVarP(
 		&m.newProject,
 		toProjectFlagName,
 		"",
 		"",
-		`Target Project for the moved SLOs (required for cross-project moves, omit for same-project service moves).`,
+		"Target Project for a cross-Project move. Omit when moving within the source Project.",
 	)
 	moveSubCmd.Flags().StringVarP(
 		&m.newService,
 		"to-service",
 		"",
 		"",
-		"Target Service for the moved SLOs (required for same-project moves; if not specified for cross-project "+
-			"moves, source Service name is used).",
+		"Target Service. Required for same-Project moves; for cross-Project moves, "+
+			"the source Service name is used when omitted.",
 	)
 	moveSubCmd.Flags().BoolVarP(
 		&m.detachAlertPolicies,
 		"detach-alert-policies",
 		"",
 		false,
-		`Detach all Alert Policies from the moved SLOs.`,
+		"Detach all Alert Policies from moved SLOs during a cross-Project move.",
 	)
 
 	return moveSubCmd
