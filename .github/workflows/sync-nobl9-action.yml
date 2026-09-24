@@ -1,32 +1,28 @@
-name: Sync sloctl docs
+name: Sync nobl9-action
 
 on:
   workflow_run:
-    workflows:
-      - Release
-    types:
-      - completed
+    workflows: [Release]
+    types: [completed]
 
 permissions:
   contents: read
 
 concurrency:
-  group: sync-sloctl-docs-${{ github.event.workflow_run.id }}
+  group: sync-nobl9-action-${{ github.event.workflow_run.id }}
   cancel-in-progress: false
 
 jobs:
   dispatch:
-    environment: sloctl-docs-dispatch
+    environment: nobl9-action-dispatch
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
-    # Keep the job within the GitHub App token's one-hour lifetime.
     timeout-minutes: 55
     steps:
       - name: Validate official release
         env:
-          DOCS_REPOSITORY: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
           SLOCTL_SHA: ${{ github.event.workflow_run.head_sha }}
           SLOCTL_TAG: ${{ github.event.workflow_run.head_branch }}
         run: |
@@ -38,30 +34,29 @@ jobs:
             echo "Invalid sloctl release SHA: ${SLOCTL_SHA}" >&2
             exit 2
           fi
-          if [[ ! "${DOCS_REPOSITORY}" =~ ^[A-Za-z0-9_.-]+$ ]]; then
-            echo "Invalid documentation repository name: ${DOCS_REPOSITORY}" >&2
-            exit 2
-          fi
       - name: Checkout source
-        uses: actions/checkout@v4.4.0
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - name: Create GitHub App token
-        id: app_token
+        id: app-token
         uses: actions/create-github-app-token@v3.2.0
         with:
-          client-id: ${{ vars.DOCS_AUTOMATION_CLIENT_ID }}
-          private-key: ${{ secrets.DOCS_AUTOMATION_APP_PRIVATE_KEY }}
+          client-id: ${{ vars.SLOCTL_AUTOMATION_CLIENT_ID }}
+          private-key: ${{ secrets.SLOCTL_AUTOMATION_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
-          repositories: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
+          repositories: nobl9-action
           permission-actions: write
           permission-checks: read
-      - name: Run documentation update
+      - name: Update and publish action
         uses: ./.github/actions/sync-sloctl-release
         with:
-          repository: ${{ github.repository_owner }}/${{ vars.DOCS_AUTOMATION_REPOSITORY }}
-          workflow: update-sloctl-command-reference.yml
-          ref: production
-          expected-run-name: sloctl docs from release run ${{ github.event.workflow_run.id }}
+          repository: ${{ github.repository_owner }}/nobl9-action
+          workflow: update-sloctl.yml
+          ref: main
+          expected-run-name: sloctl action from release run ${{ github.event.workflow_run.id }}
           sloctl-sha: ${{ github.event.workflow_run.head_sha }}
           sloctl-tag: ${{ github.event.workflow_run.head_branch }}
           source-run-id: ${{ github.event.workflow_run.id }}
-          token: ${{ steps.app_token.outputs.token }}
+          cancel-on-timeout: "false"
+          token: ${{ steps.app-token.outputs.token }}

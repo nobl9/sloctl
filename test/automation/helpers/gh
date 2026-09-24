@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+arguments=("$@")
+argument_value() {
+  local i
+  for ((i = 0; i < ${#arguments[@]}; i++)); do
+    if [[ "${arguments[i]}" == "$1" ]]; then
+      printf '%s\n' "${arguments[i + 1]}"
+      return
+    fi
+  done
+}
+
+printf '%s %s\n' "$1" "$2" >>"$FAKE_STATE/calls"
+case "$1 $2" in
+"run list")
+  [[ "$(argument_value --repo)" == "$TARGET_REPOSITORY" ]]
+  [[ "$(argument_value --workflow)" == "$TARGET_WORKFLOW" ]]
+  run_id=99
+  status=in_progress
+  conclusion=""
+  if [[ -f "$FAKE_STATE/dispatched" ]]; then
+    run_id=100
+    status=queued
+  else
+    case "$FAKE_MODE" in
+    existing-success)
+      status=completed
+      conclusion=success
+      ;;
+    existing-failed)
+      status=completed
+      conclusion=failure
+      ;;
+    new) run_id=0 ;;
+    esac
+  fi
+  rows="$(jq -n --argjson id "$run_id" --arg title "$EXPECTED_RUN_NAME" \
+    --arg branch "$TARGET_REF" --arg status "$status" --arg conclusion "$conclusion" '
+      [{databaseId:999999,displayTitle:"another release",headBranch:$branch,status:"completed",conclusion:"success"}] +
+      if $id == 0 then [] else
+      [{databaseId:$id,displayTitle:$title,headBranch:$branch,status:$status,conclusion:$conclusion}] end
+    ')"
+  if [[ "$FAKE_MODE" == wrong-branch ]]; then
+    rows="$(jq --arg title "$EXPECTED_RUN_NAME" \
+      '. + [{databaseId:9999999,displayTitle:$title,headBranch:"unrelated",status:"completed",conclusion:"success"}]' <<<"$rows")"
+  fi
+  branch="$(argument_value --branch)"
+  if [[ -n "$branch" ]]; then rows="$(jq --arg branch "$branch" '[.[] | select(.headBranch == $branch)]' <<<"$rows")"; fi
+  jq -r "$(argument_value --jq)" <<<"$rows"
+  ;;
+"workflow run")
+  jq -n --args '$ARGS.positional' -- "$@" >"$FAKE_STATE/dispatched"
+  ;;
+"run watch")
+  case "$FAKE_MODE" in
+  watch-failed | lost-watch-response) exit 1 ;;
+  monitor-timeout) exit 124 ;;
+  esac
+  ;;
+"run view")
+  if [[ "$FAKE_MODE" == lost-watch-response ]]; then
+    printf 'completed\tsuccess\n'
+  elif [[ "$FAKE_MODE" == monitor-timeout && ! -f "$FAKE_STATE/cancelled" ]]; then
+    printf 'queued\t\n'
+  else
+    printf 'completed\tfailure\n'
+  fi
+  ;;
+"run cancel") touch "$FAKE_STATE/cancelled" ;;
+*)
+  echo "Unexpected GitHub command: $*" >&2
+  exit 99
+  ;;
+esac
