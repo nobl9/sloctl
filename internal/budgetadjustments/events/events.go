@@ -11,8 +11,9 @@ import (
 func NewRootCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "events",
-		Short: "Budget adjustments events management",
-		Long:  "The 'events' command allows you to manage events related to SLO error budget adjustments",
+		Short: "Get, update, or delete budget adjustment events",
+		Long: `Manage event occurrences associated with budget adjustments. These
+commands do not modify budget adjustment definitions.`,
 	}
 	cmd.PersistentFlags().BoolP("help", "h", false, fmt.Sprintf("Help for %s.", cmd.Name()))
 	cmd.AddCommand(NewGetCmd(clientProvider))

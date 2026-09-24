@@ -34,14 +34,11 @@ func NewGetCmd(clientProvider sdkclient.SdkClientProvider) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "get",
-		Short: "Return a list of events for given Adjustment with related SLOs",
-		Long: "Returns a list of events for the specified adjustment along with related **SLO**. " +
-			"This command returns past and ongoing events (events that have already started). " +
-			"The events 'get' command can return a maximum of 250 events. " +
-			"You can optionally filter for a specific SLO (only one). " +
-			"If an SLO is defined, only events for that SLO will be returned, " +
-			"but the results will also include other SLOs associated with those events. " +
-			"The results are sorted by event start time.",
+		Short: "Get budget adjustment events",
+		Long: "Get past and ongoing events for one budget adjustment in a required RFC3339 time range. " +
+			"Results are ordered by event start time and limited to 250 events.\n\n" +
+			"Use `--slo-name` together with `--slo-project` to filter by one SLO. Each matching\n" +
+			"event includes its associated SLOs.",
 		Example: getExample,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			get.client = clientProvider.GetClient()

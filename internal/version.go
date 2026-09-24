@@ -13,8 +13,10 @@ const versionCmdName = "version"
 // NewVersionCmd returns cobra command version with all flags for it.
 func NewVersionCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   versionCmdName,
-		Short: "Print the sloctl version",
+		Use:     versionCmdName,
+		Short:   "Print build and runtime version information",
+		Long:    "Print the sloctl version, Git branch and revision, operating system, architecture, and Go runtime version.",
+		Example: "sloctl version",
 		Run: func(*cobra.Command, []string) {
 			fmt.Println(getUserAgent())
 		},

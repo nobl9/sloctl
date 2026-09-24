@@ -76,18 +76,15 @@ func getApplyOrDeleteDescription(description string) string {
 	if err != nil {
 		panic(err)
 	}
-	extensionsBuilder := strings.Builder{}
 	extensions := sdk.GetSupportedFileExtensions()
-	for i, ext := range extensions {
-		extensionsBuilder.WriteString("'" + ext + "'")
-		if i == len(extensions)-1 {
-			break
-		}
-		if i == len(extensions)-2 {
-			extensionsBuilder.WriteString(" and ")
-			continue
-		}
-		extensionsBuilder.WriteString(", ")
+	quotedExtensions := make([]string, 0, len(extensions))
+	for _, extension := range extensions {
+		quotedExtensions = append(quotedExtensions, "`"+extension+"`")
+	}
+	extensionsList := strings.Join(quotedExtensions, ", ")
+	if len(quotedExtensions) > 1 {
+		last := len(quotedExtensions) - 1
+		extensionsList = strings.Join(quotedExtensions[:last], ", ") + " and " + quotedExtensions[last]
 	}
 	var b strings.Builder
 	if err = tpl.Execute(&b, struct {
@@ -96,7 +93,7 @@ func getApplyOrDeleteDescription(description string) string {
 		Regex       string
 	}{
 		Description: description,
-		Extensions:  extensionsBuilder.String(),
+		Extensions:  extensionsList,
 		Regex:       sdk.APIVersionRegex,
 	}); err != nil {
 		panic(err)

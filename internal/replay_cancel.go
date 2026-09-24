@@ -12,8 +12,12 @@ import (
 func (r *ReplayCmd) AddCancelCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cancel <slo-name>",
-		Short: "Cancel an importing Replay",
-		Args:  r.cancelArguments,
+		Short: "Cancel a Replay data import",
+		Long: `Request cancellation of the data-import phase of the Replay for one SLO.
+The Project defaults to the active context's Project. This command does not
+remove a Replay that is still queued.`,
+		Example: "sloctl replay cancel my-slo --project my-project",
+		Args:    r.cancelArguments,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if r.project != "" {
 				r.client.Config.Project = r.project
@@ -24,7 +28,7 @@ func (r *ReplayCmd) AddCancelCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&r.project, "project", "p", "",
-		`Specifies the Project of the SLO you want to cancel importing Replay for.`)
+		"Project containing the SLO. Defaults to the active context's Project.")
 
 	return cmd
 }
