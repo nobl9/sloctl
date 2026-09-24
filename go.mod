@@ -13,7 +13,7 @@ require (
 	github.com/mattn/go-isatty v0.0.23
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/nobl9/go-yaml v1.0.1
-	github.com/nobl9/nobl9-go v0.135.1-0.20260922095317-ad7d2aaba98f
+	github.com/nobl9/nobl9-go v0.137.0
 	github.com/nobl9/nobl9-openslo v0.1.6
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.19.1
