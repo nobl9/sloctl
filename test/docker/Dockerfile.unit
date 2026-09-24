@@ -11,6 +11,7 @@ RUN pip install yq==v3.2.3 --break-system-packages
 WORKDIR /sloctl
 
 COPY ./test ./test
+COPY ./.github/actions ./.github/actions
 COPY ./install.bash ./install.bash
 COPY --from=sloctl-unit-test-bin /usr/bin/sloctl /usr/bin/sloctl
 

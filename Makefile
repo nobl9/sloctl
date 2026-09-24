@@ -10,6 +10,7 @@ VERSION ?= 1.0.0-test
 BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
 REVISION ?= $(shell git rev-parse --short=8 HEAD)
 GENERATED_DOCS_OUTPUT ?= ./docs/sloctl-command-reference.json
+BATS ?= bats
 
 LDFLAGS := -s -w \
 	-X $(VERSION_PKG).BuildVersion=$(VERSION) \
@@ -105,6 +106,17 @@ test/bats/unit:
 	docker build -t sloctl-bats-unit -f $(TEST_DIR)/docker/Dockerfile.unit .
 	docker run -e TERM=linux --rm \
 		sloctl-bats-unit -F pretty --filter-tags unit $(TEST_DIR)/*
+
+.PHONY: test/automation check/automation
+## Run offline tests for release synchronization.
+test/automation:
+	$(BATS) $(TEST_DIR)/automation
+
+## Check release synchronization workflows and shell scripts.
+check/automation:
+	actionlint .github/workflows/sync-sloctl-docs.yml .github/workflows/sync-nobl9-action.yml
+	shellcheck .github/actions/sync-sloctl-release/*.sh $(TEST_DIR)/automation/helpers/*
+	shfmt -d -i 2 .github/actions/sync-sloctl-release/*.sh $(TEST_DIR)/automation/*.bats $(TEST_DIR)/automation/helpers/*
 
 ## Run bats e2e tests.
 test/bats/e2e:
