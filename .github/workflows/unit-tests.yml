@@ -48,7 +48,7 @@ jobs:
         env:
           BATS_LIB_PATH: ${{ steps.setup-bats.outputs.lib-path }}
           TERM: xterm
-        run: make test/bats/platform
+        run: make test/bats/platform-native
   notification-windows:
     name: Notification compatibility (windows-latest)
     runs-on: windows-latest
@@ -85,4 +85,4 @@ jobs:
         env:
           BATS_LIB_PATH: ${{ steps.setup-bats.outputs.lib-path }}
           TERM: xterm
-        run: make test/bats/platform
+        run: make test/bats/platform-native

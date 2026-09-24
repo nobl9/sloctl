@@ -94,7 +94,7 @@ test: test/unit test/e2e
 ## Run Go and containerized Bats unit tests (excludes native platform tests).
 test/unit: test/go/unit test/bats/unit
 
-.PHONY: test/e2e test/bats/unit test/bats/platform test/bats/e2e test/go/e2e-docker
+.PHONY: test/e2e test/bats/unit test/bats/platform test/bats/platform-native test/bats/e2e test/go/e2e-docker
 ## Run all e2e tests.
 test/e2e: test/bats/e2e test/go/e2e-docker
 
@@ -116,8 +116,16 @@ test/bats/unit:
 	docker run -e RELEASE_SERVER_PORT=$(NOTIFICATIONS_TEST_RELEASE_PORT) -e TERM=linux --rm \
 		sloctl-bats-unit -F pretty --filter-tags unit,!platform $(TEST_DIR)/*
 
-## Run native platform notification tests.
+## Run Unix platform notification tests in Docker.
 test/bats/platform:
+	$(call _print_step,Running platform notification tests)
+	$(call _build_docker,sloctl-unit-test-bin,v1.0.0,PC-123-test,e2602ddc,$(NOTIFICATIONS_TEST_RELEASE_URL))
+	docker build -t sloctl-bats-unit -f $(TEST_DIR)/docker/Dockerfile.unit .
+	docker run -e RELEASE_SERVER_PORT=$(NOTIFICATIONS_TEST_RELEASE_PORT) -e TERM=linux --rm \
+		sloctl-bats-unit -F pretty --filter-tags platform:unix $(TEST_DIR)/notifications.bats
+
+## Run platform notification tests natively on the host OS, used by CI.
+test/bats/platform-native:
 	$(MAKE) VERSION=v1.0.0 NOTIFICATIONS_RELEASE_URL=$(NOTIFICATIONS_TEST_RELEASE_URL) build
 	$(call _print_step,Running native platform notification tests)
 	@set -- --filter-tags platform:unix; \
