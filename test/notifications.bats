@@ -36,6 +36,7 @@ setup() {
     SLOCTL_NO_NOTIFICATIONS \
     SLOCTL_TEST_TTY_INPUT \
     SLOCTL_TEST_TTY_INPUT_WHEN_RAW \
+    SLOCTL_TEST_TTY_INPUT_AFTER_QUERY \
     SLOCTL_TEST_TTY_BACKGROUND \
     SLOCTL_TEST_UPGRADE_EXIT_CODE \
     SLOCTL_TEST_UPGRADE_MARKER \
@@ -346,6 +347,25 @@ teardown() {
     assert_stderr --regexp $'\e''\[[0-9;]*38;2;'"$accent"'[0-9;]*mChoose update action'
   done
   assert_release_requests 2
+}
+
+@test "sloctl can interrupt an update prompt while waiting for its background color" {
+  local go_binary="$HOME/go/bin/sloctl"
+  copy_sloctl_binary "$go_binary"
+  export SLOCTL_ACCESSIBLE_MODE=0
+  export SLOCTL_TEST_TTY_INPUT_WHEN_RAW=1
+  export SLOCTL_TEST_TTY_INPUT_AFTER_QUERY=1
+  export SLOCTL_TEST_TTY_INPUT=$'\x03'
+  export SLOCTL_TEST_TTY_BACKGROUND=unresponsive
+  export TERM=xterm-256color COLORTERM=truecolor
+  unset NO_COLOR CLICOLOR CLICOLOR_FORCE
+  start_release_server
+
+  run_sloctl_binary_with_tty_stderr "$go_binary" version
+  assert_failure 130
+  assert_output ""
+  assert_stderr --partial "New sloctl version v1.1.0 is available!"
+  assert_release_requests 1
 }
 
 # bats test_tags=platform,platform:unix

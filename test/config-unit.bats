@@ -40,6 +40,27 @@ teardown() {
   assert_output 'minimal'
 }
 
+@test "sloctl config form keeps stderr and cancellation during background detection" {
+  ensure_installed python3 cmp
+  cp "$SLOCTL_DEFAULT_CONFIG" "$BATS_TEST_TMPDIR/before.toml"
+  export SLOCTL_NO_NOTIFICATIONS=1
+  export SLOCTL_ACCESSIBLE_MODE=0
+  export SLOCTL_TEST_TTY_INPUT_WHEN_RAW=1
+  export SLOCTL_TEST_TTY_INPUT_AFTER_QUERY=1
+  export SLOCTL_TEST_TTY_INPUT=$'\x03'
+  export SLOCTL_TEST_TTY_BACKGROUND=unresponsive
+  export TERM=xterm-256color COLORTERM=truecolor
+  unset NO_COLOR CLICOLOR CLICOLOR_FORCE
+
+  run --separate-stderr python3 "$TEST_SUITE_INPUTS/notifications/run_with_stderr_pty.py" sloctl config add-context
+  assert_failure 1
+  assert_output ""
+  assert_stderr --partial "failed to run context addition form"
+
+  run cmp "$BATS_TEST_TMPDIR/before.toml" "$SLOCTL_DEFAULT_CONFIG"
+  assert_success
+}
+
 @test "sloctl config current-context (override config path with flag)" {
   run_sloctl config --config="$TEST_INPUTS/delete-config.toml" current-context
   assert_success_joined_output

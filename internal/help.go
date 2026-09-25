@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime"
 	"strings"
 	"text/template"
 
@@ -34,7 +33,7 @@ func configureHelp(root *cobra.Command) {
 			plainHelp(cmd, args)
 			return
 		}
-		rendered, err := renderHelp(cmd, "help", helpWidth(out), helpHasDarkBackground(out))
+		rendered, err := renderHelp(cmd, "help", helpWidth(out), helpHasDarkBackground(cmd.InOrStdin(), out))
 		if err != nil {
 			cmd.PrintErrln(err)
 			plainHelp(cmd, args)
@@ -49,7 +48,7 @@ func configureHelp(root *cobra.Command) {
 		if !styledHelpEnabled(out) {
 			return plainUsage(cmd)
 		}
-		rendered, err := renderHelp(cmd, "usage", helpWidth(out), helpHasDarkBackground(out))
+		rendered, err := renderHelp(cmd, "usage", helpWidth(out), helpHasDarkBackground(cmd.InOrStdin(), out))
 		if err != nil {
 			cmd.PrintErrln(err)
 			return plainUsage(cmd)
@@ -78,17 +77,28 @@ func helpWidth(out io.Writer) int {
 	return 80
 }
 
-func helpHasDarkBackground(out io.Writer) bool {
-	file, ok := out.(*os.File)
-	if !ok {
+func helpHasDarkBackground(in io.Reader, out io.Writer) bool {
+	file, ok := in.(*os.File)
+	if !ok || !term.IsTerminal(file.Fd()) {
 		return true
 	}
-	if runtime.GOOS == "windows" {
-		// Windows uses separate console input and output handles.
-		return lipgloss.HasDarkBackground(os.Stdin, file)
-	}
-	// Query the output terminal so redirected stdin stays untouched.
-	return lipgloss.HasDarkBackground(file, file)
+	// Lip Gloss queries each handle as both input and output on Unix. Pair the
+	// streams so read-only stdin and write-only terminal output both work.
+	terminal := helpTerminal{File: file, output: out}
+	return lipgloss.HasDarkBackground(terminal, terminal)
+}
+
+type helpTerminal struct {
+	*os.File
+	output io.Writer
+}
+
+func (t helpTerminal) Write(p []byte) (int, error) {
+	return t.output.Write(p)
+}
+
+func (t helpTerminal) WriteString(s string) (int, error) {
+	return io.WriteString(t.output, s)
 }
 
 func renderHelp(cmd *cobra.Command, name string, width int, isDark bool) (string, error) {

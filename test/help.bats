@@ -87,6 +87,28 @@ setup() {
   done
 }
 
+@test "sloctl supports read-only input and write-only help terminals" {
+  run --separate-stderr python3 "$TEST_INPUTS/run_help.py" \
+    --width 80 --expect styled --background light --write-only --raw -- sloctl mcp --help
+  assert_success
+  assert_output --regexp $'\e''\[[0-9;]*38;2;0;129;158[0-9;]*mUsage'
+  assert_stderr ""
+
+  run --separate-stderr python3 "$TEST_INPUTS/run_help.py" \
+    --stream stderr --width 80 --expect styled --background light --write-only --raw -- sloctl aws-iam-ids direct
+  assert_failure 1
+  assert_output ""
+  assert_stderr --regexp $'\e''\[[0-9;]*38;2;0;129;158[0-9;]*mUsage'
+}
+
+@test "sloctl does not query the terminal or read redirected input for help" {
+  run --separate-stderr python3 "$TEST_INPUTS/run_help.py" \
+    --width 80 --expect styled --redirect-stdin --write-only -- sloctl mcp --help
+  assert_success
+  assert_output - < "$TEST_OUTPUTS/mcp.stdout"
+  assert_stderr ""
+}
+
 @test "sloctl wraps completion prose without changing code examples" {
   run_help_tty 60 styled completion bash --help
   assert_success
