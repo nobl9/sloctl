@@ -7,10 +7,10 @@ import (
 	chromastyles "github.com/alecthomas/chroma/v2/styles"
 )
 
-// The terminal16 formatter maps these names to the terminal's ANSI palette.
+// Keep accents in the terminal's ANSI palette and comments a neutral gray.
 var markdownSyntax = chromastyles.Register(chroma.MustNewStyle("sloctl-help", chroma.StyleEntries{
 	chroma.Text:                "#ansidarkblue",
-	chroma.Comment:             "noinherit italic",
+	chroma.Comment:             "noinherit #949494 italic",
 	chroma.Keyword:             "#ansipurple",
 	chroma.Operator:            "#ansipurple",
 	chroma.Punctuation:         "#ansipurple",
@@ -27,7 +27,7 @@ var markdownSyntax = chromastyles.Register(chroma.MustNewStyle("sloctl-help", ch
 	chroma.GenericStrong:       "bold",
 }))
 
-// MarkdownTheme uses ANSI colors so help follows the terminal's own palette.
+// MarkdownTheme uses the terminal palette for accents and a neutral gray for comments.
 func MarkdownTheme() ansi.StyleConfig {
 	t := styles.ASCIIStyleConfig
 	t.Document.Margin = new(uint(0))

@@ -35,13 +35,10 @@
 ## Additional Commands
 {{range $commands}}{{if and (eq .GroupID "") (or .IsAvailableCommand (eq .Name "help"))}}
 - `{{.Name}}`: {{.Short}}
-{{end}}{{end}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
-## Flags
+{{end}}{{end}}{{end}}{{end}}{{end}}{{end}}
 
-{{flags .LocalFlags}}{{end}}{{if .HasAvailableInheritedFlags}}
-## Global Flags
-
-{{flags .InheritedFlags}}{{end}}{{if .HasHelpSubCommands}}
+{{define "footer" -}}
+{{if .HasHelpSubCommands}}
 ## Additional help topics
 {{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
 - `{{.CommandPath}}`: {{.Short}}

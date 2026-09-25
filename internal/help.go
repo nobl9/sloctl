@@ -11,6 +11,7 @@ import (
 
 	"charm.land/glamour/v2"
 	"github.com/charmbracelet/colorprofile"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/term"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
@@ -77,17 +78,58 @@ func helpWidth(out io.Writer) int {
 
 func renderHelp(cmd *cobra.Command, name string, width int) (string, error) {
 	tpl, err := template.New("help").Funcs(template.FuncMap{
-		"flags": flagsMarkdown,
-		"trim":  strings.TrimSpace,
+		"trim": strings.TrimSpace,
 	}).Parse(helpTemplate)
 	if err != nil {
 		return "", fmt.Errorf("parse help template: %w", err)
 	}
-	var markdown bytes.Buffer
-	if err := tpl.ExecuteTemplate(&markdown, name, cmd); err != nil {
-		return "", fmt.Errorf("format help: %w", err)
+	var output strings.Builder
+	appendMarkdown := func(markdown string) error {
+		if strings.TrimSpace(markdown) == "" {
+			return nil
+		}
+		rendered, err := renderHelpMarkdown(markdown, width)
+		if err != nil {
+			return err
+		}
+		output.WriteString(strings.TrimRight(strings.TrimLeft(rendered, "\n"), " \t\n") + "\n\n")
+		return nil
 	}
-	return renderHelpMarkdown(markdown.String(), width)
+	appendSection := func(name string) error {
+		var markdown bytes.Buffer
+		if err := tpl.ExecuteTemplate(&markdown, name, cmd); err != nil {
+			return fmt.Errorf("format help: %w", err)
+		}
+		return appendMarkdown(markdown.String())
+	}
+	if err := appendSection(name); err != nil {
+		return "", err
+	}
+	if name == "usage" || cmd.Runnable() || cmd.HasSubCommands() {
+		for _, section := range []struct {
+			title string
+			flags *pflag.FlagSet
+		}{
+			{"Flags", cmd.LocalFlags()},
+			{"Global Flags", cmd.InheritedFlags()},
+		} {
+			if !section.flags.HasAvailableFlags() {
+				continue
+			}
+			if err := appendMarkdown("## " + section.title); err != nil {
+				return "", err
+			}
+			rendered, err := renderHelpFlags(section.flags, width)
+			if err != nil {
+				return "", err
+			}
+			output.WriteString(rendered + "\n")
+		}
+		if err := appendSection("footer"); err != nil {
+			return "", err
+		}
+	}
+	return "\n" + strings.TrimRight(output.String(), "\n") + "\n", nil
 }
 
 func renderHelpMarkdown(markdown string, width int) (string, error) {
@@ -103,7 +145,7 @@ func renderHelpMarkdown(markdown string, width int) (string, error) {
 		renderer, err := glamour.NewTermRenderer(
 			glamour.WithStyles(theme),
 			glamour.WithWordWrap(wrap),
-			glamour.WithChromaFormatter("terminal16"),
+			glamour.WithChromaFormatter("terminal256"),
 		)
 		if err != nil {
 			return fmt.Errorf("create help renderer: %w", err)
@@ -165,10 +207,9 @@ func helpCodeFence(line string) string {
 	return trimmed[:i]
 }
 
-func flagsMarkdown(flags *pflag.FlagSet) string {
-	var markdown strings.Builder
-	escape := strings.NewReplacer("|", "\\|", "\n", " ")
-	markdown.WriteString("| Flag | Description |\n| :--- | :--- |\n")
+func renderHelpFlags(flags *pflag.FlagSet, width int) (string, error) {
+	var rows []struct{ syntax, description string }
+	column := 0
 	flags.VisitAll(func(flag *pflag.Flag) {
 		if flag.Hidden {
 			return
@@ -176,10 +217,11 @@ func flagsMarkdown(flags *pflag.FlagSet) string {
 		// Let pflag retain value syntax, defaults, and deprecation notices.
 		single := pflag.NewFlagSet(flag.Name, pflag.ContinueOnError)
 		single.AddFlag(flag)
-		syntax, description, _ := strings.Cut(strings.TrimSpace(single.FlagUsages()), "  ")
-		if flag.Shorthand == "" || flag.ShorthandDeprecated != "" {
-			syntax = "    " + syntax
-		}
+		usage := single.FlagUsages()
+		trimmed := strings.TrimLeft(usage, " ")
+		syntax, description, _ := strings.Cut(trimmed, "  ")
+		syntax = usage[:len(usage)-len(trimmed)] + syntax
+		column = max(column, ansi.StringWidth(syntax)+3)
 		description = strings.TrimSpace(description)
 		if values := flag.Annotations[FlagDescriptionMarkdownAnnotation]; len(values) == 1 {
 			_, usage := pflag.UnquoteUsage(flag)
@@ -187,7 +229,34 @@ func flagsMarkdown(flags *pflag.FlagSet) string {
 				description = values[0] + suffix
 			}
 		}
-		fmt.Fprintf(&markdown, "| `%s` | %s |\n", escape.Replace(syntax), escape.Replace(description))
+		rows = append(rows, struct{ syntax, description string }{syntax, description})
 	})
-	return markdown.String()
+	// As in pflag, put descriptions below the flags when columns leave too little room.
+	stacked := width-column < 24
+	if stacked {
+		column = min(16, max(width-24, 0))
+	}
+	indent := strings.Repeat(" ", column)
+	var output strings.Builder
+	for _, row := range rows {
+		trimmed := strings.TrimLeft(row.syntax, " ")
+		syntax, err := renderHelpMarkdown("`"+trimmed+"`", 0)
+		if err != nil {
+			return "", err
+		}
+		syntax = row.syntax[:len(row.syntax)-len(trimmed)] + strings.TrimSpace(syntax)
+		description, err := renderHelpMarkdown(row.description, max(width-column, 1))
+		if err != nil {
+			return "", err
+		}
+		output.WriteString(syntax)
+		if stacked {
+			output.WriteString("\n" + indent)
+		} else {
+			output.WriteString(strings.Repeat(" ", max(column-ansi.StringWidth(syntax), 1)))
+		}
+		output.WriteString(strings.ReplaceAll(strings.Trim(description, "\n"), "\n", "\n"+indent))
+		output.WriteByte('\n')
+	}
+	return output.String(), nil
 }

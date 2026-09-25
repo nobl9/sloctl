@@ -32,16 +32,14 @@ Available Commands
 
 Flags
 
- Flag                 | Description
-----------------------|---------------------------------------------------------
-     --config string  | Path to config.toml. If unset, use
-                      | SLOCTL_CONFIG_FILE_PATH or the platform default.
- -c, --context string | Use this context instead of the configured default for
-                      | the selected command.
- -h, --help           | Help for sloctl.
-     --no-config-file | For API authentication, use SLOCTL_CLIENT_ID and
-                      | SLOCTL_CLIENT_SECRET without reading or creating
-                      | config.toml. Configuration commands still access the
-                      | file.
+      --config string    Path to config.toml. If unset, use
+                         SLOCTL_CONFIG_FILE_PATH or the platform default.
+  -c, --context string   Use this context instead of the configured default for
+                         the selected command.
+  -h, --help             Help for sloctl.
+      --no-config-file   For API authentication, use SLOCTL_CLIENT_ID and
+                         SLOCTL_CLIENT_SECRET without reading or creating
+                         config.toml. Configuration commands still access the
+                         file.
 
 Use sloctl [command] --help for more information about a command.
