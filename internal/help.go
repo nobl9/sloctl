@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 	"text/template"
 
 	"charm.land/glamour/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/term"
@@ -32,7 +34,7 @@ func configureHelp(root *cobra.Command) {
 			plainHelp(cmd, args)
 			return
 		}
-		rendered, err := renderHelp(cmd, "help", helpWidth(out))
+		rendered, err := renderHelp(cmd, "help", helpWidth(out), helpHasDarkBackground(out))
 		if err != nil {
 			cmd.PrintErrln(err)
 			plainHelp(cmd, args)
@@ -47,7 +49,7 @@ func configureHelp(root *cobra.Command) {
 		if !styledHelpEnabled(out) {
 			return plainUsage(cmd)
 		}
-		rendered, err := renderHelp(cmd, "usage", helpWidth(out))
+		rendered, err := renderHelp(cmd, "usage", helpWidth(out), helpHasDarkBackground(out))
 		if err != nil {
 			cmd.PrintErrln(err)
 			return plainUsage(cmd)
@@ -76,7 +78,20 @@ func helpWidth(out io.Writer) int {
 	return 80
 }
 
-func renderHelp(cmd *cobra.Command, name string, width int) (string, error) {
+func helpHasDarkBackground(out io.Writer) bool {
+	file, ok := out.(*os.File)
+	if !ok {
+		return true
+	}
+	if runtime.GOOS == "windows" {
+		// Windows uses separate console input and output handles.
+		return lipgloss.HasDarkBackground(os.Stdin, file)
+	}
+	// Query the output terminal so redirected stdin stays untouched.
+	return lipgloss.HasDarkBackground(file, file)
+}
+
+func renderHelp(cmd *cobra.Command, name string, width int, isDark bool) (string, error) {
 	tpl, err := template.New("help").Funcs(template.FuncMap{
 		"trim": strings.TrimSpace,
 	}).Parse(helpTemplate)
@@ -88,7 +103,7 @@ func renderHelp(cmd *cobra.Command, name string, width int) (string, error) {
 		if strings.TrimSpace(markdown) == "" {
 			return nil
 		}
-		rendered, err := renderHelpMarkdown(markdown, width)
+		rendered, err := renderHelpMarkdown(markdown, width, isDark)
 		if err != nil {
 			return err
 		}
@@ -119,7 +134,7 @@ func renderHelp(cmd *cobra.Command, name string, width int) (string, error) {
 			if err := appendMarkdown("## " + section.title); err != nil {
 				return "", err
 			}
-			rendered, err := renderHelpFlags(section.flags, width)
+			rendered, err := renderHelpFlags(section.flags, width, isDark)
 			if err != nil {
 				return "", err
 			}
@@ -132,8 +147,8 @@ func renderHelp(cmd *cobra.Command, name string, width int) (string, error) {
 	return "\n" + strings.TrimRight(output.String(), "\n") + "\n", nil
 }
 
-func renderHelpMarkdown(markdown string, width int) (string, error) {
-	theme := style.MarkdownTheme()
+func renderHelpMarkdown(markdown string, width int, isDark bool) (string, error) {
+	theme := style.MarkdownTheme(isDark)
 	theme.Document.BlockPrefix = ""
 	theme.Document.BlockSuffix = ""
 	var output, block strings.Builder
@@ -145,7 +160,7 @@ func renderHelpMarkdown(markdown string, width int) (string, error) {
 		renderer, err := glamour.NewTermRenderer(
 			glamour.WithStyles(theme),
 			glamour.WithWordWrap(wrap),
-			glamour.WithChromaFormatter("terminal256"),
+			glamour.WithChromaFormatter("terminal16m"),
 		)
 		if err != nil {
 			return fmt.Errorf("create help renderer: %w", err)
@@ -207,7 +222,7 @@ func helpCodeFence(line string) string {
 	return trimmed[:i]
 }
 
-func renderHelpFlags(flags *pflag.FlagSet, width int) (string, error) {
+func renderHelpFlags(flags *pflag.FlagSet, width int, isDark bool) (string, error) {
 	var rows []struct{ syntax, description string }
 	column := 0
 	flags.VisitAll(func(flag *pflag.Flag) {
@@ -240,12 +255,12 @@ func renderHelpFlags(flags *pflag.FlagSet, width int) (string, error) {
 	var output strings.Builder
 	for _, row := range rows {
 		trimmed := strings.TrimLeft(row.syntax, " ")
-		syntax, err := renderHelpMarkdown("`"+trimmed+"`", 0)
+		syntax, err := renderHelpMarkdown("`"+trimmed+"`", 0, isDark)
 		if err != nil {
 			return "", err
 		}
 		syntax = row.syntax[:len(row.syntax)-len(trimmed)] + strings.TrimSpace(syntax)
-		description, err := renderHelpMarkdown(row.description, max(width-column, 1))
+		description, err := renderHelpMarkdown(row.description, max(width-column, 1), isDark)
 		if err != nil {
 			return "", err
 		}

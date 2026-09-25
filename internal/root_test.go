@@ -136,7 +136,7 @@ func TestRenderHelpMarkdownPreservesCodeLines(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			rendered, err := renderHelpMarkdown(test.markdown, 24)
+			rendered, err := renderHelpMarkdown(test.markdown, 24, true)
 
 			require.NoError(t, err)
 			lines := strings.Split(ansi.Strip(rendered), "\n")

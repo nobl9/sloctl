@@ -7,7 +7,6 @@ Examples
 sloctl aws-iam-ids direct my-cloudwatch-source
 sloctl aws-iam-ids direct my-cloudwatch-source --output json
 
-
 Global Flags
 
       --config string    Path to config.toml. If unset, use

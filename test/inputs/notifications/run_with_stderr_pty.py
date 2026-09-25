@@ -28,6 +28,12 @@ def main():
     try:
         controller_fd, terminal_fd = pty.openpty()
         input_text = os.environ.get("SLOCTL_TEST_TTY_INPUT")
+        background = os.environ.get("SLOCTL_TEST_TTY_BACKGROUND")
+        terminal_output = bytearray()
+        answered_queries = 0
+        background_query = b"\x1b]11;?\x07\x1b[c"
+        if background is not None:
+            termios.tcsetwinsize(terminal_fd, (32, 80))
         wait_for_raw_mode = (
             os.environ.get("SLOCTL_TEST_TTY_INPUT_WHEN_RAW") == "1"
         )
@@ -87,9 +93,16 @@ def main():
 
                 key.data.write(data.replace(b"\r\n", b"\n").replace(b"\r", b""))
                 key.data.flush()
+                if key.fileobj == controller_fd and background is not None:
+                    terminal_output.extend(data)
+                    while answered_queries < terminal_output.count(background_query):
+                        color = b"2e2e/3434/4040" if background == "dark" else b"ffff/ffff/ffff"
+                        os.write(controller_fd, b"\x1b]11;rgb:" + color + b"\x07\x1b[?1;2c")
+                        answered_queries += 1
                 if key.fileobj == controller_fd and terminal_fd is not None:
                     attrs = termios.tcgetattr(terminal_fd)
-                    if not attrs[3] & termios.ICANON:
+                    prompt_ready = background is None or b"Choose update action" in terminal_output
+                    if not attrs[3] & termios.ICANON and prompt_ready:
                         os.write(controller_fd, input_text.encode())
                         os.close(terminal_fd)
                         terminal_fd = None

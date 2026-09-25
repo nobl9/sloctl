@@ -1,37 +1,52 @@
 package style
 
 import (
+	"fmt"
+	"image/color"
+
 	"charm.land/glamour/v2/ansi"
 	"charm.land/glamour/v2/styles"
 	"github.com/alecthomas/chroma/v2"
 	chromastyles "github.com/alecthomas/chroma/v2/styles"
 )
 
-// Keep accents in the terminal's ANSI palette and comments a neutral gray.
-var markdownSyntax = chromastyles.Register(chroma.MustNewStyle("sloctl-help", chroma.StyleEntries{
-	chroma.Text:                "#ansidarkblue",
-	chroma.Comment:             "noinherit #949494 italic",
-	chroma.Keyword:             "#ansipurple",
-	chroma.Operator:            "#ansipurple",
-	chroma.Punctuation:         "#ansipurple",
-	chroma.Name:                "#ansidarkblue",
-	chroma.NameVariable:        "#ansiteal",
-	chroma.NameAttribute:       "#ansiteal",
-	chroma.NameTag:             "#ansiteal",
-	chroma.LiteralNumber:       "#ansipurple",
-	chroma.LiteralString:       "#ansidarkgreen",
-	chroma.LiteralStringEscape: "#ansipurple",
-	chroma.GenericDeleted:      "#ansidarkred",
-	chroma.GenericInserted:     "#ansidarkgreen",
-	chroma.GenericEmph:         "italic",
-	chroma.GenericStrong:       "bold",
-}))
+var (
+	markdownSyntaxLight = newMarkdownSyntax("sloctl-help-light", themePalette(false))
+	markdownSyntaxDark  = newMarkdownSyntax("sloctl-help-dark", themePalette(true))
+)
 
-// MarkdownTheme uses the terminal palette for accents and a neutral gray for comments.
-func MarkdownTheme() ansi.StyleConfig {
+func newMarkdownSyntax(name string, colors palette) *chroma.Style {
+	accent, muted := hexColor(colors.accent), hexColor(colors.muted)
+	return chromastyles.Register(chroma.MustNewStyle(name, chroma.StyleEntries{
+		chroma.Comment:             muted + " italic",
+		chroma.Keyword:             accent + " bold",
+		chroma.Operator:            accent,
+		chroma.Punctuation:         accent,
+		chroma.NameVariable:        accent + " bold",
+		chroma.NameAttribute:       accent,
+		chroma.NameTag:             accent + " bold",
+		chroma.LiteralNumber:       accent,
+		chroma.LiteralString:       accent,
+		chroma.LiteralStringEscape: accent + " bold",
+		chroma.GenericDeleted:      hexColor(red),
+		chroma.GenericInserted:     accent,
+		chroma.GenericEmph:         "italic",
+		chroma.GenericStrong:       "bold",
+	}))
+}
+
+func hexColor(c color.Color) string {
+	r, g, b, _ := c.RGBA()
+	return fmt.Sprintf("#%02x%02x%02x", r>>8, g>>8, b>>8)
+}
+
+// MarkdownTheme shares the interactive forms' accents and muted text colors.
+func MarkdownTheme(isDark bool) ansi.StyleConfig {
+	colors := themePalette(isDark)
+	accent := hexColor(colors.accent)
 	t := styles.ASCIIStyleConfig
 	t.Document.Margin = new(uint(0))
-	t.Heading.Color = new("6")
+	t.Heading.Color = new(accent)
 	t.Heading.Bold = new(true)
 	t.H1.Prefix = ""
 	t.H2.Prefix = ""
@@ -42,11 +57,14 @@ func MarkdownTheme() ansi.StyleConfig {
 	t.Strong = ansi.StylePrimitive{Bold: new(true)}
 	t.Emph = ansi.StylePrimitive{Italic: new(true)}
 	t.Strikethrough = ansi.StylePrimitive{CrossedOut: new(true)}
-	t.Code = ansi.StyleBlock{StylePrimitive: ansi.StylePrimitive{Color: new("6")}}
+	t.Code = ansi.StyleBlock{StylePrimitive: ansi.StylePrimitive{Bold: new(true)}}
 	// Preserve leading whitespace so copied heredoc delimiters remain valid.
 	t.CodeBlock.Margin = new(uint(0))
-	t.CodeBlock.Theme = markdownSyntax.Name
-	t.Link.Color = new("6")
+	t.CodeBlock.Theme = markdownSyntaxLight.Name
+	if isDark {
+		t.CodeBlock.Theme = markdownSyntaxDark.Name
+	}
+	t.Link.Color = new(accent)
 	t.Link.Underline = new(true)
 	t.LinkText.Bold = new(true)
 	return t

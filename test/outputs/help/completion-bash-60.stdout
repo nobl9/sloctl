@@ -20,7 +20,6 @@ Usage
 
 sloctl completion bash
 
-
 Flags
 
       --no-descriptions   disable completion descriptions

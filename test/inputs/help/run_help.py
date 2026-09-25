@@ -18,6 +18,8 @@ def main():
     parser.add_argument("--width", type=int, required=True)
     parser.add_argument("--stream", choices=("stdout", "stderr"), default="stdout")
     parser.add_argument("--expect", choices=("styled", "plain"), required=True)
+    parser.add_argument("--background", choices=("dark", "light", "unknown", "unresponsive"), default="dark")
+    parser.add_argument("--raw", action="store_true")
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args()
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
@@ -32,6 +34,8 @@ def main():
                 os.close(terminal)
                 terminal = None
                 output = bytearray()
+                query = b"\x1b]11;?\x07\x1b[c"
+                answered_queries = 0
                 deadline = time.monotonic() + 10
                 with selectors.DefaultSelector() as selector:
                     selector.register(controller, selectors.EVENT_READ)
@@ -50,6 +54,15 @@ def main():
                         if not data:
                             break
                         output.extend(data)
+                        while answered_queries < output.count(query):
+                            reply = b""
+                            if args.background == "dark":
+                                reply = b"\x1b]11;rgb:2e2e/3434/4040\x07"
+                            elif args.background == "light":
+                                reply = b"\x1b]11;rgb:ffff/ffff/ffff\x07"
+                            if args.background != "unresponsive":
+                                os.write(controller, reply + b"\x1b[?1;2c")
+                            answered_queries += 1
                 try:
                     status = process.wait(timeout=max(deadline - time.monotonic(), 0))
                 except subprocess.TimeoutExpired:
@@ -62,15 +75,22 @@ def main():
         if terminal is not None:
             os.close(terminal)
 
-    styled = b"\x1b[" in output
+    if args.expect == "plain" and query in output:
+        print("plain help queried the terminal background", file=sys.stderr)
+        return 1
+    styled = re.search(rb"\x1b\[[0-9;]*m", output) is not None
     if styled != (args.expect == "styled"):
         print(f"expected {args.expect} terminal output, got {bytes(output)!r}", file=sys.stderr)
         return 1
     text = output.decode().replace("\r\n", "\n")
+    text = text.replace(query.decode(), "")
     text = re.sub(r"\x1b\]8;[^\x07]*\x07", "", text)
-    text = re.sub(r"\x1b\[[0-9;]*m", "", text)
-    lines = [line.rstrip() for line in text.splitlines()]
-    normalized = "\n".join(lines) + "\n"
+    if args.raw:
+        normalized = text
+    else:
+        text = re.sub(r"\x1b\[[0-9;]*m", "", text)
+        lines = [line.rstrip() for line in text.splitlines()]
+        normalized = "\n".join(lines) + "\n"
     if args.stream == "stdout":
         sys.stdout.write(normalized)
         sys.stderr.buffer.write(other_output)

@@ -2,6 +2,7 @@
 package style
 
 import (
+	"image/color"
 	"os"
 
 	huh "charm.land/huh/v2"
@@ -20,6 +21,19 @@ var (
 	darkTeal  = lipgloss.Color("#01465C")
 )
 
+type palette struct {
+	accent color.Color
+	muted  color.Color
+}
+
+func themePalette(isDark bool) palette {
+	lightDark := lipgloss.LightDark(isDark)
+	return palette{
+		accent: lightDark(teal, cyan),
+		muted:  lightDark(gray, lightGray),
+	}
+}
+
 // HuhTheme returns the shared Nobl9 terminal theme for interactive forms.
 func HuhTheme(isDark bool) *huh.Styles {
 	t := huh.ThemeBase(isDark)
@@ -28,8 +42,8 @@ func HuhTheme(isDark bool) *huh.Styles {
 	}
 
 	lightDark := lipgloss.LightDark(isDark)
-	accent := lightDark(teal, cyan)
-	muted := lightDark(gray, lightGray)
+	colors := themePalette(isDark)
+	accent, muted := colors.accent, colors.muted
 	// Keep ordinary text readable even when background detection is unavailable.
 	text := lipgloss.NoColor{}
 	selectedBackground := lightDark(teal, darkTeal)

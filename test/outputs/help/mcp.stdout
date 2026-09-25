@@ -18,7 +18,6 @@ Examples
 
 sloctl mcp
 
-
 Global Flags
 
       --config string    Path to config.toml. If unset, use

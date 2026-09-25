@@ -54,6 +54,39 @@ setup() {
   assert_stderr ""
 }
 
+@test "sloctl distinguishes headings, flag names, and comments in both themes" {
+  local background accent comment
+  for background in light dark; do
+    if [[ "$background" == light ]]; then
+      accent='0;129;158'
+      comment='103;104;104'
+    else
+      accent='0;186;211'
+      comment='186;187;187'
+    fi
+
+    run --separate-stderr python3 "$TEST_INPUTS/run_help.py" \
+      --width 100 --expect styled --background "$background" --raw -- sloctl get alerts --help
+    assert_success
+    assert_stderr ""
+    # Match semantic colors without fixing unrelated layout and syntax tokens.
+    assert_output --regexp $'\e''\[[0-9;]*38;2;'"$accent"'[0-9;]*mFlags'
+    assert_output --regexp $'\e''\[1m--alert-policy stringArray'$'\e''\[m'
+    assert_output --regexp $'\e''\[[0-9;]*38;2;'"$comment"'m# Get active and resolved alerts from all projects\.'
+  done
+}
+
+@test "sloctl renders help when the terminal cannot report its background" {
+  local background
+  for background in unknown unresponsive; do
+    run --separate-stderr python3 "$TEST_INPUTS/run_help.py" \
+      --width 80 --expect styled --background "$background" -- sloctl mcp --help
+    assert_success
+    assert_output - < "$TEST_OUTPUTS/mcp.stdout"
+    assert_stderr ""
+  done
+}
+
 @test "sloctl wraps completion prose without changing code examples" {
   run_help_tty 60 styled completion bash --help
   assert_success
