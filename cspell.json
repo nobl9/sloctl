@@ -53,6 +53,7 @@
     "msys",
     "msystem",
     "nobl",
+    "noinherit",
     "openslo",
     "openslosdk",
     "openslotonobl9",

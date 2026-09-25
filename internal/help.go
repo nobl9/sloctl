@@ -167,6 +167,8 @@ func helpCodeFence(line string) string {
 
 func flagsMarkdown(flags *pflag.FlagSet) string {
 	var markdown strings.Builder
+	escape := strings.NewReplacer("|", "\\|", "\n", " ")
+	markdown.WriteString("| Flag | Description |\n| :--- | :--- |\n")
 	flags.VisitAll(func(flag *pflag.Flag) {
 		if flag.Hidden {
 			return
@@ -175,6 +177,9 @@ func flagsMarkdown(flags *pflag.FlagSet) string {
 		single := pflag.NewFlagSet(flag.Name, pflag.ContinueOnError)
 		single.AddFlag(flag)
 		syntax, description, _ := strings.Cut(strings.TrimSpace(single.FlagUsages()), "  ")
+		if flag.Shorthand == "" || flag.ShorthandDeprecated != "" {
+			syntax = "    " + syntax
+		}
 		description = strings.TrimSpace(description)
 		if values := flag.Annotations[FlagDescriptionMarkdownAnnotation]; len(values) == 1 {
 			_, usage := pflag.UnquoteUsage(flag)
@@ -182,7 +187,7 @@ func flagsMarkdown(flags *pflag.FlagSet) string {
 				description = values[0] + suffix
 			}
 		}
-		fmt.Fprintf(&markdown, "- `%s`: %s\n", syntax, strings.ReplaceAll(description, "\n", "\n  "))
+		fmt.Fprintf(&markdown, "| `%s` | %s |\n", escape.Replace(syntax), escape.Replace(description))
 	})
 	return markdown.String()
 }

@@ -10,7 +10,7 @@ import (
 // The terminal16 formatter maps these names to the terminal's ANSI palette.
 var markdownSyntax = chromastyles.Register(chroma.MustNewStyle("sloctl-help", chroma.StyleEntries{
 	chroma.Text:                "#ansidarkblue",
-	chroma.Comment:             "italic",
+	chroma.Comment:             "noinherit italic",
 	chroma.Keyword:             "#ansipurple",
 	chroma.Operator:            "#ansipurple",
 	chroma.Punctuation:         "#ansipurple",
