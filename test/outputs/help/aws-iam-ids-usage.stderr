@@ -1,11 +1,11 @@
 Usage
 
-  sloctl aws-iam-ids direct <direct-name> [flags]
+sloctl aws-iam-ids direct <direct-name> [flags]
 
 Examples
 
-  sloctl aws-iam-ids direct my-cloudwatch-source
-  sloctl aws-iam-ids direct my-cloudwatch-source --output json
+sloctl aws-iam-ids direct my-cloudwatch-source
+sloctl aws-iam-ids direct my-cloudwatch-source --output json
 
 
 Global Flags

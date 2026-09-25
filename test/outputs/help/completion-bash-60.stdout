@@ -6,19 +6,19 @@ completion package first.
 
 Load completions in the current shell:
 
-  source <(sloctl completion bash)
+source <(sloctl completion bash)
 
 Install completions for future sessions on Linux:
 
-  sloctl completion bash > /etc/bash_completion.d/sloctl
+sloctl completion bash > /etc/bash_completion.d/sloctl
 
 With Homebrew on macOS:
 
-  sloctl completion bash > "$(brew --prefix)/etc/bash_completion.d/sloctl"
+sloctl completion bash > "$(brew --prefix)/etc/bash_completion.d/sloctl"
 
 Usage
 
-  sloctl completion bash
+sloctl completion bash
 
 
 Flags

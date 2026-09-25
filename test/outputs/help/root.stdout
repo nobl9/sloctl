@@ -9,7 +9,7 @@ with environment variables only.
 
 Usage
 
-  sloctl [command]
+sloctl [command]
 
 Available Commands
 

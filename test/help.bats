@@ -61,6 +61,25 @@ setup() {
   assert_stderr ""
 }
 
+@test "sloctl preserves heredoc delimiters in help examples" {
+  local action example
+  for action in delete update; do
+    run_help_tty 60 styled budgetadjustments events "$action" --help
+    assert_success
+    assert_line 'Examples'
+    assert_stderr ""
+
+    example="${output#*$'Examples\n\n'}"
+    example="${example%%$'\nFlags\n'*}"
+    printf '%s\n' "$example" > "$BATS_TEST_TMPDIR/example.sh"
+
+    run --separate-stderr bash -n "$BATS_TEST_TMPDIR/example.sh"
+    assert_success
+    assert_output ""
+    assert_stderr ""
+  done
+}
+
 @test "sloctl renders usage on stderr for invalid arguments" {
   run --separate-stderr python3 "$TEST_INPUTS/run_help.py" \
     --stream stderr --width 80 --expect styled -- sloctl aws-iam-ids direct

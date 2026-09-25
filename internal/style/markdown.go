@@ -43,6 +43,8 @@ func MarkdownTheme() ansi.StyleConfig {
 	t.Emph = ansi.StylePrimitive{Italic: new(true)}
 	t.Strikethrough = ansi.StylePrimitive{CrossedOut: new(true)}
 	t.Code = ansi.StyleBlock{StylePrimitive: ansi.StylePrimitive{Color: new("6")}}
+	// Preserve leading whitespace so copied heredoc delimiters remain valid.
+	t.CodeBlock.Margin = new(uint(0))
 	t.CodeBlock.Theme = markdownSyntax.Name
 	t.Link.Color = new("6")
 	t.Link.Underline = new(true)

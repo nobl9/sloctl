@@ -9,7 +9,7 @@ page.
 
 Usage
 
-  sloctl get slos [name...] [flags]
+sloctl get slos [name...] [flags]
 
 Aliases
 

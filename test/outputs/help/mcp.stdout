@@ -12,11 +12,11 @@ https://docs.nobl9.com/tools-and-utilities/mcp-server.
 
 Usage
 
-  sloctl mcp [flags]
+sloctl mcp [flags]
 
 Examples
 
-  sloctl mcp
+sloctl mcp
 
 
 Global Flags

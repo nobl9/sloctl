@@ -117,15 +117,15 @@ func TestRenderHelpMarkdownPreservesCodeLines(t *testing.T) {
 	}{
 		"tilde fence": {
 			markdown: "Before.\n\n~~~text\n" + command + "\n~~~\n\nAfter.",
-			want:     "Before.\n\n  " + command + "\n\nAfter.",
+			want:     "Before.\n\n" + command + "\n\nAfter.",
 		},
 		"backtick fence": {
 			markdown: "Before.\n\n```text\n" + command + "\n```\n\nAfter.",
-			want:     "Before.\n\n  " + command + "\n\nAfter.",
+			want:     "Before.\n\n" + command + "\n\nAfter.",
 		},
 		"shorter fence inside code": {
 			markdown: "~~~~text\n~~~\n" + command + "\n~~~~",
-			want:     "~~~\n  " + command,
+			want:     "~~~\n" + command,
 		},
 		"unclosed fence": {
 			markdown: "~~~text\n" + command,
