@@ -8,17 +8,12 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-const (
-	pinkHex = "#DB2779"
-	tealHex = "#00819E"
-)
-
 var (
 	darkGray  = lipgloss.Color("#383939")
 	white     = lipgloss.Color("#FFFFFF")
-	pink      = lipgloss.Color(pinkHex)
+	pink      = lipgloss.Color("#DB2779")
 	red       = lipgloss.Color("#D42E56")
-	teal      = lipgloss.Color(tealHex)
+	teal      = lipgloss.Color("#00819E")
 	cyan      = lipgloss.Color("#00BAD3")
 	gray      = lipgloss.Color("#676868")
 	lightGray = lipgloss.Color("#BABBBB")

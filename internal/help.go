@@ -103,7 +103,7 @@ func renderHelpMarkdown(markdown string, width int) (string, error) {
 		renderer, err := glamour.NewTermRenderer(
 			glamour.WithStyles(theme),
 			glamour.WithWordWrap(wrap),
-			glamour.WithChromaFormatter("terminal16m"),
+			glamour.WithChromaFormatter("terminal16"),
 		)
 		if err != nil {
 			return fmt.Errorf("create help renderer: %w", err)
