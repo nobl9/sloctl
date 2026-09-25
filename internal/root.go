@@ -122,6 +122,7 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.AddCommand(root.NewReviewCmd())
 	rootCmd.AddCommand(root.NewValidateCmd())
 	customizeCompletionHelp(rootCmd)
+	configureHelp(rootCmd)
 
 	return rootCmd
 }

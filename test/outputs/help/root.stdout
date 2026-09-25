@@ -1,0 +1,44 @@
+
+sloctl
+
+Manage Nobl9 resources from the command line.
+
+Commands that access Nobl9 use the active configuration context. Use --context
+to select another context for one command, or --no-config-file to authenticate
+with environment variables only.
+
+Usage
+
+  sloctl [command]
+
+Available Commands
+
+• apply: Apply Nobl9 resource definitions
+• aws-iam-ids: Get AWS IAM role identifiers
+• budgetadjustments: Manage budget adjustment events
+• completion: Generate shell completion scripts
+• config: Manage sloctl configuration contexts
+• convert: Convert external definitions to Nobl9 resources
+• delete: Delete Nobl9 resources by name or definition file
+• edit: Edit Nobl9 resources in the configured editor
+• get: Get Nobl9 resources
+• help: Help about any command
+• mcp: Start the Nobl9 MCP proxy over stdio
+• move: Move SLOs between Projects or Services
+• replay: Replay historical SLI data for existing SLOs
+• review: Manage SLO review
+• validate: Validate SLI queries
+• version: Print build and runtime version information
+
+Flags
+
+• --config string: Path to config.toml. If unset, use SLOCTL_CONFIG_FILE_PATH or
+the platform default.
+• -c, --context string: Use this context instead of the configured default for
+the selected command.
+• -h, --help: Help for sloctl.
+• --no-config-file: For API authentication, use SLOCTL_CLIENT_ID and
+SLOCTL_CLIENT_SECRET without reading or creating config.toml. Configuration
+commands still access the file.
+
+Use sloctl [command] --help for more information about a command.

@@ -1,0 +1,30 @@
+
+sloctl mcp
+
+Start a Model Context Protocol (MCP) https://modelcontextprotocol.io/ proxy over
+standard input and output. The proxy uses the active sloctl context to
+authenticate and forwards requests to Nobl9.
+
+Use this proxy instead of a direct HTTP connection when the MCP client
+communicates over stdio, requires dynamic client registration, or should reuse
+credentials from the active sloctl context. See Nobl9 MCP server
+https://docs.nobl9.com/tools-and-utilities/mcp-server.
+
+Usage
+
+  sloctl mcp [flags]
+
+Examples
+
+  sloctl mcp
+
+Global Flags
+
+• --config string: Path to config.toml. If unset, use SLOCTL_CONFIG_FILE_PATH or
+the platform default.
+• -c, --context string: Use this context instead of the configured default for
+the selected command.
+• -h, --help: Help for sloctl.
+• --no-config-file: For API authentication, use SLOCTL_CLIENT_ID and
+SLOCTL_CLIENT_SECRET without reading or creating config.toml. Configuration
+commands still access the file.
