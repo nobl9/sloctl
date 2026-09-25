@@ -19,8 +19,9 @@ const accessibleModeEnv = "SLOCTL_ACCESSIBLE_MODE"
 func New(groups ...*huh.Group) *huh.Form {
 	accessible := AccessibleMode()
 	isDark := true
+	theme := huh.ThemeFunc(func(bool) *huh.Styles { return style.HuhTheme(isDark) })
 	form := huh.NewForm(groups...).
-		WithTheme(huh.ThemeFunc(func(bool) *huh.Styles { return style.HuhTheme(isDark) })).
+		WithTheme(theme).
 		WithAccessible(accessible)
 	if accessible || os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb" {
 		return form
@@ -32,6 +33,8 @@ func New(groups ...*huh.Group) *huh.Form {
 	return form.WithProgramOptions(tea.WithOutput(os.Stderr), tea.WithFilter(func(_ tea.Model, msg tea.Msg) tea.Msg {
 		if background, ok := msg.(tea.BackgroundColorMsg); ok {
 			isDark = background.IsDark()
+			// Reapply the theme to refresh Huh's cached keyboard hint styles.
+			form.WithTheme(theme)
 		}
 		if requested {
 			return msg

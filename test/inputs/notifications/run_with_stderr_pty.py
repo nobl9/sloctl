@@ -29,6 +29,7 @@ def main():
         controller_fd, terminal_fd = pty.openpty()
         input_text = os.environ.get("SLOCTL_TEST_TTY_INPUT")
         background = os.environ.get("SLOCTL_TEST_TTY_BACKGROUND")
+        prompt_title = os.environ.get("SLOCTL_TEST_TTY_PROMPT_TITLE", "Choose update action").encode()
         input_after_query = os.environ.get("SLOCTL_TEST_TTY_INPUT_AFTER_QUERY") == "1"
         terminal_output = bytearray()
         answered_queries = 0
@@ -107,7 +108,7 @@ def main():
                         prompt_ready = answered_queries > 0
                     elif background is not None:
                         accent = b"38;2;0;186;211" if background == "dark" else b"38;2;0;129;158"
-                        prompt_ready = b"Choose update action" in terminal_output and accent in terminal_output
+                        prompt_ready = prompt_title in terminal_output and accent in terminal_output
                     else:
                         prompt_ready = True
                     if not attrs[3] & termios.ICANON and prompt_ready:
