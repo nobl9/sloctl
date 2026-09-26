@@ -35,7 +35,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
-      - uses: actions/setup-python@v6.2.0
+      - uses: actions/setup-python@v6.3.0
         with:
           python-version: "3.13.15"
       - name: Set up Bats
@@ -62,7 +62,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
-      - uses: actions/setup-python@v6.2.0
+      - uses: actions/setup-python@v6.3.0
         with:
           python-version: "3.13.15"
       - name: Install Windows PTY dependency
