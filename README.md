@@ -41,6 +41,11 @@ Sloctl includes built-in documentation for each command, to access it, run:
 sloctl <command> --help
 ```
 
+Help uses Markdown formatting and wraps prose to the terminal width.
+Code examples keep their original line breaks.
+Redirected output stays plain, as does terminal output when `NO_COLOR` has a
+nonempty value or `TERM=dumb`.
+
 For more details check out
 [sloctl user guide](https://docs.nobl9.com/sloctl-user-guide).
 
