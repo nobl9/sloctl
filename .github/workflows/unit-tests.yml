@@ -74,7 +74,7 @@ jobs:
           bats-version: 1.13.0
           assert-version: 2.2.4
       - name: Set up MinGW
-        uses: msys2/setup-msys2@v2.32.0
+        uses: msys2/setup-msys2@v2.33.0
         with:
           install: make python
           msystem: MINGW64
