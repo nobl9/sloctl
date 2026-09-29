@@ -26,7 +26,7 @@ LDFLAGS += -X $(NOTIFICATIONS_PKG).latestReleaseURL=$(NOTIFICATIONS_RELEASE_URL)
 endif
 
 # renovate datasource=github-releases depName=golangci/golangci-lint
-GOLANGCI_LINT_VERSION := v2.13.2
+GOLANGCI_LINT_VERSION := v2.14.0
 
 # Check if the program is present in $PATH and install otherwise.
 # ${1} - oneOf{binary,yarn}
