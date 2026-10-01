@@ -43,7 +43,7 @@ jobs:
             exit 2
           fi
       - name: Checkout source
-        uses: actions/checkout@v4.4.0
+        uses: actions/checkout@v7.0.1
       - name: Create GitHub App token
         id: app_token
         uses: actions/create-github-app-token@v3.2.0
