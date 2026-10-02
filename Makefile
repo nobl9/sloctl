@@ -15,6 +15,7 @@ NOTIFICATIONS_RELEASE_URL ?=
 NOTIFICATIONS_TEST_RELEASE_PORT ?= 38080
 NOTIFICATIONS_TEST_RELEASE_URL := http://127.0.0.1:$(NOTIFICATIONS_TEST_RELEASE_PORT)/repos/nobl9/sloctl/releases/latest
 GENERATED_DOCS_OUTPUT ?= ./docs/sloctl-command-reference.json
+BATS ?= bats
 
 LDFLAGS := -s -w \
 	-X $(VERSION_PKG).BuildVersion=$(VERSION) \
@@ -136,6 +137,17 @@ test/bats/platform-native:
 	RELEASE_SERVER_PORT=$(NOTIFICATIONS_TEST_RELEASE_PORT) bats -F pretty \
 		--setup-suite-file $(TEST_DIR)/setup_platform_suite.bash \
 		"$$@" $(TEST_DIR)/notifications.bats
+
+.PHONY: test/automation check/automation
+## Run offline tests for release synchronization.
+test/automation:
+	$(BATS) $(TEST_DIR)/automation
+
+## Check release synchronization workflows and shell scripts.
+check/automation:
+	actionlint .github/workflows/sync-sloctl-docs.yml .github/workflows/sync-nobl9-action.yml
+	shellcheck .github/actions/sync-sloctl-release/*.sh $(TEST_DIR)/automation/helpers/*
+	shfmt -d -i 2 .github/actions/sync-sloctl-release/*.sh $(TEST_DIR)/automation/*.bats $(TEST_DIR)/automation/helpers/*
 
 ## Run bats e2e tests.
 test/bats/e2e:
