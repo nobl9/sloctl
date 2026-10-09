@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 
+	tea "charm.land/bubbletea/v2"
 	huh "charm.land/huh/v2"
 
 	"github.com/nobl9/sloctl/internal/style"
@@ -16,9 +17,31 @@ const accessibleModeEnv = "SLOCTL_ACCESSIBLE_MODE"
 
 // New returns a form configured with sloctl's shared terminal theme.
 func New(groups ...*huh.Group) *huh.Form {
-	return huh.NewForm(groups...).
-		WithTheme(huh.ThemeFunc(style.HuhTheme)).
-		WithAccessible(AccessibleMode())
+	accessible := AccessibleMode()
+	isDark := true
+	theme := huh.ThemeFunc(func(bool) *huh.Styles { return style.HuhTheme(isDark) })
+	form := huh.NewForm(groups...).
+		WithTheme(theme).
+		WithAccessible(accessible)
+	if accessible || os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb" {
+		return form
+	}
+	requested := false
+	// Huh handles background responses but does not request them. Keep the query
+	// in Bubble Tea's event loop so keyboard input and cancellation are retained.
+	// WithProgramOptions replaces Huh's defaults, including its stderr output.
+	return form.WithProgramOptions(tea.WithOutput(os.Stderr), tea.WithFilter(func(_ tea.Model, msg tea.Msg) tea.Msg {
+		if background, ok := msg.(tea.BackgroundColorMsg); ok {
+			isDark = background.IsDark()
+			// Reapply the theme to refresh Huh's cached keyboard hint styles.
+			form.WithTheme(theme)
+		}
+		if requested {
+			return msg
+		}
+		requested = true
+		return tea.Batch(tea.RequestBackgroundColor, func() tea.Msg { return msg })()
+	}))
 }
 
 // AccessibleMode reports whether SLOCTL_ACCESSIBLE_MODE enables plain-text prompts.
