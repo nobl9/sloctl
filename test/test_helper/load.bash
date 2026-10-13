@@ -241,6 +241,10 @@ ensure_installed() {
 #   <name>    Name of the library to load.
 load_lib() {
   local name="$1"
+  if [ -n "${BATS_LIB_PATH:-}" ]; then
+    bats_load_library "$name"
+    return
+  fi
   load "/usr/lib/bats/${name}/load.bash"
 }
 
@@ -251,8 +255,8 @@ load_lib() {
 #
 # Usage: assert_success_joined_output
 #
-# In case erroroneus code is detected, both stderr and stdout are conjoined.
-# This is neccessary due to `run --separate-stderr` usage.
+# In case an erroneous exit code is detected, both stderr and stdout are combined.
+# This is necessary due to `run --separate-stderr` usage.
 # Otherwise, only stdout is printed which is not very useful.
 assert_success_joined_output() {
   output+="
@@ -305,4 +309,3 @@ generate_outputs() {
 
   export TEST_OUTPUTS
 }
-

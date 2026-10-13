@@ -615,8 +615,8 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 	case replayV1.ReplayAvailabilityReasonUnknownAgentVersion:
 		return "Your Agent isn't connected to the Data Source. Deploy the Agent and run Replay once again."
 	case replayV1.ReplayAvailabilityReasonCompositeSloNotSupported:
-		return "Replay is available only for composite SLOs v2, and only if it's enabled for your organization." +
-			" To enable it, contact Nobl9 support."
+		return "Replay isn't available for this composite SLO. Replay supports composite SLOs v2 only." +
+			" If this is a composite SLO v2, contact Nobl9 support."
 	default:
 		return reason.String()
 	}

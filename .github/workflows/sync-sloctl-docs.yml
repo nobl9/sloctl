@@ -46,13 +46,14 @@ jobs:
         uses: actions/checkout@v4.4.0
       - name: Create GitHub App token
         id: app_token
-        uses: actions/create-github-app-token@v3.2.0
+        uses: actions/create-github-app-token@v3.3.0
         with:
           client-id: ${{ vars.DOCS_AUTOMATION_CLIENT_ID }}
           private-key: ${{ secrets.DOCS_AUTOMATION_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
           permission-actions: write
+          permission-checks: read
       - name: Run documentation update
         uses: ./.github/actions/sync-sloctl-docs
         with:
