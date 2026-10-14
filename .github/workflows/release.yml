@@ -34,7 +34,7 @@ jobs:
       - name: Verify generated files
         run: make check/generate
       - name: Release Binaries
-        uses: goreleaser/goreleaser-action@v7.2.3
+        uses: goreleaser/goreleaser-action@v7.3.0
         with:
           version: latest
           args: release --clean
