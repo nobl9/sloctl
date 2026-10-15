@@ -1572,7 +1572,7 @@
               },
               {
                 "syntax": "--category stringArray",
-                "description": "Filter by annotation category (one of: Comment, ReviewNote, SloEdit, Alert, Adjustment, NoDataAnomaly, IncrementalMismatchAnomaly, NoBurnAnomaly, ConstantBurnAnomaly, GoodOverTotalAnomaly). Repeat to select multiple categories."
+                "description": "Filter by annotation category (one of: Comment, ReviewNote, SloEdit, Alert, Adjustment, NoDataAnomaly, IncrementalMismatchAnomaly, NoBurnAnomaly, ConstantBurnAnomaly, GoodOverTotalAnomaly, Replay). Repeat to select multiple categories."
               },
               {
                 "syntax": "--from time",
@@ -2244,7 +2244,7 @@
             "name": "annotations",
             "path": "sloctl get annotations",
             "shortDescription": "Get annotations",
-            "descriptionMarkdown": "Get annotations by name or filter. Pass names as arguments or through standard input. Without a category selector, this command returns only user categories (`Comment`, `ReviewNote`). Use `--system`, `--user`, or repeated `--category` flags to select other categories.\n\nAnnotation category origins:\n\n- `Comment`: added manually to an SLO.\n- `ReviewNote`: created when an SLO review status changes.\n- `SloEdit`: created when an SLO definition changes.\n\nSee [Annotation types](https://docs.nobl9.com/features/slo-annotations/#annotation-types).",
+            "descriptionMarkdown": "Get annotations by name or filter. Pass names as arguments or through standard input. Without a category selector, this command returns only user categories (`Comment`, `ReviewNote`, `Replay`). Use `--system`, `--user`, or repeated `--category` flags to select other categories.\n\nAnnotation category origins:\n\n- `Comment`: added manually to an SLO.\n- `ReviewNote`: created when an SLO review status changes.\n- `SloEdit`: created when an SLO definition changes.\n\nSee [Annotation types](https://docs.nobl9.com/features/slo-annotations/#annotation-types).",
             "usage": "sloctl get annotations [name...] [flags]",
             "example": "# Get all user annotations from all projects.\nsloctl get annotations -A\n\n# Get a specific annotation by the annotation name in 'non-default' project.\nsloctl get annotation ce1a2a10-d74d-477f-b574-b278ee54e02b -p non-default\n\n# Get all user annotations for 'my-slo' SLO in 'custom' project.\nsloctl get annotation -p custom --slo=my-slo\n\n# Get annotations from your default project which mark SLO edits and reviews.\nsloctl get annotations --category=SloEdit --category=ReviewNote\n\n# Get all system annotations from all projects.\nsloctl get annotations -A --system\n\n# Get all annotations (both system and user) from all projects.\nsloctl get annotations -A --system --user\n\n# Filter user annotations by their start and end times.\n# `--from` requires `spec.startTime` at or after the specified timestamp.\n# `--to` requires `spec.endTime` at or before the specified timestamp.\n#\n# We're assuming the current date is 2023-03-23T12:00:00Z.\n# - Annotations that apply only to yesterday:\nsloctl get annotation --from 2023-03-22T00:00:00Z --to 2023-03-22T23:59:59Z -A\n# - Annotations that start at or after yesterday (no upper bound):\nsloctl get annotation --from 2023-03-22T00:00:00Z -A\n# - Annotations that end at or before today (no lower bound):\nsloctl get annotation --to 2023-03-23T00:00:00Z -A\n",
             "options": [
@@ -2254,7 +2254,7 @@
               },
               {
                 "syntax": "--category stringArray",
-                "description": "Filter by annotation category (one of: Comment, ReviewNote, SloEdit, Alert, Adjustment, NoDataAnomaly, IncrementalMismatchAnomaly, NoBurnAnomaly, ConstantBurnAnomaly, GoodOverTotalAnomaly). Repeat to select multiple categories."
+                "description": "Filter by annotation category (one of: Comment, ReviewNote, SloEdit, Alert, Adjustment, NoDataAnomaly, IncrementalMismatchAnomaly, NoBurnAnomaly, ConstantBurnAnomaly, GoodOverTotalAnomaly, Replay). Repeat to select multiple categories."
               },
               {
                 "syntax": "--from time",
