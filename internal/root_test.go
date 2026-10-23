@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -103,4 +105,45 @@ func TestRootHelpDoesNotRepeatCommandHelpHint(t *testing.T) {
 	require.NoError(t, cmd.Help())
 	assert.NotContains(t, output.String(), "Run `sloctl <command> --help`")
 	assert.Contains(t, output.String(), `Use "sloctl [command] --help"`)
+}
+
+func TestRenderHelpMarkdownPreservesCodeLines(t *testing.T) {
+	t.Parallel()
+
+	const command = `sloctl completion bash > "$(brew --prefix)/etc/bash_completion.d/sloctl"`
+	tests := map[string]struct {
+		markdown string
+		want     string
+	}{
+		"tilde fence": {
+			markdown: "Before.\n\n~~~text\n" + command + "\n~~~\n\nAfter.",
+			want:     "Before.\n\n" + command + "\n\nAfter.",
+		},
+		"backtick fence": {
+			markdown: "Before.\n\n```text\n" + command + "\n```\n\nAfter.",
+			want:     "Before.\n\n" + command + "\n\nAfter.",
+		},
+		"shorter fence inside code": {
+			markdown: "~~~~text\n~~~\n" + command + "\n~~~~",
+			want:     "~~~\n" + command,
+		},
+		"unclosed fence": {
+			markdown: "~~~text\n" + command,
+			want:     command,
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			rendered, err := renderHelpMarkdown(test.markdown, 24, true)
+
+			require.NoError(t, err)
+			lines := strings.Split(ansi.Strip(rendered), "\n")
+			for i := range lines {
+				lines[i] = strings.TrimRight(lines[i], " ")
+			}
+			assert.Equal(t, test.want, strings.TrimSpace(strings.Join(lines, "\n")))
+		})
+	}
 }
