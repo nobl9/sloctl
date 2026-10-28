@@ -1,4 +1,3 @@
-
 Manage Nobl9 resources from the command line.
 
 Commands that access Nobl9 use the active configuration context. Use --context

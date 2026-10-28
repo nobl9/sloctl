@@ -1,4 +1,3 @@
-
 Get SLOs by name or available filters. Names can be supplied as arguments or
 read from standard input. Without names, all matching SLOs are returned. Use --
 project to select a project or --all-projects to search all projects. By

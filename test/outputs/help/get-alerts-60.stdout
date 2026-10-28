@@ -1,4 +1,3 @@
-
 Get alerts by ID or filter. Alert IDs can also be read from
 standard input. Repeat the same filter to match any supplied
 value; different filters are combined.

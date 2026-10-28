@@ -1,4 +1,3 @@
-
 Start a Model Context Protocol (MCP) https://modelcontextprotocol.io/ proxy over
 standard input and output. The proxy uses the active sloctl context to
 authenticate and forwards requests to Nobl9.

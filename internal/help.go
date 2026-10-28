@@ -154,7 +154,7 @@ func renderHelp(cmd *cobra.Command, name string, width int, isDark bool) (string
 			return "", err
 		}
 	}
-	return "\n" + strings.TrimRight(output.String(), "\n") + "\n", nil
+	return strings.TrimRight(output.String(), "\n") + "\n", nil
 }
 
 func renderHelpMarkdown(markdown string, width int, isDark bool) (string, error) {
