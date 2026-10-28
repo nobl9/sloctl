@@ -1,6 +1,4 @@
 
-sloctl completion bash
-
 Generate a Bash completion script. Install the bash-
 completion package first.
 

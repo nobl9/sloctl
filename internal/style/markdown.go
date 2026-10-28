@@ -46,6 +46,7 @@ func MarkdownTheme(isDark bool) ansi.StyleConfig {
 	accent := hexColor(colors.accent)
 	t := styles.ASCIIStyleConfig
 	t.Document.Margin = new(uint(0))
+	t.List.Indent = new(uint(2))
 	t.Heading.Color = new(accent)
 	t.Heading.Bold = new(true)
 	t.H1.Prefix = ""

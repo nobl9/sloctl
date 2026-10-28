@@ -1,6 +1,4 @@
 
-sloctl
-
 Manage Nobl9 resources from the command line.
 
 Commands that access Nobl9 use the active configuration context. Use --context
@@ -13,22 +11,22 @@ sloctl [command]
 
 Available Commands
 
-• apply: Apply Nobl9 resource definitions
-• aws-iam-ids: Get AWS IAM role identifiers
-• budgetadjustments: Manage budget adjustment events
-• completion: Generate shell completion scripts
-• config: Manage sloctl configuration contexts
-• convert: Convert external definitions to Nobl9 resources
-• delete: Delete Nobl9 resources by name or definition file
-• edit: Edit Nobl9 resources in the configured editor
-• get: Get Nobl9 resources
-• help: Help about any command
-• mcp: Start the Nobl9 MCP proxy over stdio
-• move: Move SLOs between Projects or Services
-• replay: Replay historical SLI data for existing SLOs
-• review: Manage SLO review
-• validate: Validate SLI queries
-• version: Print build and runtime version information
+  • apply: Apply Nobl9 resource definitions
+  • aws-iam-ids: Get AWS IAM role identifiers
+  • budgetadjustments: Manage budget adjustment events
+  • completion: Generate shell completion scripts
+  • config: Manage sloctl configuration contexts
+  • convert: Convert external definitions to Nobl9 resources
+  • delete: Delete Nobl9 resources by name or definition file
+  • edit: Edit Nobl9 resources in the configured editor
+  • get: Get Nobl9 resources
+  • help: Help about any command
+  • mcp: Start the Nobl9 MCP proxy over stdio
+  • move: Move SLOs between Projects or Services
+  • replay: Replay historical SLI data for existing SLOs
+  • review: Manage SLO review
+  • validate: Validate SLI queries
+  • version: Print build and runtime version information
 
 Flags
 

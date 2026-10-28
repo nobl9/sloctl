@@ -1,6 +1,4 @@
 {{define "help" -}}
-# {{.CommandPath}}
-
 {{with (or .Long .Short)}}{{. | trim}}
 
 {{end}}{{if or .Runnable .HasSubCommands}}{{template "usage" .}}{{end}}

@@ -54,6 +54,13 @@ setup() {
   assert_stderr ""
 }
 
+@test "sloctl indents bullet lists and their wrapped lines" {
+  run_help_tty 60 styled get alerts --help
+  assert_success
+  assert_output - < "$TEST_OUTPUTS/get-alerts-60.stdout"
+  assert_stderr ""
+}
+
 @test "sloctl distinguishes headings, flag names, and comments in both themes" {
   local background accent comment
   for background in light dark; do

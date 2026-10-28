@@ -1,0 +1,128 @@
+
+Get alerts by ID or filter. Alert IDs can also be read from
+standard input. Repeat the same filter to match any supplied
+value; different filters are combined.
+
+Active and resolved alerts are both included by default. Set
+--resolved=false or --triggered=false to select only one
+status.
+
+A filter can return no alerts when a referenced Alert
+Policy, SLO, Service, or Objective was deleted. Recreating a
+resource with the same name does not restore its old alerts.
+Unlinking an Alert Policy from an SLO can also hide related
+alerts.
+
+Alert output includes these timing and resolution fields:
+
+  • spec.conditions[].status.firstMetMetricTime: when the
+  condition first became true.
+  • spec.conditions[].status.lastsForMetMetricTime: when the
+  required lastsFor duration was met.
+  • spec.conditions[].status.lastMetMetricTime: the last
+  time the condition remained true.
+  • spec.coolDownStartedAtMetricTime: when the cooldown
+  started for a resolved alert.
+  • spec.resolutionReason: why the alert was resolved or
+  canceled.
+
+Results may be truncated by the API. If sloctl reports
+truncation, use narrower filters.
+
+Usage
+
+sloctl get alerts [id...] [flags]
+
+Aliases
+
+alerts, alert, Alert, Alerts
+
+Examples
+
+# Get active and resolved alerts from all projects.
+sloctl get alert -A
+
+# Get only active (not resolved yet) alerts.
+sloctl get alert --triggered --resolved=false -A
+
+# Get only resolved alerts.
+sloctl get alert --resolved --triggered=false -A
+
+# Get a specific alert by the alert ID.
+sloctl get alert ce1a2a10-d74d-477f-b574-b278ee54e02b -A
+
+# Get alerts related to the reportsapi service or usersapi service in project prod.
+sloctl get alert --service reportsapi --service usersapi -p prod
+
+# Get only resolved alerts for the specific alert policy and SLO in the specified project.
+sloctl get alert --resolved --triggered=false --alert-policy slow-burn --slo usersapi-latency -p prod
+
+# Get alerts triggered for the slo usersapi-availability AND objective objective-1 in project prod.
+sloctl get alert --slo usersapi-availability --objective objective-1 -p prod
+
+# Get alerts for slo usersapi-latency AND either objective-1 OR objective-2 in project prod.
+sloctl get alert --slo usersapi-latency --objective objective-1 --objective objective-2 -p prod
+
+# Get alerts by a time range.
+# We're assuming the current date is 2023-03-23T12:00:00Z:
+# - Alerts that were active yesterday:
+sloctl get alert --from 2023-03-22T00:00:00Z --to 2023-03-22T23:59:59Z -A
+# - Alerts that have been active since yesterday:
+sloctl get alert --from 2023-03-22T00:00:00Z -A
+# - Alerts that have been active until today:
+sloctl get alert --to 2023-03-23T00:00:00Z -A
+
+Flags
+
+      --alert-policy stringArray   Filter by alert policy
+                                   name. Repeat to match any
+                                   of several policies.
+      --slo stringArray            Filter by SLO name.
+                                   Repeat to match any of
+                                   several SLOs.
+      --objective stringArray      Filter by objective name.
+                                   Repeat to match any of
+                                   several objectives.
+      --service stringArray        Filter by service name.
+                                   Repeat to match any of
+                                   several services.
+      --resolved                   Include resolved alerts.
+                                   Set --resolved=false to
+                                   exclude them. (default
+                                   true)
+      --triggered                  Include active alerts.
+                                   Set --triggered=false to
+                                   exclude them. (default
+                                   true)
+      --from time                  Set the start of the
+                                   alert metric-time range
+                                   in RFC3339 format.
+      --to time                    Set the end of the alert
+                                   metric-time range in
+                                   RFC3339 format.
+  -p, --project string             Select resources from
+                                   this project instead of
+                                   the configured default
+                                   project.
+  -A, --all-projects               Select resources across
+                                   all projects.
+
+Global Flags
+
+      --config string    Path to config.toml. If unset, use
+                         SLOCTL_CONFIG_FILE_PATH or the
+                         platform default.
+  -c, --context string   Use this context instead of the
+                         configured default for the selected
+                         command.
+  -h, --help             Help for sloctl.
+  -q, --jq string        Filter or transform command output
+                         using a jq expression.
+      --no-config-file   For API authentication, use
+                         SLOCTL_CLIENT_ID and
+                         SLOCTL_CLIENT_SECRET without
+                         reading or creating config.toml.
+                         Configuration commands still access
+                         the file.
+  -o, --output format    Output format: yaml, json, csv.
+                         (default yaml)
