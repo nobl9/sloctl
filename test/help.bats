@@ -94,6 +94,25 @@ setup() {
   done
 }
 
+@test "sloctl cancels help while waiting for the terminal background" {
+  local interrupt
+  for interrupt in ctrl-c sigint sigterm; do
+    run --separate-stderr python3 "$TEST_INPUTS/run_help.py" \
+      --width 80 --expect plain --interrupt "$interrupt" -- sloctl mcp --help
+    assert_failure 130
+    assert_output ""
+    assert_stderr ""
+  done
+}
+
+@test "sloctl cancels usage while waiting for the terminal background" {
+  run --separate-stderr python3 "$TEST_INPUTS/run_help.py" \
+    --stream stderr --width 80 --expect plain --interrupt ctrl-c -- sloctl aws-iam-ids direct
+  assert_failure 130
+  assert_output ""
+  assert_stderr ""
+}
+
 @test "sloctl supports read-only input and write-only help terminals" {
   run --separate-stderr python3 "$TEST_INPUTS/run_help.py" \
     --width 80 --expect styled --background light --write-only --raw -- sloctl mcp --help

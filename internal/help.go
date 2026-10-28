@@ -2,16 +2,22 @@ package internal
 
 import (
 	"bytes"
+	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"text/template"
+	"time"
 
+	tea "charm.land/bubbletea/v2"
 	"charm.land/glamour/v2"
-	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
+	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/term"
 	"github.com/mattn/go-isatty"
@@ -33,7 +39,11 @@ func configureHelp(root *cobra.Command) {
 			plainHelp(cmd, args)
 			return
 		}
-		rendered, err := renderHelp(cmd, "help", helpWidth(out), helpHasDarkBackground(cmd.InOrStdin(), out))
+		isDark, err := helpHasDarkBackground(cmd, out)
+		if err != nil {
+			return
+		}
+		rendered, err := renderHelp(cmd, "help", helpWidth(out), isDark)
 		if err != nil {
 			cmd.PrintErrln(err)
 			plainHelp(cmd, args)
@@ -48,7 +58,11 @@ func configureHelp(root *cobra.Command) {
 		if !styledHelpEnabled(out) {
 			return plainUsage(cmd)
 		}
-		rendered, err := renderHelp(cmd, "usage", helpWidth(out), helpHasDarkBackground(cmd.InOrStdin(), out))
+		isDark, err := helpHasDarkBackground(cmd, out)
+		if err != nil {
+			return err
+		}
+		rendered, err := renderHelp(cmd, "usage", helpWidth(out), isDark)
 		if err != nil {
 			cmd.PrintErrln(err)
 			return plainUsage(cmd)
@@ -77,28 +91,74 @@ func helpWidth(out io.Writer) int {
 	return 80
 }
 
-func helpHasDarkBackground(in io.Reader, out io.Writer) bool {
-	file, ok := in.(*os.File)
+func helpHasDarkBackground(cmd *cobra.Command, out io.Writer) (bool, error) {
+	file, ok := cmd.InOrStdin().(*os.File)
 	if !ok || !term.IsTerminal(file.Fd()) {
-		return true
+		return true, nil
 	}
-	// Lip Gloss queries each handle as both input and output on Unix. Pair the
-	// streams so read-only stdin and write-only terminal output both work.
-	terminal := helpTerminal{File: file, output: out}
-	return lipgloss.HasDarkBackground(terminal, terminal)
+	parent := cmd.Context()
+	if parent == nil {
+		parent = context.Background()
+	}
+	ctx, stop := signal.NotifyContext(parent, os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	// WithoutRenderer also disables Bubble Tea's terminal setup. Own raw mode
+	// here so help adds no cursor controls or blank lines and restores input on exit.
+	state, err := term.MakeRaw(file.Fd())
+	if err != nil {
+		return true, nil
+	}
+	defer func() { _ = term.Restore(file.Fd(), state) }()
+
+	model, err := tea.NewProgram(helpBackground{isDark: true},
+		tea.WithInput(file), tea.WithOutput(out), tea.WithContext(ctx),
+		tea.WithoutRenderer(), tea.WithoutSignalHandler(),
+	).Run()
+	if errors.Is(err, tea.ErrInterrupted) || ctx.Err() != nil {
+		// Cobra's help callback cannot return an error. Carry cancellation back
+		// to executeRootCommand through the root context, including usage callbacks.
+		canceled, cancel := context.WithCancelCause(parent)
+		cancel(tea.ErrInterrupted)
+		cmd.Root().SetContext(canceled)
+		cmd.Root().SilenceErrors = true
+		return true, tea.ErrInterrupted
+	}
+	if err != nil {
+		return true, nil
+	}
+	return model.(helpBackground).isDark, nil
 }
 
-type helpTerminal struct {
-	*os.File
-	output io.Writer
+type helpBackground struct {
+	isDark bool
 }
 
-func (t helpTerminal) Write(p []byte) (int, error) {
-	return t.output.Write(p)
+type helpBackgroundTimeout struct{}
+
+func (m helpBackground) Init() tea.Cmd {
+	return tea.Batch(
+		tea.Raw(ansi.RequestBackgroundColor+ansi.RequestPrimaryDeviceAttributes),
+		tea.Tick(2*time.Second, func(time.Time) tea.Msg { return helpBackgroundTimeout{} }),
+	)
 }
 
-func (t helpTerminal) WriteString(s string) (int, error) {
-	return io.WriteString(t.output, s)
+func (m helpBackground) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.BackgroundColorMsg:
+		m.isDark = msg.IsDark()
+	case uv.PrimaryDeviceAttributesEvent, helpBackgroundTimeout:
+		return m, tea.Quit
+	case tea.KeyPressMsg:
+		if msg.String() == "ctrl+c" {
+			return m, tea.Interrupt
+		}
+	}
+	return m, nil
+}
+
+func (m helpBackground) View() tea.View {
+	return tea.NewView("")
 }
 
 func renderHelp(cmd *cobra.Command, name string, width int, isDark bool) (string, error) {

@@ -2,10 +2,12 @@
 
 import argparse
 import errno
+import fcntl
 import os
 import pty
 import re
 import selectors
+import signal
 import subprocess
 import sys
 import tempfile
@@ -23,6 +25,7 @@ def main():
     parser.add_argument("--raw", action="store_true")
     parser.add_argument("--write-only", action="store_true")
     parser.add_argument("--redirect-stdin", action="store_true")
+    parser.add_argument("--interrupt", choices=("ctrl-c", "sigint", "sigterm"))
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args()
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
@@ -32,6 +35,7 @@ def main():
     terminal_output = None
     try:
         termios.tcsetwinsize(terminal, (40, args.width))
+        original_attributes = termios.tcgetattr(terminal)
         terminal_input = os.open(os.ttyname(terminal), os.O_RDONLY)
         if args.write_only:
             terminal_output = os.open(os.ttyname(terminal), os.O_WRONLY)
@@ -41,7 +45,7 @@ def main():
             streams = {"stdout": redirected, "stderr": redirected}
             streams[args.stream] = terminal_output if args.write_only else terminal
             stdin = input_file if args.redirect_stdin else terminal_input
-            with subprocess.Popen(command, stdin=stdin, **streams) as process:
+            with subprocess.Popen(command, stdin=stdin, preexec_fn=attach_terminal, **streams) as process:
                 output = bytearray()
                 query = b"\x1b]11;?\x07\x1b[c"
                 answered_queries = 0
@@ -52,6 +56,8 @@ def main():
                         remaining = deadline - time.monotonic()
                         if remaining <= 0:
                             process.kill()
+                            if args.interrupt and answered_queries:
+                                raise TimeoutError("help did not stop within 2 seconds of interruption")
                             raise TimeoutError("help command timed out after 10 seconds")
                         if not selector.select(min(remaining, 0.1)):
                             if process.poll() is not None:
@@ -68,6 +74,14 @@ def main():
                             break
                         output.extend(data)
                         while answered_queries < output.count(query):
+                            if args.interrupt:
+                                if args.interrupt == "ctrl-c":
+                                    os.write(controller, b"\x03")
+                                else:
+                                    process.send_signal(signal.SIGINT if args.interrupt == "sigint" else signal.SIGTERM)
+                                deadline = min(deadline, time.monotonic() + 2)
+                                answered_queries += 1
+                                continue
                             reply = b""
                             if args.background == "dark":
                                 reply = b"\x1b]11;rgb:2e2e/3434/4040\x07"
@@ -85,6 +99,10 @@ def main():
             other_output = redirected.read()
             if args.redirect_stdin and input_file.tell() != 0:
                 raise AssertionError("help consumed redirected input")
+        if termios.tcgetattr(terminal) != original_attributes:
+            raise AssertionError("help did not restore terminal attributes")
+        if args.interrupt and answered_queries == 0:
+            raise AssertionError("help did not query the background before interruption")
         tty.setraw(terminal, when=termios.TCSANOW)
         os.set_blocking(terminal, False)
         try:
@@ -101,7 +119,7 @@ def main():
         if terminal_output is not None:
             os.close(terminal_output)
 
-    if (args.expect == "plain" or args.redirect_stdin) and query in output:
+    if ((args.expect == "plain" and not args.interrupt) or args.redirect_stdin) and query in output:
         print("help queried the background without interactive color input", file=sys.stderr)
         return 1
     styled = re.search(rb"\x1b\[[0-9;]*m", output) is not None
@@ -125,6 +143,12 @@ def main():
         if output:
             sys.stderr.write(normalized)
     return status
+
+
+def attach_terminal():
+    os.setsid()
+    if os.isatty(0):
+        fcntl.ioctl(0, termios.TIOCSCTTY, 0)
 
 
 if __name__ == "__main__":
