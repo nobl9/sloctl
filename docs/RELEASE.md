@@ -95,9 +95,5 @@ Rerun synchronization to resume monitoring.
 The action receiver owns the sloctl image update,
 which is excluded from its Renovate configuration.
 
-Run `make test/automation` for the offline dispatcher tests.
-These tests need Bats, bats-support, bats-assert, jq, and GNU coreutils.
-Set `BATS_LIB_PATH` if the assertion libraries are outside the Bats search path.
-The containerized `make test/bats/unit` target includes the same tests.
 Run `make check/automation` for workflow and shell validation.
 This check needs actionlint, ShellCheck, and shfmt.
