@@ -18,6 +18,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/nobl9/sloctl/internal/budgetadjustments"
+	"github.com/nobl9/sloctl/internal/notifications"
 )
 
 const (
@@ -27,11 +28,34 @@ const (
 		"(for example, SLOCTL_TIMEOUT=50s)."
 )
 
-// Execute runs sloctl and exits with status 1 if command execution fails.
+// Execute may check for updates before running the requested command.
+// A successful update exits without running the requested command.
+// Notification and update failures let the requested command continue.
 func Execute() {
+	if !isShellCompletion(os.Args[1:]) {
+		switch notifications.Notify(getBuildVersion()) {
+		case notifications.ResultExitSuccess:
+			return
+		case notifications.ResultInterrupted:
+			os.Exit(130)
+		case notifications.ResultContinue:
+		}
+	}
+
 	if err := executeRootCommand(NewRootCmd()); err != nil {
 		os.Exit(1)
 	}
+}
+
+func isShellCompletion(args []string) bool {
+	// Shell startup and tab completion must not fetch releases or read update choices.
+	for _, arg := range args {
+		switch arg {
+		case "completion", cobra.ShellCompRequestCmd, cobra.ShellCompNoDescRequestCmd:
+			return true
+		}
+	}
+	return false
 }
 
 func executeRootCommand(cmd *cobra.Command) error {

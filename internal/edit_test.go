@@ -277,6 +277,7 @@ func TestResolveEditor(t *testing.T) {
 
 	assert.Equal(t, defaultEditorForOS(runtime.GOOS, lookup), resolveEditor(runtime.GOOS, lookup))
 	assert.Equal(t, defaultEditorUnixVim, resolveEditor("darwin", lookup))
+	assert.Equal(t, defaultEditorWindows, resolveEditor("windows", lookup))
 
 	t.Setenv(editorEnvSystem, defaultEditorUnixVim)
 	assert.Equal(t, defaultEditorUnixVim, resolveEditor(runtime.GOOS, lookup))
