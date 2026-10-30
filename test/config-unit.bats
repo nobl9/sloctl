@@ -40,6 +40,55 @@ teardown() {
   assert_output 'minimal'
 }
 
+@test "sloctl config form keeps stderr and cancellation during background detection" {
+  ensure_installed python3 cmp
+  cp "$SLOCTL_DEFAULT_CONFIG" "$BATS_TEST_TMPDIR/before.toml"
+  export SLOCTL_NO_NOTIFICATIONS=1
+  export SLOCTL_ACCESSIBLE_MODE=0
+  export SLOCTL_TEST_TTY_INPUT_WHEN_RAW=1
+  export SLOCTL_TEST_TTY_INPUT_AFTER_QUERY=1
+  export SLOCTL_TEST_TTY_INPUT=$'\x03'
+  export SLOCTL_TEST_TTY_BACKGROUND=unresponsive
+  export TERM=xterm-256color COLORTERM=truecolor
+  unset NO_COLOR CLICOLOR CLICOLOR_FORCE
+
+  run --separate-stderr python3 "$TEST_SUITE_INPUTS/notifications/run_with_stderr_pty.py" sloctl config add-context
+  assert_failure 1
+  assert_output ""
+  assert_stderr --partial "failed to run context addition form"
+
+  run cmp "$BATS_TEST_TMPDIR/before.toml" "$SLOCTL_DEFAULT_CONFIG"
+  assert_success
+}
+
+@test "sloctl config form keyboard hints follow the terminal background" {
+  ensure_installed python3
+  export SLOCTL_NO_NOTIFICATIONS=1
+  export SLOCTL_ACCESSIBLE_MODE=0
+  export SLOCTL_TEST_TTY_INPUT_WHEN_RAW=1
+  export SLOCTL_TEST_TTY_INPUT=$'\x03'
+  export SLOCTL_TEST_TTY_PROMPT_TITLE='Provide context name'
+  export TERM=xterm-256color COLORTERM=truecolor
+  unset NO_COLOR CLICOLOR CLICOLOR_FORCE
+
+  local background accent muted
+  for background in light dark; do
+    if [[ "$background" == light ]]; then
+      accent='0;129;158'
+      muted='103;104;104'
+    else
+      accent='0;186;211'
+      muted='186;187;187'
+    fi
+    SLOCTL_TEST_TTY_BACKGROUND="$background" \
+      run --separate-stderr python3 "$TEST_SUITE_INPUTS/notifications/run_with_stderr_pty.py" sloctl config add-context
+    assert_failure 1
+    assert_output ""
+    assert_stderr --regexp $'\e''\[[0-9;]*38;2;'"$accent"'[0-9;]*menter'
+    assert_stderr --regexp $'\e''\[[0-9;]*38;2;'"$muted"'[0-9;]*mnext'
+  done
+}
+
 @test "sloctl config current-context (override config path with flag)" {
   run_sloctl config --config="$TEST_INPUTS/delete-config.toml" current-context
   assert_success_joined_output
