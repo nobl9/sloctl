@@ -173,7 +173,7 @@ func renderHelp(cmd *cobra.Command, name string, width int, isDark bool) (string
 		if strings.TrimSpace(markdown) == "" {
 			return nil
 		}
-		rendered, err := renderHelpMarkdown(markdown, width, isDark)
+		rendered, err := renderMarkdownNoCodeWrap(markdown, width, isDark)
 		if err != nil {
 			return err
 		}
@@ -217,44 +217,20 @@ func renderHelp(cmd *cobra.Command, name string, width int, isDark bool) (string
 	return strings.TrimRight(output.String(), "\n") + "\n", nil
 }
 
-func renderHelpMarkdown(markdown string, width int, isDark bool) (string, error) {
-	theme := style.MarkdownTheme(isDark)
-	theme.Document.BlockPrefix = ""
-	theme.Document.BlockSuffix = ""
-	var output, block strings.Builder
-	renderBlock := func(wrap int) error {
-		if strings.TrimSpace(block.String()) == "" {
-			block.Reset()
-			return nil
-		}
-		renderer, err := glamour.NewTermRenderer(
-			glamour.WithStyles(theme),
-			glamour.WithWordWrap(wrap),
-			glamour.WithChromaFormatter("terminal16m"),
-		)
-		if err != nil {
-			return fmt.Errorf("create help renderer: %w", err)
-		}
-		rendered, err := renderer.Render(block.String())
-		if err != nil {
-			return fmt.Errorf("render help: %w", err)
-		}
-		output.WriteString(rendered)
-		if wrap == 0 {
-			output.WriteByte('\n')
-		}
-		block.Reset()
-		return nil
+func renderMarkdownNoCodeWrap(markdown string, width int, isDark bool) (string, error) {
+	type markdownBlock struct {
+		text string
+		wrap int
 	}
-
+	var blocks []markdownBlock
+	var block strings.Builder
 	// Render fenced examples separately so wrapping cannot change shell commands.
 	var fence string
 	for line := range strings.Lines(markdown) {
 		marker := detectCodeFence(line)
 		if fence == "" && marker != "" {
-			if err := renderBlock(width); err != nil {
-				return "", err
-			}
+			blocks = append(blocks, markdownBlock{block.String(), width})
+			block.Reset()
 			fence = marker
 			block.WriteString(line)
 			continue
@@ -262,19 +238,50 @@ func renderHelpMarkdown(markdown string, width int, isDark bool) (string, error)
 		block.WriteString(line)
 		if fence != "" && strings.HasPrefix(marker, fence) &&
 			strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(line), marker)) == "" {
-			if err := renderBlock(0); err != nil {
-				return "", err
-			}
+			blocks = append(blocks, markdownBlock{block.String(), 0})
+			block.Reset()
 			fence = ""
 		}
 	}
 	if fence != "" {
 		width = 0
 	}
-	if err := renderBlock(width); err != nil {
-		return "", err
+	blocks = append(blocks, markdownBlock{block.String(), width})
+
+	var output strings.Builder
+	for _, block := range blocks {
+		if strings.TrimSpace(block.text) == "" {
+			continue
+		}
+		rendered, err := renderMarkdownBlock(block.text, block.wrap, isDark)
+		if err != nil {
+			return "", err
+		}
+		output.WriteString(rendered)
+		if block.wrap == 0 {
+			output.WriteByte('\n')
+		}
 	}
 	return "\n" + output.String() + "\n", nil
+}
+
+func renderMarkdownBlock(markdown string, width int, isDark bool) (string, error) {
+	theme := style.MarkdownTheme(isDark)
+	theme.Document.BlockPrefix = ""
+	theme.Document.BlockSuffix = ""
+	renderer, err := glamour.NewTermRenderer(
+		glamour.WithStyles(theme),
+		glamour.WithWordWrap(width),
+		glamour.WithChromaFormatter("terminal16m"),
+	)
+	if err != nil {
+		return "", fmt.Errorf("create help renderer: %w", err)
+	}
+	rendered, err := renderer.Render(markdown)
+	if err != nil {
+		return "", fmt.Errorf("render help: %w", err)
+	}
+	return rendered, nil
 }
 
 // CommonMark permits up to three leading spaces and requires at least three
@@ -332,12 +339,12 @@ func renderHelpFlags(flags *pflag.FlagSet, width int, isDark bool) (string, erro
 	var output strings.Builder
 	for _, row := range rows {
 		trimmed := strings.TrimLeft(row.syntax, " ")
-		syntax, err := renderHelpMarkdown("`"+trimmed+"`", 0, isDark)
+		syntax, err := renderMarkdownNoCodeWrap("`"+trimmed+"`", 0, isDark)
 		if err != nil {
 			return "", err
 		}
 		syntax = row.syntax[:len(row.syntax)-len(trimmed)] + strings.TrimSpace(syntax)
-		description, err := renderHelpMarkdown(row.description, max(width-column, 1), isDark)
+		description, err := renderMarkdownNoCodeWrap(row.description, max(width-column, 1), isDark)
 		if err != nil {
 			return "", err
 		}

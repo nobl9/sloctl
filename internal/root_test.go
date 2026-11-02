@@ -107,7 +107,7 @@ func TestRootHelpDoesNotRepeatCommandHelpHint(t *testing.T) {
 	assert.Contains(t, output.String(), `Use "sloctl [command] --help"`)
 }
 
-func TestRenderHelpMarkdownPreservesCodeLines(t *testing.T) {
+func TestRenderMarkdownNoCodeWrapPreservesCodeLines(t *testing.T) {
 	t.Parallel()
 
 	const command = `sloctl completion bash > "$(brew --prefix)/etc/bash_completion.d/sloctl"`
@@ -136,7 +136,7 @@ func TestRenderHelpMarkdownPreservesCodeLines(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			rendered, err := renderHelpMarkdown(test.markdown, 24, true)
+			rendered, err := renderMarkdownNoCodeWrap(test.markdown, 24, true)
 
 			require.NoError(t, err)
 			lines := strings.Split(ansi.Strip(rendered), "\n")
