@@ -250,7 +250,7 @@ func renderHelpMarkdown(markdown string, width int, isDark bool) (string, error)
 	// Render fenced examples separately so wrapping cannot change shell commands.
 	var fence string
 	for line := range strings.Lines(markdown) {
-		marker := helpCodeFence(line)
+		marker := detectCodeFence(line)
 		if fence == "" && marker != "" {
 			if err := renderBlock(width); err != nil {
 				return "", err
@@ -277,16 +277,23 @@ func renderHelpMarkdown(markdown string, width int, isDark bool) (string, error)
 	return "\n" + output.String() + "\n", nil
 }
 
-func helpCodeFence(line string) string {
+// CommonMark permits up to three leading spaces and requires at least three
+// matching backticks or tildes: https://spec.commonmark.org/0.31.2/#fenced-code-blocks.
+func detectCodeFence(line string) string {
+	const (
+		maxFenceIndent = 3
+		minFenceLength = 3
+	)
 	trimmed := strings.TrimLeft(line, " ")
-	if len(line)-len(trimmed) > 3 || len(trimmed) < 3 || (trimmed[0] != '`' && trimmed[0] != '~') {
+	indent := len(line) - len(trimmed)
+	if indent > maxFenceIndent || len(trimmed) < minFenceLength || (trimmed[0] != '`' && trimmed[0] != '~') {
 		return ""
 	}
 	i := 1
 	for i < len(trimmed) && trimmed[i] == trimmed[0] {
 		i++
 	}
-	if i < 3 {
+	if i < minFenceLength {
 		return ""
 	}
 	return trimmed[:i]
