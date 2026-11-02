@@ -330,9 +330,12 @@ func renderHelpFlags(flags *pflag.FlagSet, width int, isDark bool) (string, erro
 		maxSyntaxWidth = max(maxSyntaxWidth, ansi.StringWidth(syntaxIndent+syntax))
 		description = strings.TrimSpace(description)
 		if values := flag.Annotations[FlagDescriptionMarkdownAnnotation]; len(values) == 1 {
-			_, usage := pflag.UnquoteUsage(flag)
-			if suffix, ok := strings.CutPrefix(description, usage); ok {
-				description = values[0] + suffix
+			// For usage "Write to `file`.", pflag produces "Write to file." and
+			// appends metadata such as ` (default "output.yaml")` in FlagUsages.
+			// Replace only the plain description, keeping defaults and deprecation notices.
+			_, plainDescription := pflag.UnquoteUsage(flag)
+			if metadataSuffix, ok := strings.CutPrefix(description, plainDescription); ok {
+				description = values[0] + metadataSuffix
 			}
 		}
 		rows = append(rows, flagRow{syntaxIndent, syntax, description})
