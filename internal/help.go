@@ -307,8 +307,9 @@ func detectCodeFence(line string) string {
 }
 
 func renderHelpFlags(flags *pflag.FlagSet, width int, isDark bool) (string, error) {
+	const syntaxDescriptionGap = 3
 	var rows []struct{ syntax, description string }
-	column := 0
+	maxSyntaxWidth := 0
 	flags.VisitAll(func(flag *pflag.Flag) {
 		if flag.Hidden {
 			return
@@ -320,7 +321,7 @@ func renderHelpFlags(flags *pflag.FlagSet, width int, isDark bool) (string, erro
 		trimmed := strings.TrimLeft(usage, " ")
 		syntax, description, _ := strings.Cut(trimmed, "   ")
 		syntax = usage[:len(usage)-len(trimmed)] + syntax
-		column = max(column, ansi.StringWidth(syntax)+3)
+		maxSyntaxWidth = max(maxSyntaxWidth, ansi.StringWidth(syntax))
 		description = strings.TrimSpace(description)
 		if values := flag.Annotations[FlagDescriptionMarkdownAnnotation]; len(values) == 1 {
 			_, usage := pflag.UnquoteUsage(flag)
@@ -330,12 +331,13 @@ func renderHelpFlags(flags *pflag.FlagSet, width int, isDark bool) (string, erro
 		}
 		rows = append(rows, struct{ syntax, description string }{syntax, description})
 	})
+	descriptionIndent := maxSyntaxWidth + syntaxDescriptionGap
 	// As in pflag, put descriptions below the flags when columns leave too little room.
-	stacked := width-column < 24
+	stacked := width-descriptionIndent < 24
 	if stacked {
-		column = min(16, max(width-24, 0))
+		descriptionIndent = min(16, max(width-24, 0))
 	}
-	indent := strings.Repeat(" ", column)
+	indent := strings.Repeat(" ", descriptionIndent)
 	var output strings.Builder
 	for _, row := range rows {
 		trimmed := strings.TrimLeft(row.syntax, " ")
@@ -344,7 +346,7 @@ func renderHelpFlags(flags *pflag.FlagSet, width int, isDark bool) (string, erro
 			return "", err
 		}
 		syntax = row.syntax[:len(row.syntax)-len(trimmed)] + strings.TrimSpace(syntax)
-		description, err := renderMarkdownNoCodeWrap(row.description, max(width-column, 1), isDark)
+		description, err := renderMarkdownNoCodeWrap(row.description, max(width-descriptionIndent, 1), isDark)
 		if err != nil {
 			return "", err
 		}
@@ -352,7 +354,7 @@ func renderHelpFlags(flags *pflag.FlagSet, width int, isDark bool) (string, erro
 		if stacked {
 			output.WriteString("\n" + indent)
 		} else {
-			output.WriteString(strings.Repeat(" ", max(column-ansi.StringWidth(syntax), 1)))
+			output.WriteString(strings.Repeat(" ", max(descriptionIndent-ansi.StringWidth(syntax), 1)))
 		}
 		output.WriteString(strings.ReplaceAll(strings.Trim(description, "\n"), "\n", "\n"+indent))
 		output.WriteByte('\n')
