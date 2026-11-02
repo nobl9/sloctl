@@ -307,7 +307,11 @@ func detectCodeFence(line string) string {
 }
 
 func renderHelpFlags(flags *pflag.FlagSet, width int, isDark bool) (string, error) {
-	const syntaxDescriptionGap = 3
+	const (
+		syntaxDescriptionGap        = 3
+		minDescriptionWidth         = 24
+		maxStackedDescriptionIndent = 16
+	)
 	var rows []struct{ syntax, description string }
 	maxSyntaxWidth := 0
 	flags.VisitAll(func(flag *pflag.Flag) {
@@ -333,9 +337,9 @@ func renderHelpFlags(flags *pflag.FlagSet, width int, isDark bool) (string, erro
 	})
 	descriptionIndent := maxSyntaxWidth + syntaxDescriptionGap
 	// As in pflag, put descriptions below the flags when columns leave too little room.
-	stacked := width-descriptionIndent < 24
+	stacked := width-descriptionIndent < minDescriptionWidth
 	if stacked {
-		descriptionIndent = min(16, max(width-24, 0))
+		descriptionIndent = min(maxStackedDescriptionIndent, max(width-minDescriptionWidth, 0))
 	}
 	indent := strings.Repeat(" ", descriptionIndent)
 	var output strings.Builder
