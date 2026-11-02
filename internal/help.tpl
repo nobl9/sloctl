@@ -35,6 +35,10 @@
 - `{{.Name}}`: {{.Short}}
 {{end}}{{end}}{{end}}{{end}}{{end}}{{end}}
 
+{{define "flag-heading" -}}
+## {{.}}
+{{end}}
+
 {{define "footer" -}}
 {{if .HasHelpSubCommands}}
 ## Additional help topics

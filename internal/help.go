@@ -168,28 +168,12 @@ func renderHelp(cmd *cobra.Command, name string, width int, isDark bool) (string
 	if err != nil {
 		return "", fmt.Errorf("parse help template: %w", err)
 	}
-	var output strings.Builder
-	appendMarkdown := func(markdown string) error {
-		if strings.TrimSpace(markdown) == "" {
-			return nil
-		}
-		rendered, err := renderMarkdownNoCodeWrap(markdown, width, isDark)
-		if err != nil {
-			return err
-		}
-		output.WriteString(strings.TrimRight(strings.TrimLeft(rendered, "\n"), " \t\n") + "\n\n")
-		return nil
-	}
-	appendSection := func(name string) error {
-		var markdown bytes.Buffer
-		if err := tpl.ExecuteTemplate(&markdown, name, cmd); err != nil {
-			return fmt.Errorf("format help: %w", err)
-		}
-		return appendMarkdown(markdown.String())
-	}
-	if err := appendSection(name); err != nil {
+	introduction, err := renderHelpSection(tpl, name, cmd, width, isDark)
+	if err != nil {
 		return "", err
 	}
+	var output strings.Builder
+	output.WriteString(introduction)
 	if name == "usage" || cmd.Runnable() || cmd.HasSubCommands() {
 		for _, section := range []struct {
 			title string
@@ -201,20 +185,39 @@ func renderHelp(cmd *cobra.Command, name string, width int, isDark bool) (string
 			if !section.flags.HasAvailableFlags() {
 				continue
 			}
-			if err := appendMarkdown("## " + section.title); err != nil {
+			heading, err := renderHelpSection(tpl, "flag-heading", section.title, width, isDark)
+			if err != nil {
 				return "", err
 			}
+			output.WriteString(heading)
 			rendered, err := renderHelpFlags(section.flags, width, isDark)
 			if err != nil {
 				return "", err
 			}
 			output.WriteString(rendered + "\n")
 		}
-		if err := appendSection("footer"); err != nil {
+		footer, err := renderHelpSection(tpl, "footer", cmd, width, isDark)
+		if err != nil {
 			return "", err
 		}
+		output.WriteString(footer)
 	}
 	return strings.TrimRight(output.String(), "\n") + "\n", nil
+}
+
+func renderHelpSection(tpl *template.Template, name string, data any, width int, isDark bool) (string, error) {
+	var markdown bytes.Buffer
+	if err := tpl.ExecuteTemplate(&markdown, name, data); err != nil {
+		return "", fmt.Errorf("format help: %w", err)
+	}
+	if strings.TrimSpace(markdown.String()) == "" {
+		return "", nil
+	}
+	rendered, err := renderMarkdownNoCodeWrap(markdown.String(), width, isDark)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimRight(strings.TrimLeft(rendered, "\n"), " \t\n") + "\n\n", nil
 }
 
 func renderMarkdownNoCodeWrap(markdown string, width int, isDark bool) (string, error) {
