@@ -312,7 +312,8 @@ func renderHelpFlags(flags *pflag.FlagSet, width int, isDark bool) (string, erro
 		minDescriptionWidth         = 24
 		maxStackedDescriptionIndent = 16
 	)
-	var rows []struct{ syntax, description string }
+	type flagRow struct{ syntaxIndent, syntax, description string }
+	var rows []flagRow
 	maxSyntaxWidth := 0
 	flags.VisitAll(func(flag *pflag.Flag) {
 		if flag.Hidden {
@@ -323,9 +324,10 @@ func renderHelpFlags(flags *pflag.FlagSet, width int, isDark bool) (string, erro
 		single.AddFlag(flag)
 		usage := single.FlagUsages()
 		trimmed := strings.TrimLeft(usage, " ")
+		// Preserve pflag's shorthand column separately from the styled syntax.
+		syntaxIndent := usage[:len(usage)-len(trimmed)]
 		syntax, description, _ := strings.Cut(trimmed, "   ")
-		syntax = usage[:len(usage)-len(trimmed)] + syntax
-		maxSyntaxWidth = max(maxSyntaxWidth, ansi.StringWidth(syntax))
+		maxSyntaxWidth = max(maxSyntaxWidth, ansi.StringWidth(syntaxIndent+syntax))
 		description = strings.TrimSpace(description)
 		if values := flag.Annotations[FlagDescriptionMarkdownAnnotation]; len(values) == 1 {
 			_, usage := pflag.UnquoteUsage(flag)
@@ -333,7 +335,7 @@ func renderHelpFlags(flags *pflag.FlagSet, width int, isDark bool) (string, erro
 				description = values[0] + suffix
 			}
 		}
-		rows = append(rows, struct{ syntax, description string }{syntax, description})
+		rows = append(rows, flagRow{syntaxIndent, syntax, description})
 	})
 	descriptionIndent := maxSyntaxWidth + syntaxDescriptionGap
 	// As in pflag, put descriptions below the flags when columns leave too little room.
@@ -342,14 +344,10 @@ func renderHelpFlags(flags *pflag.FlagSet, width int, isDark bool) (string, erro
 		descriptionIndent = min(maxStackedDescriptionIndent, max(width-minDescriptionWidth, 0))
 	}
 	indent := strings.Repeat(" ", descriptionIndent)
+	syntaxStyle := style.HelpFlagSyntax()
 	var output strings.Builder
 	for _, row := range rows {
-		trimmed := strings.TrimLeft(row.syntax, " ")
-		syntax, err := renderMarkdownNoCodeWrap("`"+trimmed+"`", 0, isDark)
-		if err != nil {
-			return "", err
-		}
-		syntax = row.syntax[:len(row.syntax)-len(trimmed)] + strings.TrimSpace(syntax)
+		syntax := row.syntaxIndent + syntaxStyle.Render(row.syntax)
 		description, err := renderMarkdownNoCodeWrap(row.description, width-descriptionIndent, isDark)
 		if err != nil {
 			return "", err

@@ -6,6 +6,7 @@ import (
 
 	"charm.land/glamour/v2/ansi"
 	"charm.land/glamour/v2/styles"
+	"charm.land/lipgloss/v2"
 	"github.com/alecthomas/chroma/v2"
 	chromastyles "github.com/alecthomas/chroma/v2/styles"
 )
@@ -38,6 +39,11 @@ func newMarkdownSyntax(name string, colors palette) *chroma.Style {
 func hexColor(c color.Color) string {
 	r, g, b, _ := c.RGBA()
 	return fmt.Sprintf("#%02x%02x%02x", r>>8, g>>8, b>>8)
+}
+
+// HelpFlagSyntax styles flag names and value syntax without paragraph spacing.
+func HelpFlagSyntax() lipgloss.Style {
+	return lipgloss.NewStyle().Bold(true)
 }
 
 // MarkdownTheme shares the interactive forms' accents and muted text colors.
