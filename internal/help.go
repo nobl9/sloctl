@@ -350,7 +350,7 @@ func renderHelpFlags(flags *pflag.FlagSet, width int, isDark bool) (string, erro
 			return "", err
 		}
 		syntax = row.syntax[:len(row.syntax)-len(trimmed)] + strings.TrimSpace(syntax)
-		description, err := renderMarkdownNoCodeWrap(row.description, max(width-descriptionIndent, 1), isDark)
+		description, err := renderMarkdownNoCodeWrap(row.description, width-descriptionIndent, isDark)
 		if err != nil {
 			return "", err
 		}
