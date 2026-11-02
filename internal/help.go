@@ -318,7 +318,7 @@ func renderHelpFlags(flags *pflag.FlagSet, width int, isDark bool) (string, erro
 		single.AddFlag(flag)
 		usage := single.FlagUsages()
 		trimmed := strings.TrimLeft(usage, " ")
-		syntax, description, _ := strings.Cut(trimmed, "  ")
+		syntax, description, _ := strings.Cut(trimmed, "   ")
 		syntax = usage[:len(usage)-len(trimmed)] + syntax
 		column = max(column, ansi.StringWidth(syntax)+3)
 		description = strings.TrimSpace(description)
