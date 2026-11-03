@@ -1,7 +1,9 @@
 package internal
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,10 +13,13 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/nobl9/nobl9-go/manifest"
@@ -27,6 +32,247 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestReplayRunContinuesAfterRequestFailures(t *testing.T) {
+	for _, queued := range []bool{true, false} {
+		for _, scenario := range []string{
+			"success", "partial API failure", "all API failures", "partial refresh failure", "all refresh failures",
+		} {
+			t.Run(fmt.Sprintf("queued=%t/%s", queued, scenario), func(t *testing.T) {
+				synctest.Test(t, func(t *testing.T) {
+					testReplayRun(t, queued, scenario)
+				})
+			})
+		}
+	}
+}
+
+func testReplayRun(t *testing.T, queued bool, scenario string) {
+	t.Helper()
+	apiURL, err := url.Parse("https://api.example.com")
+	require.NoError(t, err)
+	idpURL, err := url.Parse("https://idp.example.com")
+	require.NoError(t, err)
+	t.Setenv("REPLAY_TEST_CLIENT_ID", "test-client")
+	t.Setenv("REPLAY_TEST_CLIENT_SECRET", "test-secret")
+	config, err := sdk.ReadConfig(sdk.ConfigOptionNoConfigFile(), sdk.ConfigOptionEnvPrefix("REPLAY_TEST_"))
+	require.NoError(t, err)
+	config.URL, config.OktaOrgURL, config.OktaAuthServer = apiURL, idpURL, "test"
+	config.Timeout = 0
+
+	fixture := replayRunFixture{queued: queued, scenario: scenario}
+	transport := http.DefaultTransport
+	t.Cleanup(func() { http.DefaultTransport = transport })
+	http.DefaultTransport = replayRoundTripper(func(request *http.Request) (*http.Response, error) {
+		return fixture.roundTrip(t, request)
+	})
+	client, err := sdk.NewClient(config)
+	require.NoError(t, err)
+	useGenericObjects := v1alphaParser.UseGenericObjects
+	v1alphaParser.UseGenericObjects = true
+	t.Cleanup(func() { v1alphaParser.UseGenericObjects = useGenericObjects })
+	path := filepath.Join(t.TempDir(), "replays.json")
+	replays := []ReplayConfig{
+		{Project: "project", SLO: "slo-a", From: time.Now().Add(-time.Hour)},
+		{Project: "project", SLO: "slo-b", From: time.Now().Add(-time.Hour)},
+		{Project: "project", SLO: "slo-c", From: time.Now().Add(-time.Hour)},
+	}
+	data, err := json.Marshal(replays)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(path, data, 0o600))
+	replay := ReplayCmd{client: client, configPaths: []string{path}}
+	cmd := &cobra.Command{}
+	cmd.SetContext(t.Context())
+	var output bytes.Buffer
+	cmd.SetOut(&output)
+
+	err = replay.Run(cmd)
+	// Let the progress bar's internal ticker observe completion before the bubble exits.
+	time.Sleep(100 * time.Millisecond)
+
+	failed := 0
+	switch scenario {
+	case "partial API failure":
+		failed = 1
+	case "partial refresh failure":
+		failed = 2
+	case "all API failures", "all refresh failures":
+		failed = 3
+	}
+	if failed == 0 {
+		require.NoError(t, err)
+		assert.Contains(t, output.String(), "Successfully finished operations for all 3 SLOs.")
+	} else {
+		require.EqualError(t, err, fmt.Sprintf("%d of 3 Replay requests failed", failed))
+		assert.Contains(t, output.String(), fmt.Sprintf(
+			"Successfully finished operations for %d and failed for %d SLOs:", 3-failed, failed))
+	}
+	assert.Contains(t, output.String(), "[3/3]")
+	if strings.Contains(scenario, "refresh") {
+		assert.EqualValues(t, failed+1, fixture.tokenRequests.Load())
+		assert.Contains(t, output.String(), "token refresh rejected")
+		assert.Len(t, fixture.attempts, 3-failed)
+	} else {
+		assert.Equal(t, []string{"slo-a", "slo-b", "slo-c"}, fixture.attempts)
+		if failed > 0 {
+			assert.Contains(t, output.String(), "replay rejected")
+		}
+	}
+	if !queued {
+		assert.Len(t, fixture.statusChecks, 3-failed)
+	}
+	if failed > 0 {
+		_, summary, found := strings.Cut(output.String(), "SLOs:\n - ")
+		require.True(t, found)
+		assert.Contains(t, summary, `"slo":"slo-b"`)
+		if failed > 1 {
+			assert.Contains(t, summary, `"slo":"slo-c"`)
+		}
+		if failed == 3 {
+			assert.Contains(t, summary, `"slo":"slo-a"`)
+		}
+	}
+}
+
+type replayRunFixture struct {
+	queued               bool
+	scenario             string
+	tokenRequests        atomic.Int32
+	availabilityRequests atomic.Int32
+	attempts             []string
+	statusChecks         []string
+}
+
+func (f *replayRunFixture) roundTrip(t *testing.T, request *http.Request) (*http.Response, error) {
+	t.Helper()
+	recorder := httptest.NewRecorder()
+	recorder.Header().Set("Content-Type", "application/json")
+	var response any
+	switch request.URL.Path {
+	case "/oauth2/test/v1/token":
+		if f.tokenRequests.Add(1) > 1 {
+			recorder.WriteHeader(http.StatusUnauthorized)
+			response = map[string]string{"error": "token refresh rejected"}
+			break
+		}
+		claims, err := json.Marshal(map[string]any{
+			"iss": "https://idp.example.com/oauth2/test", "cid": "test-client",
+			"exp":        time.Now().Add(10 * time.Minute).Unix(),
+			"m2mProfile": map[string]string{"organization": "test-organization", "environment": "api.example.com"},
+		})
+		require.NoError(t, err)
+		token := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"RS256"}`)) + "." +
+			base64.RawURLEncoding.EncodeToString(claims) + ".c2lnbmF0dXJl"
+		response = map[string]string{"access_token": token}
+	case endpointPlanInfo:
+		response = PlaylistConfiguration{EnabledPlaylists: f.queued}
+	case "/get/slo":
+		if f.scenario == "preflight failure" {
+			response = []v1alpha.GenericObject{}
+			break
+		}
+		return replaySLOTestResponse(t, "project", request.URL.Query()[objectsV1.QueryKeyName]), nil
+	case "/internal/timemachine/availability":
+		response = replayV1.ReplayAvailability{Available: true}
+		if f.availabilityRequests.Add(1) == 3 && f.scenario == "all refresh failures" {
+			time.Sleep(11 * time.Minute)
+		}
+	case "/timetravel":
+		assert.Equal(t, http.MethodPost, request.Method)
+		var run replayV1.RunRequest
+		require.NoError(t, json.NewDecoder(request.Body).Decode(&run))
+		f.attempts = append(f.attempts, run.SLO)
+		if f.scenario == "all API failures" || f.scenario == "partial API failure" && run.SLO == "slo-b" {
+			recorder.WriteHeader(http.StatusBadRequest)
+			response = sdk.APIErrors{Errors: []sdk.APIError{{Title: "replay rejected"}}}
+		} else {
+			recorder.WriteHeader(http.StatusCreated)
+			if f.queued && f.scenario == "partial refresh failure" {
+				time.Sleep(11 * time.Minute)
+			}
+		}
+	case "/timetravel/slo-a", "/timetravel/slo-b", "/timetravel/slo-c":
+		f.statusChecks = append(f.statusChecks, strings.TrimPrefix(request.URL.Path, "/timetravel/"))
+		response = map[string]any{"status": map[string]string{"status": "completed"}}
+		if f.scenario == "partial refresh failure" {
+			time.Sleep(11 * time.Minute)
+		}
+	default:
+		t.Errorf("unexpected request: %s %s", request.Method, request.URL)
+		recorder.WriteHeader(http.StatusNotFound)
+	}
+	if response != nil {
+		require.NoError(t, json.NewEncoder(recorder).Encode(response))
+	}
+	return recorder.Result(), nil
+}
+
+func TestReplayCLIExitStatus(t *testing.T) {
+	binaryDir := t.TempDir()
+	build := exec.CommandContext(t.Context(), "make", "build", "BIN_DIR="+binaryDir)
+	build.Dir = ".."
+	buildOutput, err := build.CombinedOutput()
+	require.NoError(t, err, "%s", buildOutput)
+
+	for _, scenario := range []string{"success", "partial API failure", "all API failures", "preflight failure"} {
+		t.Run(scenario, func(t *testing.T) {
+			fixture := replayRunFixture{queued: true, scenario: scenario}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+				response, responseErr := fixture.roundTrip(t, request)
+				if !assert.NoError(t, responseErr) {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				defer func() { _ = response.Body.Close() }()
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(response.StatusCode)
+				_, copyErr := io.Copy(w, response.Body)
+				assert.NoError(t, copyErr)
+			}))
+			t.Cleanup(server.Close)
+			path := filepath.Join(t.TempDir(), "replays.json")
+			require.NoError(t, os.WriteFile(path, []byte(`[
+				{"project":"project","slo":"slo-a","from":"2026-01-01T00:00:00Z"},
+				{"project":"project","slo":"slo-b","from":"2026-01-01T00:00:00Z"},
+				{"project":"project","slo":"slo-c","from":"2026-01-01T00:00:00Z"}
+			]`), 0o600))
+			command := exec.CommandContext(t.Context(), filepath.Join(binaryDir, "sloctl"),
+				"--no-config-file", "replay", "--file", path)
+			command.Env = slices.DeleteFunc(os.Environ(), func(value string) bool {
+				return strings.HasPrefix(value, "SLOCTL_")
+			})
+			command.Env = append(command.Env, "SLOCTL_NO_NOTIFICATIONS=1", "SLOCTL_DISABLE_OKTA=true",
+				"SLOCTL_ORGANIZATION=test-organization", "SLOCTL_URL="+server.URL)
+
+			var stderr bytes.Buffer
+			command.Stderr = &stderr
+			stdout, runErr := command.Output()
+			server.Close()
+
+			if scenario == "success" {
+				require.NoError(t, runErr, "%s", stderr.String())
+				assert.Contains(t, stderr.String(), "Successfully finished operations for all 3 SLOs.")
+			} else {
+				var exitErr *exec.ExitError
+				require.ErrorAs(t, runErr, &exitErr, "%s", stderr.String())
+				assert.Equal(t, 1, exitErr.ExitCode(), "%s", stderr.String())
+			}
+			assert.Empty(t, stdout)
+			if scenario == "preflight failure" {
+				assert.Empty(t, fixture.attempts)
+				assert.Contains(t, stderr.String(), "Some of the SLOs marked for Replay were not found")
+			} else {
+				assert.Equal(t, []string{"slo-a", "slo-b", "slo-c"}, fixture.attempts)
+			}
+			switch scenario {
+			case "partial API failure":
+				assert.Contains(t, stderr.String(), "Error: 1 of 3 Replay requests failed\n")
+			case "all API failures":
+				assert.Contains(t, stderr.String(), "Error: 3 of 3 Replay requests failed\n")
+			}
+		})
+	}
+}
 
 func TestGetReplaySLOsBatchesByProject(t *testing.T) {
 	for _, count := range []int{0, 1, 49, 50, 51, 100, 101} {
