@@ -55,9 +55,11 @@ jobs:
           permission-actions: write
           permission-checks: read
       - name: Run documentation update
-        uses: ./.github/actions/sync-sloctl-docs
+        uses: ./.github/actions/sync-sloctl-release
         with:
-          docs-repository: ${{ vars.DOCS_AUTOMATION_REPOSITORY }}
+          repository: ${{ github.repository_owner }}/${{ vars.DOCS_AUTOMATION_REPOSITORY }}
+          workflow: update-sloctl-command-reference.yml
+          ref: production
           expected-run-name: sloctl docs from release run ${{ github.event.workflow_run.id }}
           sloctl-sha: ${{ github.event.workflow_run.head_sha }}
           sloctl-tag: ${{ github.event.workflow_run.head_branch }}
