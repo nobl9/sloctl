@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 
+	tea "charm.land/bubbletea/v2"
 	v1alphaParser "github.com/nobl9/nobl9-go/manifest/v1alpha/parser"
 	"github.com/nobl9/nobl9-go/sdk"
 	"github.com/spf13/cobra"
@@ -43,6 +44,9 @@ func Execute() {
 	}
 
 	if err := executeRootCommand(NewRootCmd()); err != nil {
+		if errors.Is(err, tea.ErrInterrupted) {
+			os.Exit(130)
+		}
 		os.Exit(1)
 	}
 }
@@ -60,6 +64,9 @@ func isShellCompletion(args []string) bool {
 
 func executeRootCommand(cmd *cobra.Command) error {
 	err := cmd.Execute()
+	if errors.Is(context.Cause(cmd.Context()), tea.ErrInterrupted) {
+		return tea.ErrInterrupted
+	}
 	if isClientTimeout(cmd.Context(), err) {
 		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), clientTimeoutConfigurationHint)
 	}
@@ -122,6 +129,7 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.AddCommand(root.NewReviewCmd())
 	rootCmd.AddCommand(root.NewValidateCmd())
 	customizeCompletionHelp(rootCmd)
+	configureHelp(rootCmd)
 
 	return rootCmd
 }
