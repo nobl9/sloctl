@@ -532,6 +532,9 @@ func annotationResponseToGenericObject(annotation v1alpha.GenericObject) v1alpha
 	if replay, ok := annotation["replay"]; ok {
 		spec["replay"] = replay
 	}
+	if regionFailover, ok := annotation["regionFailover"]; ok {
+		spec["regionFailover"] = regionFailover
+	}
 	if author, ok := annotation["author"]; ok {
 		spec["createdBy"] = author
 	}
