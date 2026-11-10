@@ -70,6 +70,24 @@ func TestAnnotationResponseToGenericObject(t *testing.T) {
 				"regionFailover": regionFailoverFacts,
 			},
 		},
+		"region recovery facts are carried into spec": {
+			response: v1alpha.GenericObject{
+				"name":           "recovery-annotation",
+				"project":        "default",
+				"slo":            "my-slo",
+				"description":    "Region recovery",
+				"startTime":      "2026-09-01T00:00:00Z",
+				"category":       "RegionRecovery",
+				"regionFailover": regionFailoverFacts,
+			},
+			wantSpec: map[string]any{
+				"slo":            "my-slo",
+				"description":    "Region recovery",
+				"startTime":      "2026-09-01T00:00:00Z",
+				"category":       "RegionRecovery",
+				"regionFailover": regionFailoverFacts,
+			},
+		},
 		"non-replay annotation has no replay key": {
 			response: v1alpha.GenericObject{
 				"name":        "comment-annotation",
