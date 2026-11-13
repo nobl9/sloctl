@@ -127,8 +127,7 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 		)))
 
 		cmd.Println("Replay is added to the queue...")
-		err = r.runReplay(ctx, replay)
-		if err != nil {
+		if err := r.runReplay(ctx, replay); err != nil {
 			cmd.Println(colorstring.Color("[red]Failed to add Replay to the queue:[reset] " + err.Error()))
 			failedIndexes = append(failedIndexes, i)
 			continue
