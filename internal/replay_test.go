@@ -399,7 +399,7 @@ func TestRunReplaysExplainsFailoverPeriod(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			// arrange
 			replay := ReplayCmd{client: newReplayClientWithAvailability(t, replayV1.ReplayAvailability{
-				Reason:   replayV1.ReplayFailoverPeriodOverlap,
+				Reason:   replayV1.ReplayAvailabilityReasonFailoverPeriodOverlap,
 				Failover: test.failover,
 			}), playlistsAvailable: true}
 			cmd := &cobra.Command{}

@@ -618,7 +618,7 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 	case replayV1.ReplayAvailabilityReasonCompositeSloNotSupported:
 		return "Replay isn't available for this composite SLO. Replay supports composite SLOs v2 only." +
 			" If this is a composite SLO v2, contact Nobl9 support."
-	case replayV1.ReplayFailoverPeriodOverlap:
+	case replayV1.ReplayAvailabilityReasonFailoverPeriodOverlap:
 		if availability.Failover == nil {
 			return reason.String()
 		}
