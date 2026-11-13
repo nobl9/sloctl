@@ -360,14 +360,13 @@ func TestRunReplaysSendsRecalculationOnlyForCompositeSLOs(t *testing.T) {
 			cmd.SetOut(io.Discard)
 			cmd.SetContext(t.Context())
 
-			failed, err := replay.RunReplays(cmd, []ReplayConfig{{
+			err = replay.RunReplays(cmd, []ReplayConfig{{
 				Project: "target-project",
 				SLO:     "target-slo",
 				From:    time.Now().Add(-10 * time.Minute),
 			}})
 
 			require.NoError(t, err)
-			assert.Zero(t, failed)
 			replayType, hasReplayType := runRequest["replayType"]
 			assert.Equal(t, test.expectedType != "", hasReplayType)
 			if hasReplayType {
@@ -379,37 +378,7 @@ func TestRunReplaysSendsRecalculationOnlyForCompositeSLOs(t *testing.T) {
 }
 
 func TestReplayRunAddsEachReplayToTheQueue(t *testing.T) {
-	var (
-		mu                 sync.Mutex
-		availabilityByName = make(map[string]string)
-		runNames           []string
-	)
-	client := newReplaySLOTestClient(t, func(request *http.Request) (*http.Response, error) {
-		mu.Lock()
-		defer mu.Unlock()
-		recorder := httptest.NewRecorder()
-		switch {
-		case request.Method == http.MethodGet && request.URL.Path == "/get/slo":
-			return replaySLOTestResponse(t, "target-project", request.URL.Query()[objectsV1.QueryKeyName]), nil
-		case request.Method == http.MethodGet && request.URL.Path == "/internal/timemachine/availability":
-			query := request.URL.Query()
-			availabilityByName[query.Get("sloName")] = query.Get("durationUnit") + "=" + query.Get("durationValue")
-			require.NoError(t, json.NewEncoder(recorder).Encode(replayV1.ReplayAvailability{Available: true}))
-		case request.Method == http.MethodPost && request.URL.Path == "/timetravel":
-			var runRequest replayV1.RunRequest
-			require.NoError(t, json.NewDecoder(request.Body).Decode(&runRequest))
-			runNames = append(runNames, runRequest.SLO)
-			if runRequest.SLO == "failing-slo" {
-				recorder.WriteHeader(http.StatusInternalServerError)
-				break
-			}
-			recorder.WriteHeader(http.StatusOK)
-		default:
-			t.Errorf("unexpected request: %s %s", request.Method, request.URL.Path)
-			recorder.WriteHeader(http.StatusNotFound)
-		}
-		return recorder.Result(), nil
-	})
+	client, platform := newReplayQueueTestClient(t, "failing-slo")
 	var out strings.Builder
 	cmd := &cobra.Command{}
 	cmd.SetOut(&out)
@@ -423,14 +392,76 @@ func TestReplayRunAddsEachReplayToTheQueue(t *testing.T) {
 		configPaths: []string{configPath},
 	}
 
-	require.NoError(t, replay.Run(cmd))
+	err := replay.Run(cmd)
 
-	assert.Equal(t, []string{"failing-slo", "queued-slo"}, runNames)
+	require.EqualError(t, err, "failed to add 1 of 2 Replays to the queue")
+	assert.Equal(t, []string{"failing-slo", "queued-slo"}, platform.runNames)
 	// Every entry asks for the same window: 10 minutes since --from plus the 5-minute start offset.
-	assert.Equal(t, map[string]string{"failing-slo": "Minute=15", "queued-slo": "Minute=15"}, availabilityByName)
+	assert.Equal(t, map[string]string{"failing-slo": "Minute=15", "queued-slo": "Minute=15"}, platform.availabilityByName)
 	output := out.String()
 	assert.Equal(t, 2, strings.Count(output, "Replay is added to the queue..."))
 	assert.Equal(t, 1, strings.Count(output, "Failed to add Replay to the queue:"))
 	assert.Equal(t, 1, strings.Count(output, "Replay has been successfully added to the queue!"))
 	assert.Contains(t, output, "Added Replays for 1 SLOs to the queue and failed for 1 SLOs:")
+}
+
+func TestApplyReplayFailsWhenAReplayIsNotQueued(t *testing.T) {
+	client, platform := newReplayQueueTestClient(t, "failing-slo")
+	cmd := &cobra.Command{}
+	cmd.SetOut(io.Discard)
+	cmd.SetContext(t.Context())
+	objects := make([]manifest.Object, 0, 2)
+	for _, name := range []string{"queued-slo", "failing-slo"} {
+		objects = append(objects, v1alpha.GenericObject{
+			"apiVersion": manifest.VersionV1alpha,
+			"kind":       manifest.KindSLO.String(),
+			"metadata":   map[string]any{"name": name, "project": "target-project"},
+		})
+	}
+	apply := ApplyCmd{client: client, replayFrom: time.Now().Add(-10 * time.Minute)}
+
+	err := apply.runReplay(cmd, objects)
+
+	require.EqualError(t, err, "failed to add 1 of 2 Replays to the queue")
+	assert.Equal(t, []string{"queued-slo", "failing-slo"}, platform.runNames)
+}
+
+type replayQueueTestPlatform struct {
+	mu                 sync.Mutex
+	availabilityByName map[string]string
+	runNames           []string
+}
+
+// newReplayQueueTestClient fails the test on any request other than the SLO lookup,
+// the availability check and adding a Replay; adding failingSLO returns a server error.
+func newReplayQueueTestClient(t *testing.T, failingSLO string) (*sdk.Client, *replayQueueTestPlatform) {
+	t.Helper()
+	platform := &replayQueueTestPlatform{availabilityByName: make(map[string]string)}
+	client := newReplaySLOTestClient(t, func(request *http.Request) (*http.Response, error) {
+		platform.mu.Lock()
+		defer platform.mu.Unlock()
+		recorder := httptest.NewRecorder()
+		switch {
+		case request.Method == http.MethodGet && request.URL.Path == "/get/slo":
+			return replaySLOTestResponse(t, "target-project", request.URL.Query()[objectsV1.QueryKeyName]), nil
+		case request.Method == http.MethodGet && request.URL.Path == "/internal/timemachine/availability":
+			query := request.URL.Query()
+			platform.availabilityByName[query.Get("sloName")] = query.Get("durationUnit") + "=" + query.Get("durationValue")
+			require.NoError(t, json.NewEncoder(recorder).Encode(replayV1.ReplayAvailability{Available: true}))
+		case request.Method == http.MethodPost && request.URL.Path == "/timetravel":
+			var runRequest replayV1.RunRequest
+			require.NoError(t, json.NewDecoder(request.Body).Decode(&runRequest))
+			platform.runNames = append(platform.runNames, runRequest.SLO)
+			if runRequest.SLO == failingSLO {
+				recorder.WriteHeader(http.StatusInternalServerError)
+				break
+			}
+			recorder.WriteHeader(http.StatusOK)
+		default:
+			t.Errorf("unexpected request: %s %s", request.Method, request.URL.Path)
+			recorder.WriteHeader(http.StatusNotFound)
+		}
+		return recorder.Result(), nil
+	})
+	return client, platform
 }

@@ -107,15 +107,16 @@ func (r *ReplayCmd) Run(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	_, err = r.RunReplays(cmd, replays)
-	return err
+	return r.RunReplays(cmd, replays)
 }
 
-func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (failedReplays int, err error) {
+// RunReplays returns an error when any Replay could not be added to the queue,
+// after attempting every entry.
+func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) error {
 	ctx := cmd.Context()
-	replays, err = r.verifySLOs(ctx, replays)
+	replays, err := r.verifySLOs(ctx, replays)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	failedIndexes := make([]int, 0)
@@ -137,7 +138,10 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 	if len(replays) > 0 {
 		r.printSummary(cmd, replays, failedIndexes)
 	}
-	return len(failedIndexes), nil
+	if len(failedIndexes) > 0 {
+		return errors.Errorf("failed to add %d of %d Replays to the queue", len(failedIndexes), len(replays))
+	}
+	return nil
 }
 
 type ReplayConfig struct {
