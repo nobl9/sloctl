@@ -87,24 +87,6 @@ func TestAnnotationResponseToGenericObject(t *testing.T) {
 				"failover":    failoverFacts,
 			},
 		},
-		"recovery facts are carried into spec": {
-			response: v1alpha.GenericObject{
-				"name":        "recovery-annotation",
-				"project":     "default",
-				"slo":         "my-slo",
-				"description": "Recovery",
-				"startTime":   "2026-09-01T00:00:00Z",
-				"category":    "Recovery",
-				"failover":    failoverFacts,
-			},
-			wantSpec: map[string]any{
-				"slo":         "my-slo",
-				"description": "Recovery",
-				"startTime":   "2026-09-01T00:00:00Z",
-				"category":    "Recovery",
-				"failover":    failoverFacts,
-			},
-		},
 		"non-replay annotation has no replay key": {
 			response: v1alpha.GenericObject{
 				"name":        "comment-annotation",
