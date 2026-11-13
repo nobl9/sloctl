@@ -20,6 +20,7 @@ import (
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/manifest/v1alpha"
 	v1alphaParser "github.com/nobl9/nobl9-go/manifest/v1alpha/parser"
+	v1alphaSLO "github.com/nobl9/nobl9-go/manifest/v1alpha/slo"
 	"github.com/nobl9/nobl9-go/sdk"
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
 	replayV1 "github.com/nobl9/nobl9-go/sdk/endpoints/replay/v1"
@@ -354,44 +355,52 @@ func TestRunReplaysSendsRecalculationOnlyForCompositeSLOs(t *testing.T) {
 	}
 }
 
-func TestRunReplaysExplainsCloudWatchFailoverPeriod(t *testing.T) {
+func TestRunReplaysExplainsFailoverPeriod(t *testing.T) {
 	periodEnd := time.Date(2026, 11, 9, 11, 30, 0, 0, time.UTC)
-	openPeriod := replayV1.ReplayRegionFailover{
-		DataSourceKind:    manifest.KindDirect,
-		DataSourceName:    "cw-failover-test",
-		DataSourceProject: "cloudwatch-failover-test",
-		PrimaryRegion:     "us-west-2",
-		FailoverRegion:    "us-east-2",
-		PeriodStart:       time.Date(2026, 11, 9, 10, 0, 0, 0, time.UTC),
+	openPeriod := replayV1.ReplayFailover{
+		MetricSource: v1alphaSLO.MetricSourceSpec{
+			Name: "cw-failover-test", Project: "cloudwatch-failover-test", Kind: manifest.KindDirect,
+		},
+		From:        v1alpha.FailoverTarget{Region: "us-west-2"},
+		To:          v1alpha.FailoverTarget{Region: "us-east-2"},
+		PeriodStart: time.Date(2026, 11, 9, 10, 0, 0, 0, time.UTC),
 	}
 	closedPeriod := openPeriod
 	closedPeriod.PeriodEnd = &periodEnd
+	agentPeriod := openPeriod
+	agentPeriod.MetricSource.Kind = manifest.KindAgent
 	for name, test := range map[string]struct {
-		regionFailover *replayV1.ReplayRegionFailover
-		explanation    string
+		failover    *replayV1.ReplayFailover
+		explanation string
 	}{
 		"open failover period": {
-			regionFailover: &openPeriod,
+			failover: &openPeriod,
 			explanation: "Replay is unavailable while the 'cw-failover-test' Direct in 'cloudwatch-failover-test'" +
 				" Project is in region failover from us-west-2 to us-east-2 since 2026-11-09T10:00:00Z." +
 				" Send a recovery event for 'cw-failover-test', then start the Replay after it.",
 		},
 		"closed failover period": {
-			regionFailover: &closedPeriod,
+			failover: &closedPeriod,
 			explanation: "Replay is unavailable for this time range: the 'cw-failover-test' Direct in" +
 				" 'cloudwatch-failover-test' Project was in region failover from us-west-2 to us-east-2" +
 				" between 2026-11-09T10:00:00Z and 2026-11-09T11:30:00Z." +
 				" Choose a start time after 2026-11-09T11:30:00Z.",
 		},
+		"open failover period of an Agent": {
+			failover: &agentPeriod,
+			explanation: "Replay is unavailable while the 'cw-failover-test' Agent in 'cloudwatch-failover-test'" +
+				" Project is in region failover from us-west-2 to us-east-2 since 2026-11-09T10:00:00Z." +
+				" Send a recovery event for 'cw-failover-test', then start the Replay after it.",
+		},
 		"failover without details": {
-			explanation: "cloudwatch_failover_period_overlap",
+			explanation: "failover_period_overlap",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			// arrange
 			replay := ReplayCmd{client: newReplayClientWithAvailability(t, replayV1.ReplayAvailability{
-				Reason:         replayV1.ReplayAvailabilityReasonCloudwatchFailoverPeriodOverlap,
-				RegionFailover: test.regionFailover,
+				Reason:   replayV1.ReplayFailoverPeriodOverlap,
+				Failover: test.failover,
 			}), playlistsAvailable: true}
 			cmd := &cobra.Command{}
 			cmd.SetOut(io.Discard)

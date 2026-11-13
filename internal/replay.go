@@ -618,25 +618,25 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 	case replayV1.ReplayAvailabilityReasonCompositeSloNotSupported:
 		return "Replay isn't available for this composite SLO. Replay supports composite SLOs v2 only." +
 			" If this is a composite SLO v2, contact Nobl9 support."
-	case replayV1.ReplayAvailabilityReasonCloudwatchFailoverPeriodOverlap:
-		if availability.RegionFailover == nil {
+	case replayV1.ReplayFailoverPeriodOverlap:
+		if availability.Failover == nil {
 			return reason.String()
 		}
-		return cloudWatchFailoverPeriodExplanation(*availability.RegionFailover)
+		return failoverPeriodExplanation(*availability.Failover)
 	default:
 		return reason.String()
 	}
 }
 
-func cloudWatchFailoverPeriodExplanation(failover replayV1.ReplayRegionFailover) string {
-	dataSource := fmt.Sprintf("the '%s' %s in '%s' Project",
-		failover.DataSourceName, failover.DataSourceKind, failover.DataSourceProject)
-	regions := fmt.Sprintf("from %s to %s", failover.PrimaryRegion, failover.FailoverRegion)
+func failoverPeriodExplanation(failover replayV1.ReplayFailover) string {
+	source := failover.MetricSource
+	dataSource := fmt.Sprintf("the '%s' %s in '%s' Project", source.Name, source.Kind, source.Project)
+	regions := fmt.Sprintf("from %s to %s", failover.From.Region, failover.To.Region)
 	periodStart := failover.PeriodStart.UTC().Format(flags.TimeLayout)
 	if failover.PeriodEnd == nil {
 		return fmt.Sprintf("Replay is unavailable while %s is in region failover %s since %s."+
 			" Send a recovery event for '%s', then start the Replay after it.",
-			dataSource, regions, periodStart, failover.DataSourceName)
+			dataSource, regions, periodStart, source.Name)
 	}
 	periodEnd := failover.PeriodEnd.UTC().Format(flags.TimeLayout)
 	return fmt.Sprintf("Replay is unavailable for this time range: %s was in region failover %s between %s and %s."+

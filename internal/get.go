@@ -515,25 +515,12 @@ func annotationResponseToGenericObject(annotation v1alpha.GenericObject) v1alpha
 		metadata["labels"] = labels
 	}
 
-	spec := map[string]any{
-		"slo":         annotation["slo"],
-		"description": annotation["description"],
-		"startTime":   annotation["startTime"],
-	}
-	if objectiveName, ok := annotation["objectiveName"]; ok {
-		spec["objectiveName"] = objectiveName
-	}
-	if endTime, ok := annotation["endTime"]; ok && endTime != nil {
-		spec["endTime"] = endTime
-	}
-	if category, ok := annotation["category"]; ok {
-		spec["category"] = category
-	}
-	if replay, ok := annotation["replay"]; ok {
-		spec["replay"] = replay
-	}
-	if regionFailover, ok := annotation["regionFailover"]; ok {
-		spec["regionFailover"] = regionFailover
+	spec := make(map[string]any, len(annotation))
+	for key, value := range annotation {
+		if value == nil || !isAnnotationSpecKey(key) {
+			continue
+		}
+		spec[key] = value
 	}
 	if author, ok := annotation["author"]; ok {
 		spec["createdBy"] = author
@@ -549,6 +536,17 @@ func annotationResponseToGenericObject(annotation v1alpha.GenericObject) v1alpha
 		object["status"] = status
 	}
 	return object
+}
+
+// isAnnotationSpecKey reports whether a key of the annotations response belongs to spec of an annotation.
+// The response puts metadata, status and the author next to the spec fields.
+func isAnnotationSpecKey(key string) bool {
+	switch key {
+	case "name", "project", "labels", "status", "author":
+		return false
+	default:
+		return true
+	}
 }
 
 func (g *GetCmd) printObjects(kind manifest.Kind, objects []manifest.Object) error {
