@@ -354,7 +354,7 @@ func TestRunReplaysSendsRecalculationOnlyForCompositeSLOs(t *testing.T) {
 				}),
 			}
 
-			replay := ReplayCmd{client: client, playlistsAvailable: true}
+			replay := ReplayCmd{client: client}
 			cmd := &cobra.Command{}
 			cmd.SetOut(io.Discard)
 			cmd.SetContext(t.Context())
