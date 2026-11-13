@@ -482,14 +482,14 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 
 func (r *ReplayCmd) printSummary(cmd *cobra.Command, replays []ReplayConfig, failedIndexes []int) {
 	if len(failedIndexes) == 0 {
-		cmd.Printf("\nSuccessfully finished operations for all %d SLOs.\n", len(replays))
+		cmd.Printf("\nAdded Replays for all %d SLOs to the queue.\n", len(replays))
 	} else {
 		failedDetails := make([]string, 0, len(failedIndexes))
 		for _, i := range failedIndexes {
 			fr, _ := json.Marshal(replays[i])
 			failedDetails = append(failedDetails, string(fr))
 		}
-		cmd.Printf("\nSuccessfully finished operations for %d and failed for %d SLOs:\n - %s\n",
+		cmd.Printf("\nAdded Replays for %d SLOs to the queue and failed for %d SLOs:\n - %s\n",
 			len(replays)-len(failedIndexes), len(failedIndexes), strings.Join(failedDetails, "\n - "))
 	}
 }
