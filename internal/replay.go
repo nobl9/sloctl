@@ -1,13 +1,11 @@
 package internal
 
 import (
-	"bytes"
 	"context"
 	_ "embed"
 	"encoding/json"
 	stderrors "errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -35,14 +33,13 @@ import (
 )
 
 type ReplayCmd struct {
-	client             *sdk.Client
-	printer            *printer.Printer
-	from               time.Time
-	configPaths        []string
-	sloName            string
-	project            string
-	deleteAll          bool
-	playlistsAvailable bool
+	client      *sdk.Client
+	printer     *printer.Printer
+	from        time.Time
+	configPaths []string
+	sloName     string
+	project     string
+	deleteAll   bool
 }
 
 //go:embed replay_example.sh
@@ -65,9 +62,9 @@ func (r *RootCmd) NewReplayCmd() *cobra.Command {
 			"`--project` and `--from`.\n\n" +
 			"sloctl validates every requested SLO before starting any Replay. After\n" +
 			"preflight succeeds, a failure for one entry does not stop the remaining\n" +
-			"entries. Organizations with Replay queues enqueue the jobs; otherwise sloctl\n" +
-			"waits for each Replay to finish before starting the next. Modifying an SLO\n" +
-			"after its Replay starts does not change the running Replay.",
+			"entries. sloctl adds each Replay to the queue and returns without waiting for\n" +
+			"it to finish. Modifying an SLO after its Replay starts does not change the\n" +
+			"running Replay.",
 		Example: replayExample,
 		Args:    replay.arguments,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -106,7 +103,6 @@ func (r *ReplayCmd) Run(cmd *cobra.Command) error {
 	if r.project == "*" {
 		return errProjectWildcardIsNotAllowed
 	}
-	r.arePlaylistEnabled(cmd.Context())
 	replays, err := r.prepareConfigs()
 	if err != nil {
 		return err
@@ -122,12 +118,6 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 		return 0, err
 	}
 
-	if r.playlistsAvailable {
-		cmd.Println(colorstring.Color("[yellow]- Your organization has access to Replay queues!"))
-		cmd.Println(colorstring.Color("[yellow]- To learn more about Replay queues, follow this link: " +
-			"https://docs.nobl9.com/replay/replay-sloctl [reset]"))
-	}
-
 	failedIndexes := make([]int, 0)
 	for i, replay := range replays {
 		cmd.Println(colorstring.Color(fmt.Sprintf(
@@ -136,57 +126,18 @@ func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (fail
 			replay.From.Format(flags.TimeLayout), time.Now().In(replay.From.Location()).Format(flags.TimeLayout),
 		)))
 
-		if r.playlistsAvailable {
-			cmd.Println("Replay is added to the queue...")
-			err = r.runReplay(ctx, replay)
-			if err != nil {
-				cmd.Println(colorstring.Color("[red]Failed to add Replay to the queue:[reset] " + err.Error()))
-				failedIndexes = append(failedIndexes, i)
-				continue
-			}
-			cmd.Println(colorstring.Color("[green]Replay has been successfully added to the queue![reset]"))
-		} else {
-			spinner := NewSpinner("Importing data...")
-			spinner.Go()
-			err = r.runReplayWithStatusCheck(ctx, replay)
-			spinner.Stop()
-
-			if err != nil {
-				cmd.Println(colorstring.Color("[red]Import failed:[reset] " + err.Error()))
-				failedIndexes = append(failedIndexes, i)
-				continue
-			}
-			cmd.Println(colorstring.Color("[green]Import succeeded![reset]"))
+		cmd.Println("Replay is added to the queue...")
+		if err := r.runReplay(ctx, replay); err != nil {
+			cmd.Println(colorstring.Color("[red]Failed to add Replay to the queue:[reset] " + err.Error()))
+			failedIndexes = append(failedIndexes, i)
+			continue
 		}
+		cmd.Println(colorstring.Color("[green]Replay has been successfully added to the queue![reset]"))
 	}
 	if len(replays) > 0 {
 		r.printSummary(cmd, replays, failedIndexes)
 	}
 	return len(failedIndexes), nil
-}
-
-type PlaylistConfiguration struct {
-	EnabledPlaylists bool `json:"enabledPlaylists"`
-}
-
-func (r *ReplayCmd) arePlaylistEnabled(ctx context.Context) {
-	r.playlistsAvailable = true
-	data, err := r.doRequest(
-		ctx,
-		http.MethodGet,
-		endpointPlanInfo,
-		"*",
-		nil,
-		nil,
-	)
-	if err != nil {
-		fmt.Printf("error checking playlist availability: %v\n", err)
-	}
-	var pc PlaylistConfiguration
-	if err = json.Unmarshal(data, &pc); err != nil {
-		fmt.Printf("error unmarshalling playlist configuration: %v\n", err)
-	}
-	r.playlistsAvailable = pc.EnabledPlaylists
 }
 
 type ReplayConfig struct {
@@ -310,9 +261,6 @@ func (r *ReplayCmd) readConfigFile(path string) ([]ReplayConfig, error) {
 	return replays, nil
 }
 
-// averageReplayDuration is used to calculate when running bulk Replay to calculate time offset for each SLO.
-const averageReplayDuration = 20 * time.Minute
-
 const replaySLOBatchSize = 50
 
 func (r *ReplayCmd) getReplaySLOs(ctx context.Context, replays []ReplayConfig) ([]replaySLO, error) {
@@ -427,16 +375,11 @@ func (r *ReplayCmd) checkReplayAvailability(ctx context.Context, replays []Repla
 	eg, ctx := errgroup.WithContext(ctx)
 	eg.SetLimit(10)
 
-	for i, replay := range replays {
+	for _, replay := range replays {
 		eg.Go(func() error {
 			timeNow := time.Now()
 			tt := replay.ToReplay(timeNow)
-			offset := 0
-			if !r.playlistsAvailable {
-				offset = i * int(averageReplayDuration.Minutes())
-			}
-			expectedDuration := offset + tt.Duration.Value
-			av, err := r.getReplayAvailability(ctx, replay, tt.Duration.Unit, expectedDuration)
+			av, err := r.getReplayAvailability(ctx, replay, tt.Duration.Unit, tt.Duration.Value)
 			if err != nil {
 				return errors.Wrapf(err,
 					"failed to check Replay availability for '%s' SLO in '%s' Project", replay.SLO, replay.Project)
@@ -451,8 +394,7 @@ func (r *ReplayCmd) checkReplayAvailability(ctx context.Context, replays []Repla
 				replay.SLO, replay.Project, r.replayUnavailabilityReasonExplanation(
 					av.Reason,
 					replay,
-					time.Duration(expectedDuration)*time.Minute,
-					time.Duration(offset)*time.Minute,
+					time.Duration(tt.Duration.Value)*time.Minute,
 					timeNow,
 				)))
 			return nil
@@ -469,36 +411,6 @@ func (r *ReplayCmd) checkReplayAvailability(ctx context.Context, replays []Repla
 	}
 
 	return nil
-}
-
-const replayStatusCheckInterval = 30 * time.Second
-
-func (r *ReplayCmd) runReplayWithStatusCheck(ctx context.Context, config ReplayConfig) error {
-	err := r.runReplay(ctx, config)
-	if err != nil {
-		return err
-	}
-	ticker := time.NewTicker(replayStatusCheckInterval)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			status, err := r.getReplayStatus(ctx, config)
-			if err != nil {
-				return errors.Wrap(err, "failed to get for Replay status")
-			}
-			switch status {
-			case replayV1.ReplayListStatusFailed:
-				return errors.New("Replay has failed")
-			case replayV1.ReplayListStatusCompleted:
-				return nil
-			default:
-				continue
-			}
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
 }
 
 func (r *ReplayCmd) runReplay(ctx context.Context, config ReplayConfig) error {
@@ -533,57 +445,10 @@ func (r *ReplayCmd) getReplayAvailability(
 	return *response, nil
 }
 
-func (r *ReplayCmd) getReplayStatus(
-	ctx context.Context,
-	config ReplayConfig,
-) (replayV1.ReplayListStatus, error) {
-	response, err := r.client.Replay().V1().GetStatus(ctx, replayV1.GetStatusRequest{
-		Project: config.Project,
-		SLO:     config.SLO,
-	})
-	if err != nil {
-		return "", err
-	}
-	return response.Status.Status, nil
-}
-
-const endpointPlanInfo = "/internal/plan-info"
-
-func (r *ReplayCmd) doRequest(
-	ctx context.Context,
-	method, endpoint, project string,
-	values url.Values,
-	payload any,
-) (data []byte, err error) {
-	var body io.Reader
-	if payload != nil {
-		buf := new(bytes.Buffer)
-		if err = json.NewEncoder(buf).Encode(payload); err != nil {
-			return nil, err
-		}
-		body = buf
-	}
-	header := http.Header{sdk.HeaderProject: []string{project}}
-	req, err := r.client.CreateRequest(ctx, method, endpoint, header, values, body)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := r.client.HTTP.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = resp.Body.Close() }()
-	data, err = io.ReadAll(resp.Body)
-	if resp.StatusCode >= 300 {
-		return nil, errors.Errorf("bad response (status: %d): %s", resp.StatusCode, string(data))
-	}
-	return data, err
-}
-
 func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 	reason replayV1.ReplayAvailabilityReason,
 	replay ReplayConfig,
-	expectedDuration, replayOffset time.Duration,
+	expectedDuration time.Duration,
 	timeNow time.Time,
 ) string {
 	switch reason {
@@ -594,21 +459,14 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 			" version to the latest to use Replay for this Data Source.",
 			replay.metricSource.Name, replay.metricSource.Project)
 	case replayV1.ReplayAvailabilityReasonMaxHistoricalDataRetrievalTooLow:
-		var offsetNotice string
-		if replayOffset > 0 {
-			offsetNotice = fmt.Sprintf(
-				" + %s (offset for each next replay run in bulk is increased by an average of %s)",
-				replayOffset, averageReplayDuration,
-			)
-		}
 		return fmt.Sprintf(
 			"Value configured for spec.historicalDataRetrieval.maxDuration.value"+
 				" for '%s' Data Source in '%s' Project is lower than the duration you're trying to run Replay for."+
 				" The calculated duration is: %s, calculated from: %s (time.Now) - %s (from)"+
-				" + %dm (start offset to ensure Replay covers the desired time window) %s."+
+				" + %dm (start offset to ensure Replay covers the desired time window)."+
 				" Edit the Data Source and run Replay once again.",
 			replay.metricSource.Name, replay.metricSource.Project, expectedDuration.String(),
-			timeNow.Format(flags.TimeLayout), replay.From.Format(flags.TimeLayout), startOffsetMinutes, offsetNotice,
+			timeNow.Format(flags.TimeLayout), replay.From.Format(flags.TimeLayout), startOffsetMinutes,
 		)
 	case replayV1.ReplayAvailabilityReasonConcurrentReplayRunsLimitExhausted:
 		return "You've exceeded the limit of concurrent Replay runs. Wait until the current Replay(s) are done."
@@ -624,14 +482,14 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 
 func (r *ReplayCmd) printSummary(cmd *cobra.Command, replays []ReplayConfig, failedIndexes []int) {
 	if len(failedIndexes) == 0 {
-		cmd.Printf("\nSuccessfully finished operations for all %d SLOs.\n", len(replays))
+		cmd.Printf("\nAdded Replays for all %d SLOs to the queue.\n", len(replays))
 	} else {
 		failedDetails := make([]string, 0, len(failedIndexes))
 		for _, i := range failedIndexes {
 			fr, _ := json.Marshal(replays[i])
 			failedDetails = append(failedDetails, string(fr))
 		}
-		cmd.Printf("\nSuccessfully finished operations for %d and failed for %d SLOs:\n - %s\n",
+		cmd.Printf("\nAdded Replays for %d SLOs to the queue and failed for %d SLOs:\n - %s\n",
 			len(replays)-len(failedIndexes), len(failedIndexes), strings.Join(failedDetails, "\n - "))
 	}
 }

@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -354,7 +355,7 @@ func TestRunReplaysSendsRecalculationOnlyForCompositeSLOs(t *testing.T) {
 				}),
 			}
 
-			replay := ReplayCmd{client: client, playlistsAvailable: true}
+			replay := ReplayCmd{client: client}
 			cmd := &cobra.Command{}
 			cmd.SetOut(io.Discard)
 			cmd.SetContext(t.Context())
@@ -375,4 +376,61 @@ func TestRunReplaysSendsRecalculationOnlyForCompositeSLOs(t *testing.T) {
 			assert.Equal(t, test.expectedType, availabilityQuery.Get("type"))
 		})
 	}
+}
+
+func TestReplayRunAddsEachReplayToTheQueue(t *testing.T) {
+	var (
+		mu                 sync.Mutex
+		availabilityByName = make(map[string]string)
+		runNames           []string
+	)
+	client := newReplaySLOTestClient(t, func(request *http.Request) (*http.Response, error) {
+		mu.Lock()
+		defer mu.Unlock()
+		recorder := httptest.NewRecorder()
+		switch {
+		case request.Method == http.MethodGet && request.URL.Path == "/get/slo":
+			return replaySLOTestResponse(t, "target-project", request.URL.Query()[objectsV1.QueryKeyName]), nil
+		case request.Method == http.MethodGet && request.URL.Path == "/internal/timemachine/availability":
+			query := request.URL.Query()
+			availabilityByName[query.Get("sloName")] = query.Get("durationUnit") + "=" + query.Get("durationValue")
+			require.NoError(t, json.NewEncoder(recorder).Encode(replayV1.ReplayAvailability{Available: true}))
+		case request.Method == http.MethodPost && request.URL.Path == "/timetravel":
+			var runRequest replayV1.RunRequest
+			require.NoError(t, json.NewDecoder(request.Body).Decode(&runRequest))
+			runNames = append(runNames, runRequest.SLO)
+			if runRequest.SLO == "failing-slo" {
+				recorder.WriteHeader(http.StatusInternalServerError)
+				break
+			}
+			recorder.WriteHeader(http.StatusOK)
+		default:
+			t.Errorf("unexpected request: %s %s", request.Method, request.URL.Path)
+			recorder.WriteHeader(http.StatusNotFound)
+		}
+		return recorder.Result(), nil
+	})
+	var out strings.Builder
+	cmd := &cobra.Command{}
+	cmd.SetOut(&out)
+	cmd.SetContext(t.Context())
+	configPath := filepath.Join(t.TempDir(), "replay.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte("- slo: failing-slo\n- slo: queued-slo\n"), 0o600))
+	replay := &ReplayCmd{
+		client:      client,
+		project:     "target-project",
+		from:        time.Now().Add(-10 * time.Minute),
+		configPaths: []string{configPath},
+	}
+
+	require.NoError(t, replay.Run(cmd))
+
+	assert.Equal(t, []string{"failing-slo", "queued-slo"}, runNames)
+	// Every entry asks for the same window: 10 minutes since --from plus the 5-minute start offset.
+	assert.Equal(t, map[string]string{"failing-slo": "Minute=15", "queued-slo": "Minute=15"}, availabilityByName)
+	output := out.String()
+	assert.Equal(t, 2, strings.Count(output, "Replay is added to the queue..."))
+	assert.Equal(t, 1, strings.Count(output, "Failed to add Replay to the queue:"))
+	assert.Equal(t, 1, strings.Count(output, "Replay has been successfully added to the queue!"))
+	assert.Contains(t, output, "Added Replays for 1 SLOs to the queue and failed for 1 SLOs:")
 }
