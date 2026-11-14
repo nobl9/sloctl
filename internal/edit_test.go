@@ -32,6 +32,11 @@ func TestNewEditCmd_Subcommands(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "services", serviceCmd.Name())
 
+	groupCmd, _, err := cmd.Find([]string{"usergroup"})
+	require.NoError(t, err)
+	assert.Equal(t, "usergroups", groupCmd.Name())
+	assert.Nil(t, groupCmd.Flag("project"))
+
 	sloCmdAlias, _, err := cmd.Find([]string{"SLOs"})
 	require.NoError(t, err)
 	assert.Equal(t, "slos", sloCmdAlias.Name())

@@ -13,6 +13,9 @@ sloctl delete -f - <slo.yaml
 # Delete by passing in one or more resource names.
 sloctl delete slo my-slo-name another-slo-name
 
+# Delete a manual group after removing its RoleBindings.
+sloctl delete usergroups platform-team
+
 # Delete the configuration from slo.yaml and set project context if it is not defined in file.
 sloctl delete -f ./slo.yaml -p slo
 
