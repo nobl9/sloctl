@@ -20,6 +20,7 @@ import (
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/manifest/v1alpha"
 	v1alphaParser "github.com/nobl9/nobl9-go/manifest/v1alpha/parser"
+	v1alphaSLO "github.com/nobl9/nobl9-go/manifest/v1alpha/slo"
 	"github.com/nobl9/nobl9-go/sdk"
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
 	replayV1 "github.com/nobl9/nobl9-go/sdk/endpoints/replay/v1"
@@ -196,29 +197,18 @@ func TestReplayConfigDecodesSourceSLOIntoRunRequest(t *testing.T) {
 }
 
 func TestRunReplayPreservesConflictError(t *testing.T) {
-	apiURL, err := url.Parse("https://example.com/api")
-	require.NoError(t, err)
-	client, err := sdk.NewClient(&sdk.Config{
-		DisableOkta:  true,
-		Organization: "test-organization",
-		Project:      "target-project",
-		URL:          apiURL,
+	client := newReplayTestClient(t, func(*http.Request) (*http.Response, error) {
+		recorder := httptest.NewRecorder()
+		recorder.Header().Set("Content-Type", "application/json")
+		recorder.WriteHeader(http.StatusConflict)
+		require.NoError(t, json.NewEncoder(recorder).Encode(sdk.APIErrors{
+			Errors: []sdk.APIError{{Title: "Replay already exists"}},
+		}))
+		return recorder.Result(), nil
 	})
-	require.NoError(t, err)
-	client.HTTP = &http.Client{
-		Transport: replayRoundTripper(func(*http.Request) (*http.Response, error) {
-			recorder := httptest.NewRecorder()
-			recorder.Header().Set("Content-Type", "application/json")
-			recorder.WriteHeader(http.StatusConflict)
-			require.NoError(t, json.NewEncoder(recorder).Encode(sdk.APIErrors{
-				Errors: []sdk.APIError{{Title: "Replay already exists"}},
-			}))
-			return recorder.Result(), nil
-		}),
-	}
 	replay := ReplayCmd{client: client}
 
-	err = replay.runReplay(t.Context(), ReplayConfig{
+	err := replay.runReplay(t.Context(), ReplayConfig{
 		Project: "target-project",
 		SLO:     "target-slo",
 		From:    time.Now().Add(-10 * time.Minute),
@@ -317,42 +307,30 @@ func TestRunReplaysSendsRecalculationOnlyForCompositeSLOs(t *testing.T) {
 		"regular SLO":   {spec: regularSpec, expectedType: ""},
 	} {
 		t.Run(name, func(t *testing.T) {
-			apiURL, err := url.Parse("https://example.com/api")
-			require.NoError(t, err)
-			client, err := sdk.NewClient(&sdk.Config{
-				DisableOkta:  true,
-				Organization: "test-organization",
-				Project:      "target-project",
-				URL:          apiURL,
-			})
-			require.NoError(t, err)
-
 			var runRequest map[string]any
 			var availabilityQuery url.Values
-			client.HTTP = &http.Client{
-				Transport: replayRoundTripper(func(request *http.Request) (*http.Response, error) {
-					recorder := httptest.NewRecorder()
-					recorder.Header().Set("Content-Type", "application/json")
-					switch {
-					case strings.Contains(request.URL.Path, "timemachine/availability"):
-						availabilityQuery = request.URL.Query()
-						assert.NoError(t, json.NewEncoder(recorder).Encode(
-							replayV1.ReplayAvailability{Available: true},
-						))
-					case request.Method == http.MethodPost && strings.HasSuffix(request.URL.Path, "/timetravel"):
-						assert.NoError(t, json.NewDecoder(request.Body).Decode(&runRequest))
-						recorder.WriteHeader(http.StatusCreated)
-					default:
-						assert.NoError(t, json.NewEncoder(recorder).Encode([]v1alpha.GenericObject{{
-							"apiVersion": manifest.VersionV1alpha,
-							"kind":       manifest.KindSLO,
-							"metadata":   map[string]any{"name": "target-slo", "project": "target-project"},
-							"spec":       test.spec,
-						}}))
-					}
-					return recorder.Result(), nil
-				}),
-			}
+			client := newReplayTestClient(t, func(request *http.Request) (*http.Response, error) {
+				recorder := httptest.NewRecorder()
+				recorder.Header().Set("Content-Type", "application/json")
+				switch {
+				case strings.Contains(request.URL.Path, "timemachine/availability"):
+					availabilityQuery = request.URL.Query()
+					assert.NoError(t, json.NewEncoder(recorder).Encode(
+						replayV1.ReplayAvailability{Available: true},
+					))
+				case request.Method == http.MethodPost && strings.HasSuffix(request.URL.Path, "/timetravel"):
+					assert.NoError(t, json.NewDecoder(request.Body).Decode(&runRequest))
+					recorder.WriteHeader(http.StatusCreated)
+				default:
+					assert.NoError(t, json.NewEncoder(recorder).Encode([]v1alpha.GenericObject{{
+						"apiVersion": manifest.VersionV1alpha,
+						"kind":       manifest.KindSLO,
+						"metadata":   map[string]any{"name": "target-slo", "project": "target-project"},
+						"spec":       test.spec,
+					}}))
+				}
+				return recorder.Result(), nil
+			})
 
 			replay := ReplayCmd{client: client, playlistsAvailable: true}
 			cmd := &cobra.Command{}
@@ -375,4 +353,110 @@ func TestRunReplaysSendsRecalculationOnlyForCompositeSLOs(t *testing.T) {
 			assert.Equal(t, test.expectedType, availabilityQuery.Get("type"))
 		})
 	}
+}
+
+func TestRunReplaysExplainsFailoverPeriod(t *testing.T) {
+	periodEnd := time.Date(2026, 11, 9, 11, 30, 0, 0, time.UTC)
+	openPeriod := replayV1.ReplayFailover{
+		MetricSource: v1alphaSLO.MetricSourceSpec{
+			Name: "cw-failover-test", Project: "cloudwatch-failover-test", Kind: manifest.KindDirect,
+		},
+		From:        v1alpha.FailoverTarget{Region: "us-west-2"},
+		To:          v1alpha.FailoverTarget{Region: "us-east-2"},
+		PeriodStart: time.Date(2026, 11, 9, 10, 0, 0, 0, time.UTC),
+	}
+	closedPeriod := openPeriod
+	closedPeriod.PeriodEnd = &periodEnd
+	agentPeriod := openPeriod
+	agentPeriod.MetricSource.Kind = manifest.KindAgent
+	for name, test := range map[string]struct {
+		failover    *replayV1.ReplayFailover
+		explanation string
+	}{
+		"open failover period": {
+			failover: &openPeriod,
+			explanation: "Replay is unavailable while the 'cw-failover-test' Direct in 'cloudwatch-failover-test'" +
+				" Project is in region failover from us-west-2 to us-east-2 since 2026-11-09T10:00:00Z." +
+				" Send a recovery event for 'cw-failover-test', then start the Replay after it.",
+		},
+		"closed failover period": {
+			failover: &closedPeriod,
+			explanation: "Replay is unavailable for this time range: the 'cw-failover-test' Direct in" +
+				" 'cloudwatch-failover-test' Project was in region failover from us-west-2 to us-east-2" +
+				" between 2026-11-09T10:00:00Z and 2026-11-09T11:30:00Z." +
+				" Choose a start time after 2026-11-09T11:30:00Z.",
+		},
+		"open failover period of an Agent": {
+			failover: &agentPeriod,
+			explanation: "Replay is unavailable while the 'cw-failover-test' Agent in 'cloudwatch-failover-test'" +
+				" Project is in region failover from us-west-2 to us-east-2 since 2026-11-09T10:00:00Z." +
+				" Send a recovery event for 'cw-failover-test', then start the Replay after it.",
+		},
+		"failover without details": {
+			explanation: "failover_period_overlap",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			// arrange
+			replay := ReplayCmd{client: newReplayClientWithAvailability(t, replayV1.ReplayAvailability{
+				Reason:   replayV1.ReplayAvailabilityReasonFailoverPeriodOverlap,
+				Failover: test.failover,
+			}), playlistsAvailable: true}
+			cmd := &cobra.Command{}
+			cmd.SetOut(io.Discard)
+			cmd.SetContext(t.Context())
+
+			// act
+			_, err := replay.RunReplays(cmd, []ReplayConfig{{
+				Project: "target-project",
+				SLO:     "cw-swap",
+				From:    time.Now().Add(-time.Hour),
+			}})
+
+			// assert
+			require.Error(t, err)
+			assert.Equal(t, "The following SLOs are not available for Replay: \n"+
+				" - ['cw-swap' SLO in 'target-project' Project] "+test.explanation, err.Error())
+		})
+	}
+}
+
+func newReplayTestClient(t *testing.T, transport replayRoundTripper) *sdk.Client {
+	t.Helper()
+	apiURL, err := url.Parse("https://example.com/api")
+	require.NoError(t, err)
+	client, err := sdk.NewClient(&sdk.Config{
+		DisableOkta:  true,
+		Organization: "test-organization",
+		Project:      "target-project",
+		URL:          apiURL,
+	})
+	require.NoError(t, err)
+	client.HTTP = &http.Client{Transport: transport}
+	return client
+}
+
+// newReplayClientWithAvailability returns a client whose API serves the SLO 'cw-swap'
+// and answers every Replay availability check with the given availability.
+func newReplayClientWithAvailability(t *testing.T, availability replayV1.ReplayAvailability) *sdk.Client {
+	t.Helper()
+	return newReplayTestClient(t, func(request *http.Request) (*http.Response, error) {
+		recorder := httptest.NewRecorder()
+		recorder.Header().Set("Content-Type", "application/json")
+		if strings.Contains(request.URL.Path, "timemachine/availability") {
+			assert.NoError(t, json.NewEncoder(recorder).Encode(availability))
+			return recorder.Result(), nil
+		}
+		assert.NoError(t, json.NewEncoder(recorder).Encode([]v1alpha.GenericObject{{
+			"apiVersion": manifest.VersionV1alpha,
+			"kind":       manifest.KindSLO,
+			"metadata":   map[string]any{"name": "cw-swap", "project": "target-project"},
+			"spec": map[string]any{"indicator": map[string]any{
+				"metricSource": map[string]any{
+					"name": "cw-failover-test", "project": "cloudwatch-failover-test", "kind": "Direct",
+				},
+			}},
+		}}))
+		return recorder.Result(), nil
+	})
 }
