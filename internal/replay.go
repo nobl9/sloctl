@@ -468,8 +468,6 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 			replay.metricSource.Name, replay.metricSource.Project, expectedDuration.String(),
 			timeNow.Format(flags.TimeLayout), replay.From.Format(flags.TimeLayout), startOffsetMinutes,
 		)
-	case replayV1.ReplayAvailabilityReasonConcurrentReplayRunsLimitExhausted:
-		return "You've exceeded the limit of concurrent Replay runs. Wait until the current Replay(s) are done."
 	case replayV1.ReplayAvailabilityReasonUnknownAgentVersion:
 		return "Your Agent isn't connected to the Data Source. Deploy the Agent and run Replay once again."
 	case replayV1.ReplayAvailabilityReasonCompositeSloNotSupported:
