@@ -129,8 +129,8 @@ func (a ApplyCmd) runReplay(cmd *cobra.Command, objects []manifest.Object) error
 			From:    a.replayFrom,
 		})
 	}
-	failedReplays, err := replayCmd.RunReplays(cmd, replays)
-	if err != nil || failedReplays > 0 {
+	err := replayCmd.RunReplays(cmd, replays)
+	if err != nil {
 		fmt.Println("Warning! Applied changes are not rolled back when Replay fails." +
 			" Once you've fixed all related issues, we recommend using the 'sloctl replay' command" +
 			" to run Replay, or reapply the resources with the '--replay' flag.")
