@@ -356,14 +356,16 @@ func TestRunReplaysSendsRecalculationOnlyForCompositeSLOs(t *testing.T) {
 }
 
 func TestRunReplaysExplainsFailoverPeriod(t *testing.T) {
-	periodEnd := time.Date(2026, 11, 9, 11, 30, 0, 0, time.UTC)
+	// The API can send the period in any zone; sloctl prints it in UTC.
+	cet := time.FixedZone("CET", 60*60)
+	periodEnd := time.Date(2026, 11, 9, 12, 30, 0, 0, cet)
 	openPeriod := replayV1.ReplayFailover{
 		MetricSource: v1alphaSLO.MetricSourceSpec{
-			Name: "cw-failover-test", Project: "cloudwatch-failover-test", Kind: manifest.KindDirect,
+			Name: "cw-failover-source", Project: "failover-project", Kind: manifest.KindDirect,
 		},
 		From:        v1alpha.FailoverTarget{Region: "us-west-2"},
 		To:          v1alpha.FailoverTarget{Region: "us-east-2"},
-		PeriodStart: time.Date(2026, 11, 9, 10, 0, 0, 0, time.UTC),
+		PeriodStart: time.Date(2026, 11, 9, 11, 0, 0, 0, cet),
 	}
 	closedPeriod := openPeriod
 	closedPeriod.PeriodEnd = &periodEnd
@@ -375,22 +377,22 @@ func TestRunReplaysExplainsFailoverPeriod(t *testing.T) {
 	}{
 		"open failover period": {
 			failover: &openPeriod,
-			explanation: "Replay is unavailable while the 'cw-failover-test' Direct in 'cloudwatch-failover-test'" +
+			explanation: "Replay is unavailable while the 'cw-failover-source' Direct in 'failover-project'" +
 				" Project is in region failover from us-west-2 to us-east-2 since 2026-11-09T10:00:00Z." +
-				" Send a recovery event for 'cw-failover-test', then start the Replay after it.",
+				" Send a recovery event for 'cw-failover-source', then start the Replay after it.",
 		},
 		"closed failover period": {
 			failover: &closedPeriod,
-			explanation: "Replay is unavailable for this time range: the 'cw-failover-test' Direct in" +
-				" 'cloudwatch-failover-test' Project was in region failover from us-west-2 to us-east-2" +
+			explanation: "Replay is unavailable for this time range: the 'cw-failover-source' Direct in" +
+				" 'failover-project' Project was in region failover from us-west-2 to us-east-2" +
 				" between 2026-11-09T10:00:00Z and 2026-11-09T11:30:00Z." +
 				" Choose a start time after 2026-11-09T11:30:00Z.",
 		},
 		"open failover period of an Agent": {
 			failover: &agentPeriod,
-			explanation: "Replay is unavailable while the 'cw-failover-test' Agent in 'cloudwatch-failover-test'" +
+			explanation: "Replay is unavailable while the 'cw-failover-source' Agent in 'failover-project'" +
 				" Project is in region failover from us-west-2 to us-east-2 since 2026-11-09T10:00:00Z." +
-				" Send a recovery event for 'cw-failover-test', then start the Replay after it.",
+				" Send a recovery event for 'cw-failover-source', then start the Replay after it.",
 		},
 		"failover without details": {
 			explanation: "failover_period_overlap",
