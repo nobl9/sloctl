@@ -378,20 +378,20 @@ func TestRunReplaysExplainsFailoverPeriod(t *testing.T) {
 		"open failover period": {
 			failover: &openPeriod,
 			explanation: "Replay is unavailable while the 'cw-failover-source' Direct in 'failover-project'" +
-				" Project is in region failover from us-west-2 to us-east-2 since 2026-11-09T10:00:00Z." +
+				" Project is in failover from us-west-2 to us-east-2 since 2026-11-09T10:00:00Z." +
 				" Send a recovery event for 'cw-failover-source', then start the Replay after it.",
 		},
 		"closed failover period": {
 			failover: &closedPeriod,
 			explanation: "Replay is unavailable for this time range: the 'cw-failover-source' Direct in" +
-				" 'failover-project' Project was in region failover from us-west-2 to us-east-2" +
+				" 'failover-project' Project was in failover from us-west-2 to us-east-2" +
 				" between 2026-11-09T10:00:00Z and 2026-11-09T11:30:00Z." +
 				" Choose a start time after 2026-11-09T11:30:00Z.",
 		},
 		"open failover period of an Agent": {
 			failover: &agentPeriod,
 			explanation: "Replay is unavailable while the 'cw-failover-source' Agent in 'failover-project'" +
-				" Project is in region failover from us-west-2 to us-east-2 since 2026-11-09T10:00:00Z." +
+				" Project is in failover from us-west-2 to us-east-2 since 2026-11-09T10:00:00Z." +
 				" Send a recovery event for 'cw-failover-source', then start the Replay after it.",
 		},
 		"failover without details": {

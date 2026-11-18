@@ -631,17 +631,17 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 func failoverPeriodExplanation(failover replayV1.ReplayFailover) string {
 	source := failover.MetricSource
 	dataSource := fmt.Sprintf("the '%s' %s in '%s' Project", source.Name, source.Kind, source.Project)
-	regions := fmt.Sprintf("from %s to %s", failover.From.Region, failover.To.Region)
+	targets := fmt.Sprintf("from %s to %s", failover.From.Region, failover.To.Region)
 	periodStart := failover.PeriodStart.UTC().Format(flags.TimeLayout)
 	if failover.PeriodEnd == nil {
-		return fmt.Sprintf("Replay is unavailable while %s is in region failover %s since %s."+
+		return fmt.Sprintf("Replay is unavailable while %s is in failover %s since %s."+
 			" Send a recovery event for '%s', then start the Replay after it.",
-			dataSource, regions, periodStart, source.Name)
+			dataSource, targets, periodStart, source.Name)
 	}
 	periodEnd := failover.PeriodEnd.UTC().Format(flags.TimeLayout)
-	return fmt.Sprintf("Replay is unavailable for this time range: %s was in region failover %s between %s and %s."+
+	return fmt.Sprintf("Replay is unavailable for this time range: %s was in failover %s between %s and %s."+
 		" Choose a start time after %s.",
-		dataSource, regions, periodStart, periodEnd, periodEnd)
+		dataSource, targets, periodStart, periodEnd, periodEnd)
 }
 
 func (r *ReplayCmd) printSummary(cmd *cobra.Command, replays []ReplayConfig, failedIndexes []int) {
