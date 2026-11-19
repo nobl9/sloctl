@@ -618,30 +618,12 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 	case replayV1.ReplayAvailabilityReasonCompositeSloNotSupported:
 		return "Replay isn't available for this composite SLO. Replay supports composite SLOs v2 only." +
 			" If this is a composite SLO v2, contact Nobl9 support."
-	case replayV1.ReplayAvailabilityReasonFailoverPeriodOverlap:
-		if availability.Failover == nil {
-			return reason.String()
-		}
-		return failoverPeriodExplanation(*availability.Failover)
 	default:
+		if availability.Message != "" {
+			return availability.Message
+		}
 		return reason.String()
 	}
-}
-
-func failoverPeriodExplanation(failover replayV1.ReplayFailover) string {
-	source := failover.MetricSource
-	dataSource := fmt.Sprintf("the '%s' %s in '%s' Project", source.Name, source.Kind, source.Project)
-	targets := fmt.Sprintf("from %s to %s", failover.From.Region, failover.To.Region)
-	periodStart := failover.PeriodStart.UTC().Format(flags.TimeLayout)
-	if failover.PeriodEnd == nil {
-		return fmt.Sprintf("Replay is unavailable while %s is in failover %s since %s."+
-			" Send a recovery event for '%s', then start the Replay after it.",
-			dataSource, targets, periodStart, source.Name)
-	}
-	periodEnd := failover.PeriodEnd.UTC().Format(flags.TimeLayout)
-	return fmt.Sprintf("Replay is unavailable for this time range: %s was in failover %s between %s and %s."+
-		" Choose a start time after %s.",
-		dataSource, targets, periodStart, periodEnd, periodEnd)
 }
 
 func (r *ReplayCmd) printSummary(cmd *cobra.Command, replays []ReplayConfig, failedIndexes []int) {

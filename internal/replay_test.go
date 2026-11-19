@@ -20,7 +20,6 @@ import (
 	"github.com/nobl9/nobl9-go/manifest"
 	"github.com/nobl9/nobl9-go/manifest/v1alpha"
 	v1alphaParser "github.com/nobl9/nobl9-go/manifest/v1alpha/parser"
-	v1alphaSLO "github.com/nobl9/nobl9-go/manifest/v1alpha/slo"
 	"github.com/nobl9/nobl9-go/sdk"
 	objectsV1 "github.com/nobl9/nobl9-go/sdk/endpoints/objects/v1"
 	replayV1 "github.com/nobl9/nobl9-go/sdk/endpoints/replay/v1"
@@ -197,7 +196,7 @@ func TestReplayConfigDecodesSourceSLOIntoRunRequest(t *testing.T) {
 }
 
 func TestRunReplayPreservesConflictError(t *testing.T) {
-	client := newReplayTestClient(t, func(*http.Request) (*http.Response, error) {
+	client := newReplaySLOTestClient(t, func(*http.Request) (*http.Response, error) {
 		recorder := httptest.NewRecorder()
 		recorder.Header().Set("Content-Type", "application/json")
 		recorder.WriteHeader(http.StatusConflict)
@@ -309,7 +308,7 @@ func TestRunReplaysSendsRecalculationOnlyForCompositeSLOs(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			var runRequest map[string]any
 			var availabilityQuery url.Values
-			client := newReplayTestClient(t, func(request *http.Request) (*http.Response, error) {
+			client := newReplaySLOTestClient(t, func(request *http.Request) (*http.Response, error) {
 				recorder := httptest.NewRecorder()
 				recorder.Header().Set("Content-Type", "application/json")
 				switch {
@@ -355,110 +354,29 @@ func TestRunReplaysSendsRecalculationOnlyForCompositeSLOs(t *testing.T) {
 	}
 }
 
-func TestRunReplaysExplainsFailoverPeriod(t *testing.T) {
-	// The API can send the period in any zone; sloctl prints it in UTC.
-	cet := time.FixedZone("CET", 60*60)
-	periodEnd := time.Date(2026, 11, 9, 12, 30, 0, 0, cet)
-	openPeriod := replayV1.ReplayFailover{
-		MetricSource: v1alphaSLO.MetricSourceSpec{
-			Name: "cw-failover-source", Project: "failover-project", Kind: manifest.KindDirect,
-		},
-		From:        v1alpha.FailoverTarget{Region: "us-west-2"},
-		To:          v1alpha.FailoverTarget{Region: "us-east-2"},
-		PeriodStart: time.Date(2026, 11, 9, 11, 0, 0, 0, cet),
-	}
-	closedPeriod := openPeriod
-	closedPeriod.PeriodEnd = &periodEnd
-	agentPeriod := openPeriod
-	agentPeriod.MetricSource.Kind = manifest.KindAgent
+func TestReplayUnavailabilityReasonExplanation(t *testing.T) {
 	for name, test := range map[string]struct {
-		failover    *replayV1.ReplayFailover
-		explanation string
+		availability replayV1.ReplayAvailability
+		explanation  string
 	}{
-		"open failover period": {
-			failover: &openPeriod,
-			explanation: "Replay is unavailable while the 'cw-failover-source' Direct in 'failover-project'" +
-				" Project is in failover from us-west-2 to us-east-2 since 2026-11-09T10:00:00Z." +
-				" Send a recovery event for 'cw-failover-source', then start the Replay after it.",
+		"server message": {
+			availability: replayV1.ReplayAvailability{
+				Reason:  replayV1.ReplayAvailabilityReasonFailoverPeriodOverlap,
+				Message: "Replay is unavailable for this time range.",
+			},
+			explanation: "Replay is unavailable for this time range.",
 		},
-		"closed failover period": {
-			failover: &closedPeriod,
-			explanation: "Replay is unavailable for this time range: the 'cw-failover-source' Direct in" +
-				" 'failover-project' Project was in failover from us-west-2 to us-east-2" +
-				" between 2026-11-09T10:00:00Z and 2026-11-09T11:30:00Z." +
-				" Choose a start time after 2026-11-09T11:30:00Z.",
-		},
-		"open failover period of an Agent": {
-			failover: &agentPeriod,
-			explanation: "Replay is unavailable while the 'cw-failover-source' Agent in 'failover-project'" +
-				" Project is in failover from us-west-2 to us-east-2 since 2026-11-09T10:00:00Z." +
-				" Send a recovery event for 'cw-failover-source', then start the Replay after it.",
-		},
-		"failover without details": {
-			explanation: "failover_period_overlap",
+		"reason code without a server message": {
+			availability: replayV1.ReplayAvailability{Reason: replayV1.ReplayAvailabilityReasonFailoverPeriodOverlap},
+			explanation:  "failover_period_overlap",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			// arrange
-			replay := ReplayCmd{client: newReplayClientWithAvailability(t, replayV1.ReplayAvailability{
-				Reason:   replayV1.ReplayAvailabilityReasonFailoverPeriodOverlap,
-				Failover: test.failover,
-			}), playlistsAvailable: true}
-			cmd := &cobra.Command{}
-			cmd.SetOut(io.Discard)
-			cmd.SetContext(t.Context())
+			replay := ReplayCmd{}
 
-			// act
-			_, err := replay.RunReplays(cmd, []ReplayConfig{{
-				Project: "target-project",
-				SLO:     "cw-swap",
-				From:    time.Now().Add(-time.Hour),
-			}})
+			explanation := replay.replayUnavailabilityReasonExplanation(test.availability, ReplayConfig{}, 0, 0, time.Now())
 
-			// assert
-			require.Error(t, err)
-			assert.Equal(t, "The following SLOs are not available for Replay: \n"+
-				" - ['cw-swap' SLO in 'target-project' Project] "+test.explanation, err.Error())
+			assert.Equal(t, test.explanation, explanation)
 		})
 	}
-}
-
-func newReplayTestClient(t *testing.T, transport replayRoundTripper) *sdk.Client {
-	t.Helper()
-	apiURL, err := url.Parse("https://example.com/api")
-	require.NoError(t, err)
-	client, err := sdk.NewClient(&sdk.Config{
-		DisableOkta:  true,
-		Organization: "test-organization",
-		Project:      "target-project",
-		URL:          apiURL,
-	})
-	require.NoError(t, err)
-	client.HTTP = &http.Client{Transport: transport}
-	return client
-}
-
-// newReplayClientWithAvailability returns a client whose API serves the SLO 'cw-swap'
-// and answers every Replay availability check with the given availability.
-func newReplayClientWithAvailability(t *testing.T, availability replayV1.ReplayAvailability) *sdk.Client {
-	t.Helper()
-	return newReplayTestClient(t, func(request *http.Request) (*http.Response, error) {
-		recorder := httptest.NewRecorder()
-		recorder.Header().Set("Content-Type", "application/json")
-		if strings.Contains(request.URL.Path, "timemachine/availability") {
-			assert.NoError(t, json.NewEncoder(recorder).Encode(availability))
-			return recorder.Result(), nil
-		}
-		assert.NoError(t, json.NewEncoder(recorder).Encode([]v1alpha.GenericObject{{
-			"apiVersion": manifest.VersionV1alpha,
-			"kind":       manifest.KindSLO,
-			"metadata":   map[string]any{"name": "cw-swap", "project": "target-project"},
-			"spec": map[string]any{"indicator": map[string]any{
-				"metricSource": map[string]any{
-					"name": "cw-failover-test", "project": "cloudwatch-failover-test", "kind": "Direct",
-				},
-			}},
-		}}))
-		return recorder.Result(), nil
-	})
 }

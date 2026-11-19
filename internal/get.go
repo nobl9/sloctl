@@ -517,10 +517,9 @@ func annotationResponseToGenericObject(annotation v1alpha.GenericObject) v1alpha
 
 	spec := make(map[string]any, len(annotation))
 	for key, value := range annotation {
-		if value == nil || !isAnnotationSpecKey(key) {
-			continue
+		if value != nil && isAnnotationSpecKey(key) {
+			spec[key] = value
 		}
-		spec[key] = value
 	}
 	if author, ok := annotation["author"]; ok {
 		spec["createdBy"] = author

@@ -17,12 +17,6 @@ func TestAnnotationResponseToGenericObject(t *testing.T) {
 		"periodEnd":          "2026-09-02T00:00:00Z",
 		"elapsedTimeSeconds": float64(93),
 	}
-	failoverFacts := map[string]any{
-		"metricSource": map[string]any{"name": "cloudwatch-agent", "project": "cloudwatch-failover-test", "kind": "Agent"},
-		"from":         map[string]any{"region": "eu-central-1"},
-		"to":           map[string]any{"region": "eu-west-1"},
-		"eventId":      "event-1",
-	}
 
 	tests := map[string]struct {
 		response v1alpha.GenericObject
@@ -67,24 +61,6 @@ func TestAnnotationResponseToGenericObject(t *testing.T) {
 				"description": "Future",
 				"startTime":   "2026-09-01T00:00:00Z",
 				"futureFacts": map[string]any{"key": "value"},
-			},
-		},
-		"failover facts are carried into spec": {
-			response: v1alpha.GenericObject{
-				"name":        "failover-annotation",
-				"project":     "default",
-				"slo":         "my-slo",
-				"description": "Failover",
-				"startTime":   "2026-09-01T00:00:00Z",
-				"category":    "Failover",
-				"failover":    failoverFacts,
-			},
-			wantSpec: map[string]any{
-				"slo":         "my-slo",
-				"description": "Failover",
-				"startTime":   "2026-09-01T00:00:00Z",
-				"category":    "Failover",
-				"failover":    failoverFacts,
 			},
 		},
 		"non-replay annotation has no replay key": {
