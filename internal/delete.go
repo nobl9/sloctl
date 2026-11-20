@@ -35,7 +35,9 @@ func (r *RootCmd) NewDeleteCmd() *cobra.Command {
 		Short: "Delete Nobl9 resources by name or definition file",
 		Long: getApplyOrDeleteDescription(
 			"Delete resources described by one or more YAML or JSON sources. To delete resources by name, " +
-				"use a resource subcommand such as `sloctl delete slos <name>`.",
+				"use a resource subcommand such as `sloctl delete slos <name>`.\n\n" +
+				"Only manual UserGroups can be deleted. Remove their RoleBindings first, or include those " +
+				"bindings in the same delete request. A group with remaining RoleBindings cannot be deleted.",
 		),
 		Example: deleteExample,
 		Args:    noPositionalArgsCondition,
@@ -76,6 +78,7 @@ func (r *RootCmd) NewDeleteCmd() *cobra.Command {
 		{kind: manifest.KindDirect},
 		{kind: manifest.KindProject},
 		{kind: manifest.KindRoleBinding},
+		{kind: manifest.KindUserGroup},
 		{kind: manifest.KindService, aliases: aliasesForKind(manifest.KindService)},
 		{kind: manifest.KindSLO},
 		{kind: manifest.KindBudgetAdjustment},
@@ -134,6 +137,9 @@ func newSubcommand(
 	)
 	if objectKindSupportsProjectFlag(kind) {
 		longDesc += " Use `--project` to override the configured default project."
+	}
+	if kind == manifest.KindUserGroup {
+		longDesc += " Only manual groups can be deleted. Remove the group's RoleBindings first."
 	}
 	sc := &cobra.Command{
 		Use:     useCmd + " <name> [name...]",

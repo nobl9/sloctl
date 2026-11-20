@@ -1,6 +1,9 @@
 # Apply the configuration from slo.yaml.
 sloctl apply -f ./slo.yaml
 
+# Apply manual groups and their RoleBindings together; input order does not matter.
+sloctl apply -f ./role-bindings.yaml -f ./user-groups.yaml
+
 # Preview an apply without persisting changes.
 sloctl apply -f ./slo.yaml --dry-run
 

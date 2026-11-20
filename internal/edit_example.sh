@@ -1,6 +1,9 @@
 # Edit one SLO from your default Project.
 sloctl edit slo my-slo
 
+# Edit the display name or complete member list of a manual group.
+sloctl edit usergroups platform-team
+
 # Use an alternative editor.
 SLOCTL_EDITOR="nano" sloctl edit project default
 
