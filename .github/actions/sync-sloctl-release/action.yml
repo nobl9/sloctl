@@ -1,9 +1,15 @@
-name: Sync sloctl docs
-description: Dispatch and monitor a sloctl documentation update.
+name: Sync sloctl release
+description: Dispatch and monitor a downstream sloctl release update.
 
 inputs:
-  docs-repository:
-    description: Documentation repository name without the owner.
+  repository:
+    description: Downstream repository including its owner.
+    required: true
+  workflow:
+    description: Downstream workflow filename.
+    required: true
+  ref:
+    description: Branch containing the downstream workflow.
     required: true
   expected-run-name:
     description: Expected downstream workflow run name.
@@ -20,17 +26,23 @@ inputs:
   token:
     description: GitHub App token with Actions write permission.
     required: true
+  cancel-on-timeout:
+    description: Cancel the downstream run when monitoring times out.
+    default: "true"
 
 runs:
   using: composite
   steps:
-    - name: Dispatch and monitor documentation update
+    - name: Dispatch and monitor release update
       shell: bash
       env:
-        DOCS_REPOSITORY: ${{ inputs.docs-repository }}
+        TARGET_REPOSITORY: ${{ inputs.repository }}
+        TARGET_WORKFLOW: ${{ inputs.workflow }}
+        TARGET_REF: ${{ inputs.ref }}
         EXPECTED_RUN_NAME: ${{ inputs.expected-run-name }}
         GH_TOKEN: ${{ inputs.token }}
         SLOCTL_SHA: ${{ inputs.sloctl-sha }}
         SLOCTL_TAG: ${{ inputs.sloctl-tag }}
         SOURCE_RUN_ID: ${{ inputs.source-run-id }}
-      run: bash "${GITHUB_ACTION_PATH}/sync-sloctl-docs.sh"
+        CANCEL_ON_TIMEOUT: ${{ inputs.cancel-on-timeout }}
+      run: bash "${GITHUB_ACTION_PATH}/sync-sloctl-release.sh"
