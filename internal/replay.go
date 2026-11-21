@@ -449,7 +449,7 @@ func (r *ReplayCmd) checkReplayAvailability(ctx context.Context, replays []Repla
 			defer mu.Unlock()
 			notAvailable = append(notAvailable, fmt.Sprintf("['%s' SLO in '%s' Project] %s",
 				replay.SLO, replay.Project, r.replayUnavailabilityReasonExplanation(
-					av.Reason,
+					av,
 					replay,
 					time.Duration(expectedDuration)*time.Minute,
 					time.Duration(offset)*time.Minute,
@@ -581,11 +581,12 @@ func (r *ReplayCmd) doRequest(
 }
 
 func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
-	reason replayV1.ReplayAvailabilityReason,
+	availability replayV1.ReplayAvailability,
 	replay ReplayConfig,
 	expectedDuration, replayOffset time.Duration,
 	timeNow time.Time,
 ) string {
+	reason := availability.Reason
 	switch reason {
 	case replayV1.ReplayAvailabilityReasonIntegrationDoesNotSupportReplay:
 		return fmt.Sprintf("%s Data Source does not support Replay yet", replay.metricSource.Kind)
@@ -618,6 +619,9 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 		return "Replay isn't available for this composite SLO. Replay supports composite SLOs v2 only." +
 			" If this is a composite SLO v2, contact Nobl9 support."
 	default:
+		if availability.Message != "" {
+			return availability.Message
+		}
 		return reason.String()
 	}
 }

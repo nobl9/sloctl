@@ -196,29 +196,18 @@ func TestReplayConfigDecodesSourceSLOIntoRunRequest(t *testing.T) {
 }
 
 func TestRunReplayPreservesConflictError(t *testing.T) {
-	apiURL, err := url.Parse("https://example.com/api")
-	require.NoError(t, err)
-	client, err := sdk.NewClient(&sdk.Config{
-		DisableOkta:  true,
-		Organization: "test-organization",
-		Project:      "target-project",
-		URL:          apiURL,
+	client := newReplaySLOTestClient(t, func(*http.Request) (*http.Response, error) {
+		recorder := httptest.NewRecorder()
+		recorder.Header().Set("Content-Type", "application/json")
+		recorder.WriteHeader(http.StatusConflict)
+		require.NoError(t, json.NewEncoder(recorder).Encode(sdk.APIErrors{
+			Errors: []sdk.APIError{{Title: "Replay already exists"}},
+		}))
+		return recorder.Result(), nil
 	})
-	require.NoError(t, err)
-	client.HTTP = &http.Client{
-		Transport: replayRoundTripper(func(*http.Request) (*http.Response, error) {
-			recorder := httptest.NewRecorder()
-			recorder.Header().Set("Content-Type", "application/json")
-			recorder.WriteHeader(http.StatusConflict)
-			require.NoError(t, json.NewEncoder(recorder).Encode(sdk.APIErrors{
-				Errors: []sdk.APIError{{Title: "Replay already exists"}},
-			}))
-			return recorder.Result(), nil
-		}),
-	}
 	replay := ReplayCmd{client: client}
 
-	err = replay.runReplay(t.Context(), ReplayConfig{
+	err := replay.runReplay(t.Context(), ReplayConfig{
 		Project: "target-project",
 		SLO:     "target-slo",
 		From:    time.Now().Add(-10 * time.Minute),
@@ -317,42 +306,30 @@ func TestRunReplaysSendsRecalculationOnlyForCompositeSLOs(t *testing.T) {
 		"regular SLO":   {spec: regularSpec, expectedType: ""},
 	} {
 		t.Run(name, func(t *testing.T) {
-			apiURL, err := url.Parse("https://example.com/api")
-			require.NoError(t, err)
-			client, err := sdk.NewClient(&sdk.Config{
-				DisableOkta:  true,
-				Organization: "test-organization",
-				Project:      "target-project",
-				URL:          apiURL,
-			})
-			require.NoError(t, err)
-
 			var runRequest map[string]any
 			var availabilityQuery url.Values
-			client.HTTP = &http.Client{
-				Transport: replayRoundTripper(func(request *http.Request) (*http.Response, error) {
-					recorder := httptest.NewRecorder()
-					recorder.Header().Set("Content-Type", "application/json")
-					switch {
-					case strings.Contains(request.URL.Path, "timemachine/availability"):
-						availabilityQuery = request.URL.Query()
-						assert.NoError(t, json.NewEncoder(recorder).Encode(
-							replayV1.ReplayAvailability{Available: true},
-						))
-					case request.Method == http.MethodPost && strings.HasSuffix(request.URL.Path, "/timetravel"):
-						assert.NoError(t, json.NewDecoder(request.Body).Decode(&runRequest))
-						recorder.WriteHeader(http.StatusCreated)
-					default:
-						assert.NoError(t, json.NewEncoder(recorder).Encode([]v1alpha.GenericObject{{
-							"apiVersion": manifest.VersionV1alpha,
-							"kind":       manifest.KindSLO,
-							"metadata":   map[string]any{"name": "target-slo", "project": "target-project"},
-							"spec":       test.spec,
-						}}))
-					}
-					return recorder.Result(), nil
-				}),
-			}
+			client := newReplaySLOTestClient(t, func(request *http.Request) (*http.Response, error) {
+				recorder := httptest.NewRecorder()
+				recorder.Header().Set("Content-Type", "application/json")
+				switch {
+				case strings.Contains(request.URL.Path, "timemachine/availability"):
+					availabilityQuery = request.URL.Query()
+					assert.NoError(t, json.NewEncoder(recorder).Encode(
+						replayV1.ReplayAvailability{Available: true},
+					))
+				case request.Method == http.MethodPost && strings.HasSuffix(request.URL.Path, "/timetravel"):
+					assert.NoError(t, json.NewDecoder(request.Body).Decode(&runRequest))
+					recorder.WriteHeader(http.StatusCreated)
+				default:
+					assert.NoError(t, json.NewEncoder(recorder).Encode([]v1alpha.GenericObject{{
+						"apiVersion": manifest.VersionV1alpha,
+						"kind":       manifest.KindSLO,
+						"metadata":   map[string]any{"name": "target-slo", "project": "target-project"},
+						"spec":       test.spec,
+					}}))
+				}
+				return recorder.Result(), nil
+			})
 
 			replay := ReplayCmd{client: client, playlistsAvailable: true}
 			cmd := &cobra.Command{}
@@ -373,6 +350,33 @@ func TestRunReplaysSendsRecalculationOnlyForCompositeSLOs(t *testing.T) {
 				assert.Equal(t, test.expectedType, replayType)
 			}
 			assert.Equal(t, test.expectedType, availabilityQuery.Get("type"))
+		})
+	}
+}
+
+func TestReplayUnavailabilityReasonExplanation(t *testing.T) {
+	for name, test := range map[string]struct {
+		availability replayV1.ReplayAvailability
+		explanation  string
+	}{
+		"server message": {
+			availability: replayV1.ReplayAvailability{
+				Reason:  replayV1.ReplayAvailabilityReasonFailoverPeriodOverlap,
+				Message: "Replay is unavailable for this time range.",
+			},
+			explanation: "Replay is unavailable for this time range.",
+		},
+		"reason code without a server message": {
+			availability: replayV1.ReplayAvailability{Reason: replayV1.ReplayAvailabilityReasonFailoverPeriodOverlap},
+			explanation:  "failover_period_overlap",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			replay := ReplayCmd{}
+
+			explanation := replay.replayUnavailabilityReasonExplanation(test.availability, ReplayConfig{}, 0, 0, time.Now())
+
+			assert.Equal(t, test.explanation, explanation)
 		})
 	}
 }
