@@ -2,6 +2,8 @@ module github.com/nobl9/sloctl
 
 go 1.26.6
 
+toolchain go1.27.4
+
 require (
 	charm.land/huh/v2 v2.0.3
 	charm.land/lipgloss/v2 v2.0.6
