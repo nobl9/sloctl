@@ -366,6 +366,29 @@ func TestReplayUnavailabilityReasonExplanation(t *testing.T) {
 			},
 			explanation: "Replay is unavailable for this time range.",
 		},
+		"open failover period": {
+			availability: replayV1.ReplayAvailability{
+				Reason:   replayV1.ReplayAvailabilityReasonFailoverPeriodOverlap,
+				Message:  "Replay is unavailable: the data source is in failover.",
+				Failover: &replayV1.ReplayFailover{PeriodStart: time.Date(2026, 11, 25, 8, 46, 50, 0, time.UTC)},
+			},
+			explanation: "Replay is unavailable: the data source is in failover." +
+				" sloctl starts the Replay 5 minutes before the start time you give," +
+				" so choose a start time at least 5 minutes after the recovery event.",
+		},
+		"closed failover period": {
+			availability: replayV1.ReplayAvailability{
+				Reason:  replayV1.ReplayAvailabilityReasonFailoverPeriodOverlap,
+				Message: "Replay is unavailable: the data source was in failover.",
+				Failover: &replayV1.ReplayFailover{
+					PeriodStart: time.Date(2026, 11, 25, 8, 46, 50, 0, time.UTC),
+					PeriodEnd:   new(time.Date(2026, 11, 25, 8, 57, 33, 0, time.UTC)),
+				},
+			},
+			explanation: "Replay is unavailable: the data source was in failover." +
+				" sloctl starts the Replay 5 minutes before the start time you give," +
+				" so choose a start time of 2026-11-25T09:02:33Z or later.",
+		},
 		"reason code without a server message": {
 			availability: replayV1.ReplayAvailability{Reason: replayV1.ReplayAvailabilityReasonFailoverPeriodOverlap},
 			explanation:  "failover_period_overlap",

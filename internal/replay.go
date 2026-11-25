@@ -618,12 +618,35 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 	case replayV1.ReplayAvailabilityReasonCompositeSloNotSupported:
 		return "Replay isn't available for this composite SLO. Replay supports composite SLOs v2 only." +
 			" If this is a composite SLO v2, contact Nobl9 support."
+	case replayV1.ReplayAvailabilityReasonFailoverPeriodOverlap:
+		return serverExplanation(availability) + failoverStartOffsetNotice(availability.Failover)
 	default:
-		if availability.Message != "" {
-			return availability.Message
-		}
-		return reason.String()
+		return serverExplanation(availability)
 	}
+}
+
+func serverExplanation(availability replayV1.ReplayAvailability) string {
+	if availability.Message != "" {
+		return availability.Message
+	}
+	return availability.Reason.String()
+}
+
+// failoverStartOffsetNotice explains that the Replay window starts [startOffsetMinutes] before the start time
+// the user gives, so a start time right after the failover still overlaps it.
+func failoverStartOffsetNotice(failover *replayV1.ReplayFailover) string {
+	if failover == nil {
+		return ""
+	}
+	if failover.PeriodEnd == nil {
+		return fmt.Sprintf(" sloctl starts the Replay %d minutes before the start time you give,"+
+			" so choose a start time at least %d minutes after the recovery event.",
+			startOffsetMinutes, startOffsetMinutes)
+	}
+	return fmt.Sprintf(" sloctl starts the Replay %d minutes before the start time you give,"+
+		" so choose a start time of %s or later.",
+		startOffsetMinutes,
+		failover.PeriodEnd.Add(startOffsetMinutes*time.Minute).UTC().Format(flags.TimeLayout))
 }
 
 func (r *ReplayCmd) printSummary(cmd *cobra.Command, replays []ReplayConfig, failedIndexes []int) {
