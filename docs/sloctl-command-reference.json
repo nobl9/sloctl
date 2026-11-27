@@ -15,11 +15,11 @@
         "description": "Use this context instead of the configured default for the selected command."
       },
       {
-        "syntax": "-h, --help",
+        "syntax": "-h, --help[=true|false]",
         "description": "Help for sloctl."
       },
       {
-        "syntax": "--no-config-file",
+        "syntax": "--no-config-file[=true|false]",
         "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
       }
     ],
@@ -34,7 +34,7 @@
         "example": "# Apply the configuration from slo.yaml.\nsloctl apply -f ./slo.yaml\n\n# Preview an apply without persisting changes.\nsloctl apply -f ./slo.yaml --dry-run\n\n# Apply resources from multiple different sources at once.\nsloctl apply -f ./slo.yaml -f test/config.yaml -f https://nobl9.com/slo.yaml\n\n# Apply the YAML or JSON passed directly into stdin.\nsloctl apply -f - \u003cslo.yaml\n\n# Apply the configuration from slo.yaml and set project if it is not defined in file.\nsloctl apply -f ./slo.yaml -p slo\n\n# Apply the configurations from all the files located at cwd recursively.\nsloctl apply -f '**'\n\n# Apply the configurations from files with 'annotations' name within the whole directory tree.\nsloctl apply -f '**/annotations*'\n\n# Apply the SLO(s) from slo.yaml and import its/their data from 2023-03-02T15:00:00Z until now.\nsloctl apply -f ./slo.yaml --replay --from=2023-03-02T15:00:00Z\n",
         "options": [
           {
-            "syntax": "--dry-run",
+            "syntax": "--dry-run[=true|false]",
             "description": "Send the request without persisting changes."
           },
           {
@@ -50,11 +50,11 @@
             "description": "Use this project for project-scoped definitions that omit metadata.project; definitions specifying another project are rejected."
           },
           {
-            "syntax": "--replay",
+            "syntax": "--replay[=true|false]",
             "description": "Run Replay for each applied SLO. Applied changes are not rolled back if Replay fails."
           },
           {
-            "syntax": "-y, --yes",
+            "syntax": "-y, --yes[=true|false]",
             "description": "Skip the file-count confirmation prompt. By default, the prompt appears when a directory or glob resolves to more than 23 files. Configure `filesPromptEnabled` and `filesPromptThreshold` in the `[sloctl]` section of `config.toml`, or set `SLOCTL_FILES_PROMPT_ENABLED` and `SLOCTL_FILES_PROMPT_THRESHOLD`."
           }
         ],
@@ -68,11 +68,11 @@
             "description": "Use this context instead of the configured default for the selected command."
           },
           {
-            "syntax": "-h, --help",
+            "syntax": "-h, --help[=true|false]",
             "description": "Help for sloctl."
           },
           {
-            "syntax": "--no-config-file",
+            "syntax": "--no-config-file[=true|false]",
             "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
@@ -103,11 +103,11 @@
             "description": "Use this context instead of the configured default for the selected command."
           },
           {
-            "syntax": "-h, --help",
+            "syntax": "-h, --help[=true|false]",
             "description": "Help for sloctl."
           },
           {
-            "syntax": "--no-config-file",
+            "syntax": "--no-config-file[=true|false]",
             "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
@@ -130,7 +130,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -138,7 +138,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -166,7 +166,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -174,7 +174,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -193,7 +193,7 @@
         "descriptionMarkdown": "Manage events associated with budget adjustments.",
         "options": [
           {
-            "syntax": "-h, --help",
+            "syntax": "-h, --help[=true|false]",
             "description": "Help for budgetadjustments."
           }
         ],
@@ -207,7 +207,7 @@
             "description": "Use this context instead of the configured default for the selected command."
           },
           {
-            "syntax": "--no-config-file",
+            "syntax": "--no-config-file[=true|false]",
             "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
@@ -219,7 +219,7 @@
             "descriptionMarkdown": "Manage event occurrences associated with budget adjustments. These\ncommands do not modify budget adjustment definitions.",
             "options": [
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for events."
               }
             ],
@@ -233,7 +233,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -265,11 +265,11 @@
                     "description": "Use this context instead of the configured default for the selected command."
                   },
                   {
-                    "syntax": "-h, --help",
+                    "syntax": "-h, --help[=true|false]",
                     "description": "Help for events."
                   },
                   {
-                    "syntax": "--no-config-file",
+                    "syntax": "--no-config-file[=true|false]",
                     "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
                   }
                 ],
@@ -322,11 +322,11 @@
                     "description": "Use this context instead of the configured default for the selected command."
                   },
                   {
-                    "syntax": "-h, --help",
+                    "syntax": "-h, --help[=true|false]",
                     "description": "Help for events."
                   },
                   {
-                    "syntax": "--no-config-file",
+                    "syntax": "--no-config-file[=true|false]",
                     "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
                   }
                 ],
@@ -359,11 +359,11 @@
                     "description": "Use this context instead of the configured default for the selected command."
                   },
                   {
-                    "syntax": "-h, --help",
+                    "syntax": "-h, --help[=true|false]",
                     "description": "Help for events."
                   },
                   {
-                    "syntax": "--no-config-file",
+                    "syntax": "--no-config-file[=true|false]",
                     "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
                   }
                 ],
@@ -389,11 +389,11 @@
             "description": "Use this context instead of the configured default for the selected command."
           },
           {
-            "syntax": "-h, --help",
+            "syntax": "-h, --help[=true|false]",
             "description": "Help for sloctl."
           },
           {
-            "syntax": "--no-config-file",
+            "syntax": "--no-config-file[=true|false]",
             "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
@@ -406,7 +406,7 @@
             "usage": "sloctl completion bash",
             "options": [
               {
-                "syntax": "--no-descriptions",
+                "syntax": "--no-descriptions[=true|false]",
                 "description": "disable completion descriptions"
               }
             ],
@@ -420,11 +420,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -438,7 +438,7 @@
             "usage": "sloctl completion fish [flags]",
             "options": [
               {
-                "syntax": "--no-descriptions",
+                "syntax": "--no-descriptions[=true|false]",
                 "description": "disable completion descriptions"
               }
             ],
@@ -452,11 +452,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -470,7 +470,7 @@
             "usage": "sloctl completion powershell [flags]",
             "options": [
               {
-                "syntax": "--no-descriptions",
+                "syntax": "--no-descriptions[=true|false]",
                 "description": "disable completion descriptions"
               }
             ],
@@ -484,11 +484,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -502,7 +502,7 @@
             "usage": "sloctl completion zsh [flags]",
             "options": [
               {
-                "syntax": "--no-descriptions",
+                "syntax": "--no-descriptions[=true|false]",
                 "description": "disable completion descriptions"
               }
             ],
@@ -516,11 +516,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -544,11 +544,11 @@
             "description": "Use this context instead of the configured default for the selected command."
           },
           {
-            "syntax": "-h, --help",
+            "syntax": "-h, --help[=true|false]",
             "description": "Help for sloctl."
           },
           {
-            "syntax": "--no-config-file",
+            "syntax": "--no-config-file[=true|false]",
             "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
@@ -571,11 +571,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -598,11 +598,11 @@
                 "description": "Output format: toml, yaml, json, csv. (default yaml)"
               },
               {
-                "syntax": "--show-secret",
+                "syntax": "--show-secret[=true|false]",
                 "description": "Display unmasked credentials (requires --verbose)."
               },
               {
-                "syntax": "-v, --verbose",
+                "syntax": "-v, --verbose[=true|false]",
                 "description": "Display the current context configuration."
               }
             ],
@@ -616,11 +616,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -643,7 +643,7 @@
                 "description": "Output format: toml, yaml, json, csv. (default yaml)"
               },
               {
-                "syntax": "-v, --verbose",
+                "syntax": "-v, --verbose[=true|false]",
                 "description": "Display the complete user record."
               }
             ],
@@ -657,11 +657,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -685,11 +685,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -712,7 +712,7 @@
                 "description": "Output format: toml, yaml, json, csv. (default yaml)"
               },
               {
-                "syntax": "-v, --verbose",
+                "syntax": "-v, --verbose[=true|false]",
                 "description": "Display context configuration details."
               }
             ],
@@ -726,11 +726,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -754,11 +754,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -782,11 +782,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -810,11 +810,11 @@
             "description": "Use this context instead of the configured default for the selected command."
           },
           {
-            "syntax": "-h, --help",
+            "syntax": "-h, --help[=true|false]",
             "description": "Help for sloctl."
           },
           {
-            "syntax": "--no-config-file",
+            "syntax": "--no-config-file[=true|false]",
             "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
@@ -850,11 +850,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -871,7 +871,7 @@
         "example": "# Delete the configuration from slo.yaml.\nsloctl delete -f ./slo.yaml\n\n# Preview deletion without persisting changes.\nsloctl delete -f ./slo.yaml --dry-run\n\n# Delete resources from multiple different sources at once.\nsloctl delete -f ./slo.yaml -f test/config.yaml -f https://nobl9.com/slo.yaml\n\n# Delete the YAML or JSON passed directly into stdin.\nsloctl delete -f - \u003cslo.yaml\n\n# Delete by passing in one or more resource names.\nsloctl delete slo my-slo-name another-slo-name\n\n# Delete the configuration from slo.yaml and set project context if it is not defined in file.\nsloctl delete -f ./slo.yaml -p slo\n\n# Delete the configurations from all the files located at cwd recursively.\nsloctl delete -f '**'\n\n# Delete the configurations from files with 'annotations' name within the whole directory tree.\nsloctl delete -f '**/annotations*'\n",
         "options": [
           {
-            "syntax": "--dry-run",
+            "syntax": "--dry-run[=true|false]",
             "description": "Send the request without persisting changes."
           },
           {
@@ -883,7 +883,7 @@
             "description": "Use this project for project-scoped definitions that omit metadata.project; definitions specifying another project are rejected."
           },
           {
-            "syntax": "-y, --yes",
+            "syntax": "-y, --yes[=true|false]",
             "description": "Skip the file-count confirmation prompt. By default, the prompt appears when a directory or glob resolves to more than 23 files. Configure `filesPromptEnabled` and `filesPromptThreshold` in the `[sloctl]` section of `config.toml`, or set `SLOCTL_FILES_PROMPT_ENABLED` and `SLOCTL_FILES_PROMPT_THRESHOLD`."
           }
         ],
@@ -897,11 +897,11 @@
             "description": "Use this context instead of the configured default for the selected command."
           },
           {
-            "syntax": "-h, --help",
+            "syntax": "-h, --help[=true|false]",
             "description": "Help for sloctl."
           },
           {
-            "syntax": "--no-config-file",
+            "syntax": "--no-config-file[=true|false]",
             "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
@@ -914,7 +914,7 @@
             "usage": "sloctl delete agents \u003cname\u003e [name...] [flags]",
             "options": [
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
@@ -932,11 +932,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -950,7 +950,7 @@
             "usage": "sloctl delete alertmethods \u003cname\u003e [name...] [flags]",
             "options": [
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
@@ -968,11 +968,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -986,7 +986,7 @@
             "usage": "sloctl delete alertpolicies \u003cname\u003e [name...] [flags]",
             "options": [
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
@@ -1004,11 +1004,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1022,7 +1022,7 @@
             "usage": "sloctl delete alertsilences \u003cname\u003e [name...] [flags]",
             "options": [
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
@@ -1040,11 +1040,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1058,7 +1058,7 @@
             "usage": "sloctl delete annotations \u003cname\u003e [name...] [flags]",
             "options": [
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
@@ -1076,11 +1076,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1094,7 +1094,7 @@
             "usage": "sloctl delete budgetadjustments \u003cname\u003e [name...] [flags]",
             "options": [
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               }
             ],
@@ -1108,11 +1108,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1126,7 +1126,7 @@
             "usage": "sloctl delete dataexports \u003cname\u003e [name...] [flags]",
             "options": [
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
@@ -1144,11 +1144,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1162,7 +1162,7 @@
             "usage": "sloctl delete directs \u003cname\u003e [name...] [flags]",
             "options": [
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
@@ -1180,11 +1180,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1198,7 +1198,7 @@
             "usage": "sloctl delete projects \u003cname\u003e [name...] [flags]",
             "options": [
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               }
             ],
@@ -1212,11 +1212,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1230,7 +1230,7 @@
             "usage": "sloctl delete reports \u003cname\u003e [name...] [flags]",
             "options": [
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               }
             ],
@@ -1244,11 +1244,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1262,7 +1262,7 @@
             "usage": "sloctl delete rolebindings \u003cname\u003e [name...] [flags]",
             "options": [
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
@@ -1280,11 +1280,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1298,7 +1298,7 @@
             "usage": "sloctl delete services \u003cname\u003e [name...] [flags]",
             "options": [
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
@@ -1316,11 +1316,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1334,7 +1334,7 @@
             "usage": "sloctl delete slos \u003cname\u003e [name...] [flags]",
             "options": [
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
@@ -1352,11 +1352,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1372,7 +1372,7 @@
         "example": "# Edit one SLO from your default Project.\nsloctl edit slo my-slo\n\n# Use an alternative editor.\nSLOCTL_EDITOR=\"nano\" sloctl edit project default\n\n# Edit one Service from a specific Project.\nsloctl edit service my-service -p my-project\n\n# Edit multiple Alert Policies in one session.\nsloctl edit alertpolicy policy-a policy-b\n\n# Preview edited changes without persisting them.\nsloctl edit service my-service -p my-project --dry-run\n",
         "options": [
           {
-            "syntax": "--dry-run",
+            "syntax": "--dry-run[=true|false]",
             "description": "Send the request without persisting changes."
           }
         ],
@@ -1386,11 +1386,11 @@
             "description": "Use this context instead of the configured default for the selected command."
           },
           {
-            "syntax": "-h, --help",
+            "syntax": "-h, --help[=true|false]",
             "description": "Help for sloctl."
           },
           {
-            "syntax": "--no-config-file",
+            "syntax": "--no-config-file[=true|false]",
             "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
@@ -1403,7 +1403,7 @@
             "usage": "sloctl edit agents [name] [flags]",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources to edit across all projects."
               },
               {
@@ -1421,15 +1421,15 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1443,7 +1443,7 @@
             "usage": "sloctl edit alertmethods [name...] [flags]",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources to edit across all projects."
               },
               {
@@ -1461,15 +1461,15 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1483,7 +1483,7 @@
             "usage": "sloctl edit alertpolicies [name...] [flags]",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources to edit across all projects."
               },
               {
@@ -1505,15 +1505,15 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1527,7 +1527,7 @@
             "usage": "sloctl edit alertsilences [name...] [flags]",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources to edit across all projects."
               },
               {
@@ -1545,15 +1545,15 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1567,7 +1567,7 @@
             "usage": "sloctl edit annotations [name...] [flags]",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources to edit across all projects."
               },
               {
@@ -1587,7 +1587,7 @@
                 "description": "Filter annotations by SLO name."
               },
               {
-                "syntax": "--system",
+                "syntax": "--system[=true|false]",
                 "description": "Include annotations in system categories."
               },
               {
@@ -1595,7 +1595,7 @@
                 "description": "Filter annotations whose spec.endTime is at or before this RFC3339 timestamp."
               },
               {
-                "syntax": "--user",
+                "syntax": "--user[=true|false]",
                 "description": "Include annotations in user categories."
               }
             ],
@@ -1609,15 +1609,15 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1649,15 +1649,15 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1671,7 +1671,7 @@
             "usage": "sloctl edit dataexports [name...] [flags]",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources to edit across all projects."
               },
               {
@@ -1689,15 +1689,15 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1711,7 +1711,7 @@
             "usage": "sloctl edit directs [name...] [flags]",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources to edit across all projects."
               },
               {
@@ -1729,15 +1729,15 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1765,15 +1765,15 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1796,15 +1796,15 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1818,7 +1818,7 @@
             "usage": "sloctl edit rolebindings [name...] [flags]",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources to edit across all projects."
               },
               {
@@ -1836,15 +1836,15 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1858,7 +1858,7 @@
             "usage": "sloctl edit services [name...] [flags]",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources to edit across all projects."
               },
               {
@@ -1880,15 +1880,15 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1902,7 +1902,7 @@
             "usage": "sloctl edit slos [name...] [flags]",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources to edit across all projects."
               },
               {
@@ -1928,15 +1928,15 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "--dry-run",
+                "syntax": "--dry-run[=true|false]",
                 "description": "Send the request without persisting changes."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -1970,11 +1970,11 @@
             "description": "Use this context instead of the configured default for the selected command."
           },
           {
-            "syntax": "-h, --help",
+            "syntax": "-h, --help[=true|false]",
             "description": "Help for sloctl."
           },
           {
-            "syntax": "--no-config-file",
+            "syntax": "--no-config-file[=true|false]",
             "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
@@ -1987,7 +1987,7 @@
             "usage": "sloctl get agents [name...] [flags]",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources across all projects."
               },
               {
@@ -1995,7 +1995,7 @@
                 "description": "Select resources from this project instead of the configured default project."
               },
               {
-                "syntax": "-k, --with-keys",
+                "syntax": "-k, --with-keys[=true|false]",
                 "description": "Include agent client_id and client_secret values. This performs one additional credential request per returned agent."
               }
             ],
@@ -2009,7 +2009,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -2017,7 +2017,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -2035,7 +2035,7 @@
             "usage": "sloctl get alertmethods [name...] [flags]",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources across all projects."
               },
               {
@@ -2053,7 +2053,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -2061,7 +2061,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -2079,7 +2079,7 @@
             "usage": "sloctl get alertpolicies [name...] [flags]",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources across all projects."
               },
               {
@@ -2101,7 +2101,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -2109,7 +2109,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -2144,11 +2144,11 @@
                 "description": "Filter by service name. Repeat to match any of several services."
               },
               {
-                "syntax": "--resolved",
+                "syntax": "--resolved[=true|false]",
                 "description": "Include resolved alerts. Set --resolved=false to exclude them. (default true)"
               },
               {
-                "syntax": "--triggered",
+                "syntax": "--triggered[=true|false]",
                 "description": "Include active alerts. Set --triggered=false to exclude them. (default true)"
               },
               {
@@ -2164,7 +2164,7 @@
                 "description": "Select resources from this project instead of the configured default project."
               },
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources across all projects."
               }
             ],
@@ -2178,7 +2178,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -2186,7 +2186,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -2204,7 +2204,7 @@
             "usage": "sloctl get alertsilences [name...] [flags]",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources across all projects."
               },
               {
@@ -2222,7 +2222,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -2230,7 +2230,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -2249,7 +2249,7 @@
             "example": "# Get all user annotations from all projects.\nsloctl get annotations -A\n\n# Get a specific annotation by the annotation name in 'non-default' project.\nsloctl get annotation ce1a2a10-d74d-477f-b574-b278ee54e02b -p non-default\n\n# Get all user annotations for 'my-slo' SLO in 'custom' project.\nsloctl get annotation -p custom --slo=my-slo\n\n# Get annotations from your default project which mark SLO edits and reviews.\nsloctl get annotations --category=SloEdit --category=ReviewNote\n\n# Get all system annotations from all projects.\nsloctl get annotations -A --system\n\n# Get all annotations (both system and user) from all projects.\nsloctl get annotations -A --system --user\n\n# Filter user annotations by their start and end times.\n# `--from` requires `spec.startTime` at or after the specified timestamp.\n# `--to` requires `spec.endTime` at or before the specified timestamp.\n#\n# We're assuming the current date is 2023-03-23T12:00:00Z.\n# - Annotations that apply only to yesterday:\nsloctl get annotation --from 2023-03-22T00:00:00Z --to 2023-03-22T23:59:59Z -A\n# - Annotations that start at or after yesterday (no upper bound):\nsloctl get annotation --from 2023-03-22T00:00:00Z -A\n# - Annotations that end at or before today (no lower bound):\nsloctl get annotation --to 2023-03-23T00:00:00Z -A\n",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources across all projects."
               },
               {
@@ -2269,7 +2269,7 @@
                 "description": "Filter annotations by SLO name."
               },
               {
-                "syntax": "--system",
+                "syntax": "--system[=true|false]",
                 "description": "Include annotations in system categories."
               },
               {
@@ -2277,7 +2277,7 @@
                 "description": "Filter annotations whose spec.endTime is at or before this RFC3339 timestamp."
               },
               {
-                "syntax": "--user",
+                "syntax": "--user[=true|false]",
                 "description": "Include annotations in user categories."
               }
             ],
@@ -2291,7 +2291,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -2299,7 +2299,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -2335,7 +2335,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -2343,7 +2343,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -2361,7 +2361,7 @@
             "usage": "sloctl get dataexports [name...] [flags]",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources across all projects."
               },
               {
@@ -2379,7 +2379,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -2387,7 +2387,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -2405,7 +2405,7 @@
             "usage": "sloctl get directs [name...] [flags]",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources across all projects."
               },
               {
@@ -2423,7 +2423,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -2431,7 +2431,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -2463,7 +2463,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -2471,7 +2471,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -2498,7 +2498,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -2506,7 +2506,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -2524,7 +2524,7 @@
             "usage": "sloctl get rolebindings [name...] [flags]",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources across all projects."
               },
               {
@@ -2542,7 +2542,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -2550,7 +2550,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -2568,7 +2568,7 @@
             "usage": "sloctl get services [name...] [flags]",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources across all projects."
               },
               {
@@ -2590,7 +2590,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -2598,7 +2598,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -2616,7 +2616,7 @@
             "usage": "sloctl get slos [name...] [flags]",
             "options": [
               {
-                "syntax": "-A, --all-projects",
+                "syntax": "-A, --all-projects[=true|false]",
                 "description": "Select resources across all projects."
               },
               {
@@ -2650,7 +2650,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -2658,7 +2658,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -2690,7 +2690,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -2698,7 +2698,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -2725,7 +2725,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -2733,7 +2733,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -2763,11 +2763,11 @@
             "description": "Use this context instead of the configured default for the selected command."
           },
           {
-            "syntax": "-h, --help",
+            "syntax": "-h, --help[=true|false]",
             "description": "Help for sloctl."
           },
           {
-            "syntax": "--no-config-file",
+            "syntax": "--no-config-file[=true|false]",
             "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
@@ -2789,11 +2789,11 @@
             "description": "Use this context instead of the configured default for the selected command."
           },
           {
-            "syntax": "-h, --help",
+            "syntax": "-h, --help[=true|false]",
             "description": "Help for sloctl."
           },
           {
-            "syntax": "--no-config-file",
+            "syntax": "--no-config-file[=true|false]",
             "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
@@ -2807,7 +2807,7 @@
             "example": "# Move 'slo-1' and 'slo-2' from your default Project to 'new-project'.\nsloctl move slo slo-1 slo-2 --to-project=new-project\n\n# Move 'slo-1' and 'slo-2' from 'old-project' to 'new-project'.\nsloctl move slo slo-1 slo-2 -p old-project --to-project=new-project\n\n# Move all SLOs from 'old-project' to 'new-project'.\nsloctl move slo -p old-project --to-project=new-project\n\n# Move 'slo-1' and 'slo-2' from 'old-project' to 'new-project' and\n# assign 'my-service' in 'new-project' Project for the moved SLOs.\nsloctl move slo slo-1 slo-2 -p old-project --to-service=my-service --to-project=new-project\n\n# Move 'slo-1' and 'slo-2' from 'old-project' to 'new-project' and\n# detach Alert Policies from both SLOs.\nsloctl move slo slo-1 slo-2 -p old-project --detach-alert-policies --to-project=new-project\n\n# Move 'slo-1' and 'slo-2' to 'new-service' within your default Project.\nsloctl move slo slo-1 slo-2 --to-service=new-service\n\n# Move 'slo-1' to 'my-service', both the SLO and Service are in 'my-project'.\nsloctl move slo slo-1 -p my-project --to-service=my-service\n\n# Move all SLOs in 'my-project' to 'new-service' within the same Project.\nsloctl move slo -p my-project --to-service=new-service\n",
             "options": [
               {
-                "syntax": "--detach-alert-policies",
+                "syntax": "--detach-alert-policies[=true|false]",
                 "description": "Detach all Alert Policies from moved SLOs during a cross-Project move."
               },
               {
@@ -2833,11 +2833,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -2884,11 +2884,11 @@
             "description": "Use this context instead of the configured default for the selected command."
           },
           {
-            "syntax": "-h, --help",
+            "syntax": "-h, --help[=true|false]",
             "description": "Help for sloctl."
           },
           {
-            "syntax": "--no-config-file",
+            "syntax": "--no-config-file[=true|false]",
             "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
@@ -2916,7 +2916,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -2924,7 +2924,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -2943,7 +2943,7 @@
             "example": "sloctl replay delete my-slo --project my-project\nsloctl replay delete --all",
             "options": [
               {
-                "syntax": "--all",
+                "syntax": "--all[=true|false]",
                 "description": "Remove all queued Replays across all Projects."
               },
               {
@@ -2961,7 +2961,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -2969,7 +2969,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -2997,7 +2997,7 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
@@ -3005,7 +3005,7 @@
                 "description": "Filter or transform command output using a jq expression."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               },
               {
@@ -3033,11 +3033,11 @@
             "description": "Use this context instead of the configured default for the selected command."
           },
           {
-            "syntax": "-h, --help",
+            "syntax": "-h, --help[=true|false]",
             "description": "Help for sloctl."
           },
           {
-            "syntax": "--no-config-file",
+            "syntax": "--no-config-file[=true|false]",
             "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
@@ -3059,11 +3059,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -3090,11 +3090,11 @@
                     "description": "Use this context instead of the configured default for the selected command."
                   },
                   {
-                    "syntax": "-h, --help",
+                    "syntax": "-h, --help[=true|false]",
                     "description": "Help for sloctl."
                   },
                   {
-                    "syntax": "--no-config-file",
+                    "syntax": "--no-config-file[=true|false]",
                     "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
                   }
                 ],
@@ -3122,11 +3122,11 @@
                     "description": "Use this context instead of the configured default for the selected command."
                   },
                   {
-                    "syntax": "-h, --help",
+                    "syntax": "-h, --help[=true|false]",
                     "description": "Help for sloctl."
                   },
                   {
-                    "syntax": "--no-config-file",
+                    "syntax": "--no-config-file[=true|false]",
                     "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
                   }
                 ],
@@ -3158,11 +3158,11 @@
                     "description": "Use this context instead of the configured default for the selected command."
                   },
                   {
-                    "syntax": "-h, --help",
+                    "syntax": "-h, --help[=true|false]",
                     "description": "Help for sloctl."
                   },
                   {
-                    "syntax": "--no-config-file",
+                    "syntax": "--no-config-file[=true|false]",
                     "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
                   }
                 ],
@@ -3194,11 +3194,11 @@
                     "description": "Use this context instead of the configured default for the selected command."
                   },
                   {
-                    "syntax": "-h, --help",
+                    "syntax": "-h, --help[=true|false]",
                     "description": "Help for sloctl."
                   },
                   {
-                    "syntax": "--no-config-file",
+                    "syntax": "--no-config-file[=true|false]",
                     "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
                   }
                 ],
@@ -3226,11 +3226,11 @@
                     "description": "Use this context instead of the configured default for the selected command."
                   },
                   {
-                    "syntax": "-h, --help",
+                    "syntax": "-h, --help[=true|false]",
                     "description": "Help for sloctl."
                   },
                   {
-                    "syntax": "--no-config-file",
+                    "syntax": "--no-config-file[=true|false]",
                     "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
                   }
                 ],
@@ -3257,11 +3257,11 @@
             "description": "Use this context instead of the configured default for the selected command."
           },
           {
-            "syntax": "-h, --help",
+            "syntax": "-h, --help[=true|false]",
             "description": "Help for sloctl."
           },
           {
-            "syntax": "--no-config-file",
+            "syntax": "--no-config-file[=true|false]",
             "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],
@@ -3321,11 +3321,11 @@
                 "description": "Use this context instead of the configured default for the selected command."
               },
               {
-                "syntax": "-h, --help",
+                "syntax": "-h, --help[=true|false]",
                 "description": "Help for sloctl."
               },
               {
-                "syntax": "--no-config-file",
+                "syntax": "--no-config-file[=true|false]",
                 "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
               }
             ],
@@ -3351,11 +3351,11 @@
             "description": "Use this context instead of the configured default for the selected command."
           },
           {
-            "syntax": "-h, --help",
+            "syntax": "-h, --help[=true|false]",
             "description": "Help for sloctl."
           },
           {
-            "syntax": "--no-config-file",
+            "syntax": "--no-config-file[=true|false]",
             "description": "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` without reading or creating `config.toml`. Configuration commands still access the file."
           }
         ],

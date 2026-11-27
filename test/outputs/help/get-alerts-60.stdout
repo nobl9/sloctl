@@ -73,55 +73,59 @@ sloctl get alert --to 2023-03-23T00:00:00Z -A
 
 Flags
 
-      --alert-policy stringArray   Filter by alert policy
-                                   name. Repeat to match any
-                                   of several policies.
-      --slo stringArray            Filter by SLO name.
-                                   Repeat to match any of
-                                   several SLOs.
-      --objective stringArray      Filter by objective name.
-                                   Repeat to match any of
-                                   several objectives.
-      --service stringArray        Filter by service name.
-                                   Repeat to match any of
-                                   several services.
-      --resolved                   Include resolved alerts.
-                                   Set --resolved=false to
-                                   exclude them. (default
-                                   true)
-      --triggered                  Include active alerts.
-                                   Set --triggered=false to
-                                   exclude them. (default
-                                   true)
-      --from time                  Set the start of the
-                                   alert metric-time range
-                                   in RFC3339 format.
-      --to time                    Set the end of the alert
-                                   metric-time range in
-                                   RFC3339 format.
-  -p, --project string             Select resources from
-                                   this project instead of
-                                   the configured default
-                                   project.
-  -A, --all-projects               Select resources across
-                                   all projects.
+      --alert-policy stringArray    Filter by alert policy
+                                    name. Repeat to match
+                                    any of several policies.
+      --slo stringArray             Filter by SLO name.
+                                    Repeat to match any of
+                                    several SLOs.
+      --objective stringArray       Filter by objective
+                                    name. Repeat to match
+                                    any of several
+                                    objectives.
+      --service stringArray         Filter by service name.
+                                    Repeat to match any of
+                                    several services.
+      --resolved[=true|false]       Include resolved alerts.
+                                    Set --resolved=false to
+                                    exclude them. (default
+                                    true)
+      --triggered[=true|false]      Include active alerts.
+                                    Set --triggered=false to
+                                    exclude them. (default
+                                    true)
+      --from time                   Set the start of the
+                                    alert metric-time range
+                                    in RFC3339 format.
+      --to time                     Set the end of the alert
+                                    metric-time range in
+                                    RFC3339 format.
+  -p, --project string              Select resources from
+                                    this project instead of
+                                    the configured default
+                                    project.
+  -A, --all-projects[=true|false]   Select resources across
+                                    all projects.
 
 Global Flags
 
-      --config string    Path to config.toml. If unset, use
-                         SLOCTL_CONFIG_FILE_PATH or the
-                         platform default.
-  -c, --context string   Use this context instead of the
-                         configured default for the selected
-                         command.
-  -h, --help             Help for sloctl.
-  -q, --jq string        Filter or transform command output
-                         using a jq expression.
-      --no-config-file   For API authentication, use
-                         SLOCTL_CLIENT_ID and
-                         SLOCTL_CLIENT_SECRET without
-                         reading or creating config.toml.
-                         Configuration commands still access
-                         the file.
-  -o, --output format    Output format: yaml, json, csv.
-                         (default yaml)
+      --config string
+                Path to config.toml. If unset, use
+                SLOCTL_CONFIG_FILE_PATH or the platform
+                default.
+  -c, --context string
+                Use this context instead of the configured
+                default for the selected command.
+  -h, --help[=true|false]
+                Help for sloctl.
+  -q, --jq string
+                Filter or transform command output using a
+                jq expression.
+      --no-config-file[=true|false]
+                For API authentication, use SLOCTL_CLIENT_ID
+                and SLOCTL_CLIENT_SECRET without reading or
+                creating config.toml. Configuration commands
+                still access the file.
+  -o, --output format
+                Output format: yaml, json, csv. (default
+                yaml)

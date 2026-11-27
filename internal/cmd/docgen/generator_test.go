@@ -36,7 +36,7 @@ func TestGenerateCommandReference_ActualSloctlIsDeterministic(t *testing.T) {
 		DescriptionMarkdown: "Path to config.toml. If unset, use `SLOCTL_CONFIG_FILE_PATH` or the platform default.",
 	})
 	assert.Contains(t, document.Command.Options, optionReference{
-		Syntax: "--no-config-file",
+		Syntax: "--no-config-file[=true|false]",
 		DescriptionMarkdown: "For API authentication, use `SLOCTL_CLIENT_ID` and `SLOCTL_CLIENT_SECRET` " +
 			"without reading or creating `config.toml`. Configuration commands still access the file.",
 	})
@@ -61,7 +61,7 @@ func TestGenerateCommandReference_ActualSloctlIsDeterministic(t *testing.T) {
 			"Repeat this flag to use multiple sources.",
 	})
 	assert.Contains(t, apply.Options, optionReference{
-		Syntax: "-y, --yes",
+		Syntax: "-y, --yes[=true|false]",
 		DescriptionMarkdown: "Skip the file-count confirmation prompt. By default, the prompt appears when a " +
 			"directory or glob resolves to more than 23 files. Configure `filesPromptEnabled` and " +
 			"`filesPromptThreshold` in the `[sloctl]` section of `config.toml`, or set `SLOCTL_FILES_PROMPT_ENABLED` " +
@@ -77,7 +77,7 @@ func TestGenerateCommandReference_ActualSloctlIsDeterministic(t *testing.T) {
 	agents := requireCommandReference(t, document.Command, "sloctl get agents")
 	assert.Contains(t, agents.DescriptionMarkdown, "`--with-keys`")
 	assert.Contains(t, agents.Options, optionReference{
-		Syntax: "-k, --with-keys",
+		Syntax: "-k, --with-keys[=true|false]",
 		DescriptionMarkdown: "Include agent client_id and client_secret values. " +
 			"This performs one additional credential request per returned agent.",
 	})
@@ -139,10 +139,9 @@ func TestGenerateCommandReference_PreservesCommandDataAndHierarchy(t *testing.T)
 		Syntax:              "--format format",
 		DescriptionMarkdown: "Output format. (default \"yaml\")",
 	})
-	assert.NotContains(t, command.Options, optionReference{
-		Syntax:              "--hidden-option",
-		DescriptionMarkdown: "Not public.",
-	})
+	for _, option := range command.Options {
+		assert.NotContains(t, option.Syntax, "--hidden-option")
+	}
 	assert.Contains(t, command.InheritedOptions, optionReference{
 		Syntax:              "--context string",
 		DescriptionMarkdown: "Use another context.",
@@ -198,7 +197,7 @@ func Test_optionReferenceFromPreservesPflagFormatting(t *testing.T) {
 		"name",
 		"n",
 		"default",
-		"Select a `value  with spaces` | path\\segment.",
+		"Select a `value   with spaces` | path\\segment.",
 	)
 	flag := flags.Lookup("name")
 	require.NotNil(t, flag)
@@ -207,10 +206,10 @@ func Test_optionReferenceFromPreservesPflagFormatting(t *testing.T) {
 	option, err := optionReferenceFrom(flag)
 
 	require.NoError(t, err)
-	assert.Equal(t, "-n, --name value  with spaces[=\"foo  bar\"]", option.Syntax)
+	assert.Equal(t, "-n, --name value   with spaces[=\"foo  bar\"]", option.Syntax)
 	assert.Equal(
 		t,
-		"Select a value  with spaces | path\\segment. (default \"default\")",
+		"Select a value   with spaces | path\\segment. (default \"default\")",
 		option.DescriptionMarkdown,
 	)
 }
@@ -245,19 +244,19 @@ func Test_optionReferenceFromRejectsInvalidMarkdownAnnotation(t *testing.T) {
 	require.ErrorContains(t, err, "must contain one non-empty value")
 }
 
-func Test_optionSyntaxPreservesPflagNoOptAndShorthandRules(t *testing.T) {
+func Test_optionReferenceFromPreservesPflagNoOptAndShorthandRules(t *testing.T) {
 	tests := []struct {
 		name     string
 		flag     func(*pflag.FlagSet) *pflag.Flag
 		expected string
 	}{
 		{
-			name: "boolean true is implicit",
+			name: "boolean accepts an optional value",
 			flag: func(flags *pflag.FlagSet) *pflag.Flag {
 				flags.BoolP("verbose", "v", false, "Enable verbose output.")
 				return flags.Lookup("verbose")
 			},
-			expected: "-v, --verbose",
+			expected: "-v, --verbose[=true|false]",
 		},
 		{
 			name: "nonstandard boolean value",
@@ -267,7 +266,7 @@ func Test_optionSyntaxPreservesPflagNoOptAndShorthandRules(t *testing.T) {
 				flag.NoOptDefVal = "false"
 				return flag
 			},
-			expected: "-v, --verbose[=false]",
+			expected: "-v, --verbose[=true|false][=false]",
 		},
 		{
 			name: "count increment is implicit",
@@ -305,7 +304,7 @@ func Test_optionSyntaxPreservesPflagNoOptAndShorthandRules(t *testing.T) {
 				flag.ShorthandDeprecated = "use --legacy"
 				return flag
 			},
-			expected: "--legacy",
+			expected: "--legacy[=true|false]",
 		},
 	}
 
@@ -313,7 +312,9 @@ func Test_optionSyntaxPreservesPflagNoOptAndShorthandRules(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
 
-			assert.Equal(t, test.expected, optionSyntax(test.flag(flags)))
+			option, err := optionReferenceFrom(test.flag(flags))
+			require.NoError(t, err)
+			assert.Equal(t, test.expected, option.Syntax)
 		})
 	}
 }
@@ -328,7 +329,7 @@ func Test_optionReferencesOmitsHiddenFlags(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t,
-		[]optionReference{{Syntax: "--visible", DescriptionMarkdown: "Visible option."}},
+		[]optionReference{{Syntax: "--visible[=true|false]", DescriptionMarkdown: "Visible option."}},
 		options,
 	)
 }

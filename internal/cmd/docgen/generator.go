@@ -154,26 +154,20 @@ func optionReferences(flags *pflag.FlagSet) ([]optionReference, error) {
 }
 
 func optionReferenceFrom(flag *pflag.Flag) (optionReference, error) {
-	syntax := optionSyntax(flag)
-	if strings.TrimSpace(syntax) == "" {
-		return optionReference{}, fmt.Errorf("option syntax is empty")
+	// Mark the description before pflag formats the flag. Value names and
+	// optional values can contain the same spaces that separate the columns.
+	const descriptionStart = "\x00"
+	flagCopy := *flag
+	flagCopy.Usage = descriptionStart + flag.Usage
+	flags := pflag.NewFlagSet(flag.Name, pflag.ContinueOnError)
+	flags.AddFlag(&flagCopy)
+	syntax, description, ok := strings.Cut(flags.FlagUsages(), descriptionStart)
+	if !ok {
+		return optionReference{}, fmt.Errorf("formatted usage has no description marker")
 	}
+	syntax = strings.Trim(syntax, " ")
 	if strings.ContainsAny(syntax, "\r\n") {
 		return optionReference{}, fmt.Errorf("option syntax contains a line break: %q", syntax)
-	}
-
-	flagCopy := *flag
-	flags := pflag.NewFlagSet(flag.Name, pflag.ContinueOnError)
-	flags.SortFlags = false
-	flags.AddFlag(&flagCopy)
-	formatted := strings.TrimSpace(flags.FlagUsagesWrapped(0))
-	description, ok := strings.CutPrefix(formatted, syntax)
-	if !ok {
-		return optionReference{}, fmt.Errorf(
-			"formatted usage %q does not start with option syntax %q",
-			formatted,
-			syntax,
-		)
 	}
 	formattedDescription := normalizeOptionDescription(description)
 	descriptionMarkdown, err := optionDescriptionMarkdown(flag, formattedDescription)
@@ -225,47 +219,4 @@ func normalizeOptionDescription(description string) string {
 		}
 	}
 	return strings.Join(descriptionLines, " ")
-}
-
-func optionSyntax(flag *pflag.Flag) string {
-	var syntax strings.Builder
-	if flag.Shorthand != "" && flag.ShorthandDeprecated == "" {
-		syntax.WriteString("-")
-		syntax.WriteString(flag.Shorthand)
-		syntax.WriteString(", --")
-	} else {
-		syntax.WriteString("--")
-	}
-	syntax.WriteString(flag.Name)
-	name, _ := pflag.UnquoteUsage(flag)
-	if name != "" {
-		syntax.WriteString(" ")
-		syntax.WriteString(name)
-	}
-	if flag.NoOptDefVal == "" {
-		return syntax.String()
-	}
-	quoteValue := false
-	switch flag.Value.Type() {
-	case "string":
-		quoteValue = true
-	case "bool", "boolfunc":
-		if flag.NoOptDefVal == "true" {
-			return syntax.String()
-		}
-	case "count":
-		if flag.NoOptDefVal == "+1" {
-			return syntax.String()
-		}
-	}
-	syntax.WriteString("[=")
-	if quoteValue {
-		syntax.WriteString("\"")
-	}
-	syntax.WriteString(flag.NoOptDefVal)
-	if quoteValue {
-		syntax.WriteString("\"")
-	}
-	syntax.WriteString("]")
-	return syntax.String()
 }
