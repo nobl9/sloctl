@@ -137,6 +137,13 @@ test/bats/platform-native:
 		--setup-suite-file $(TEST_DIR)/setup_platform_suite.bash \
 		"$$@" $(TEST_DIR)/notifications.bats
 
+.PHONY: check/automation
+## Check release synchronization workflows and shell scripts.
+check/automation:
+	actionlint .github/workflows/sync-sloctl-docs.yml .github/workflows/sync-nobl9-action.yml
+	shellcheck .github/actions/sync-sloctl-release/*.sh
+	shfmt -d -i 2 .github/actions/sync-sloctl-release/*.sh
+
 ## Run bats e2e tests.
 test/bats/e2e:
 	$(call _print_step,Running bats e2e tests)
