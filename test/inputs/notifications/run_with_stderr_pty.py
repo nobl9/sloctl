@@ -28,6 +28,14 @@ def main():
     try:
         controller_fd, terminal_fd = pty.openpty()
         input_text = os.environ.get("SLOCTL_TEST_TTY_INPUT")
+        background = os.environ.get("SLOCTL_TEST_TTY_BACKGROUND")
+        prompt_title = os.environ.get("SLOCTL_TEST_TTY_PROMPT_TITLE", "Choose update action").encode()
+        input_after_query = os.environ.get("SLOCTL_TEST_TTY_INPUT_AFTER_QUERY") == "1"
+        terminal_output = bytearray()
+        answered_queries = 0
+        background_query = b"\x1b]11;?\x07"
+        if background is not None:
+            termios.tcsetwinsize(terminal_fd, (32, 80))
         wait_for_raw_mode = (
             os.environ.get("SLOCTL_TEST_TTY_INPUT_WHEN_RAW") == "1"
         )
@@ -87,9 +95,23 @@ def main():
 
                 key.data.write(data.replace(b"\r\n", b"\n").replace(b"\r", b""))
                 key.data.flush()
+                if key.fileobj == controller_fd and background is not None:
+                    terminal_output.extend(data)
+                    while answered_queries < terminal_output.count(background_query):
+                        if background != "unresponsive":
+                            color = b"2e2e/3434/4040" if background == "dark" else b"ffff/ffff/ffff"
+                            os.write(controller_fd, b"\x1b]11;rgb:" + color + b"\x07\x1b[?1;2c")
+                        answered_queries += 1
                 if key.fileobj == controller_fd and terminal_fd is not None:
                     attrs = termios.tcgetattr(terminal_fd)
-                    if not attrs[3] & termios.ICANON:
+                    if input_after_query:
+                        prompt_ready = answered_queries > 0
+                    elif background is not None:
+                        accent = b"38;2;0;186;211" if background == "dark" else b"38;2;0;129;158"
+                        prompt_ready = prompt_title in terminal_output and accent in terminal_output
+                    else:
+                        prompt_ready = True
+                    if not attrs[3] & termios.ICANON and prompt_ready:
                         os.write(controller_fd, input_text.encode())
                         os.close(terminal_fd)
                         terminal_fd = None
