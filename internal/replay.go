@@ -619,7 +619,7 @@ func (r *ReplayCmd) replayUnavailabilityReasonExplanation(
 		return "Replay isn't available for this composite SLO. Replay supports composite SLOs v2 only." +
 			" If this is a composite SLO v2, contact Nobl9 support."
 	case replayV1.ReplayAvailabilityReasonFailoverPeriodOverlap:
-		return serverExplanation(availability) + failoverStartOffsetNotice(availability.Failover)
+		return failoverExplanation(availability)
 	default:
 		return serverExplanation(availability)
 	}
@@ -632,21 +632,36 @@ func serverExplanation(availability replayV1.ReplayAvailability) string {
 	return availability.Reason.String()
 }
 
-// failoverStartOffsetNotice explains that the Replay window starts [startOffsetMinutes] before the start time
-// the user gives, so a start time right after the failover still overlaps it.
-func failoverStartOffsetNotice(failover *replayV1.ReplayFailover) string {
+// Next steps that end the server message of a failover overlap. They do not count the start offset of sloctl.
+const (
+	serverFailoverNextStep     = "Choose a start time after the failover ended."
+	serverOpenFailoverNextStep = "Send a recovery event first, then choose a start time after it."
+)
+
+// failoverExplanation replaces the next step of the server message with one that counts [startOffsetMinutes]:
+// sloctl starts the Replay window that much before the start time the user gives, so a start time right after
+// the failover still overlaps it. If the server message ends with another sentence, it adds the next step instead.
+func failoverExplanation(availability replayV1.ReplayAvailability) string {
+	explanation := serverExplanation(availability)
+	failover := availability.Failover
 	if failover == nil {
-		return ""
+		return explanation
 	}
-	if failover.PeriodEnd == nil {
-		return fmt.Sprintf(" sloctl starts the Replay %d minutes before the start time you give,"+
-			" so choose a start time at least %d minutes after the recovery event.",
-			startOffsetMinutes, startOffsetMinutes)
+	serverNextStep := serverOpenFailoverNextStep
+	nextStep := fmt.Sprintf("Send a recovery event first, then choose a start time at least %d minutes after it,"+
+		" because sloctl starts the Replay %d minutes before the start time you give.",
+		startOffsetMinutes, startOffsetMinutes)
+	if failover.PeriodEnd != nil {
+		serverNextStep = serverFailoverNextStep
+		nextStep = fmt.Sprintf("Choose a start time of %s or later,"+
+			" because sloctl starts the Replay %d minutes before the start time you give.",
+			failover.PeriodEnd.Add(startOffsetMinutes*time.Minute).UTC().Format(flags.TimeLayout),
+			startOffsetMinutes)
 	}
-	return fmt.Sprintf(" sloctl starts the Replay %d minutes before the start time you give,"+
-		" so choose a start time of %s or later.",
-		startOffsetMinutes,
-		failover.PeriodEnd.Add(startOffsetMinutes*time.Minute).UTC().Format(flags.TimeLayout))
+	if message, found := strings.CutSuffix(explanation, serverNextStep); found {
+		return message + nextStep
+	}
+	return explanation + " " + nextStep
 }
 
 func (r *ReplayCmd) printSummary(cmd *cobra.Command, replays []ReplayConfig, failedIndexes []int) {
