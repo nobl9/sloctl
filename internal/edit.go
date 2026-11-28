@@ -136,6 +136,12 @@ func editObjectsLongDescription(kind manifest.Kind, resourceName string) string 
 			"than one agent, the command fails. Use `--project` to select a project or `--all-projects` to select " +
 			"across projects. Run `sloctl edit --help` for editor selection and failure safeguards."
 	}
+	if kind == manifest.KindUserGroup {
+		return "Select manual user groups by name and open them for editing. Without names, only manual groups " +
+			"are selected; `sloctl get usergroups` lists all origins. SCIM and system groups cannot be edited. " +
+			"Keep the server-issued revision to detect concurrent changes. Run `sloctl edit --help` for editor " +
+			"selection and failure safeguards."
+	}
 	description := fmt.Sprintf(
 		"Select %s by name or available filters and open them for editing. Without names, all matching "+
 			"%s are opened.",
@@ -177,6 +183,12 @@ func (e *EditCmd) run(cmd *cobra.Command, kind manifest.Kind, names []string) er
 	if err != nil {
 		return err
 	}
+	if kind == manifest.KindUserGroup {
+		objects, err = selectEditableUserGroups(names, objects)
+		if err != nil {
+			return err
+		}
+	}
 	if len(objects) == 0 {
 		if objectKindSupportsSelectionProjectFlag(kind) {
 			fmt.Printf("No resources found in '%s' project.\n", e.client.Config.Project)
@@ -193,6 +205,21 @@ func (e *EditCmd) run(cmd *cobra.Command, kind manifest.Kind, names []string) er
 	}
 
 	return e.editAndApply(cmd, objects)
+}
+
+func selectEditableUserGroups(names []string, objects []manifest.Object) ([]manifest.Object, error) {
+	manualGroups := make([]manifest.Object, 0, len(objects))
+	for _, object := range objects {
+		group := object.(v1alpha.GenericObject)
+		if group["origin"] == "manual" {
+			manualGroups = append(manualGroups, object)
+			continue
+		}
+		if len(names) != 0 {
+			return nil, fmt.Errorf("UserGroup %q cannot be edited: only manual groups can be changed", object.GetName())
+		}
+	}
+	return manualGroups, nil
 }
 
 func (e *EditCmd) getObjects(ctx context.Context, kind manifest.Kind, names []string) ([]manifest.Object, error) {

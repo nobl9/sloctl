@@ -40,7 +40,11 @@ func (r *RootCmd) NewApplyCmd() *cobra.Command {
 		Long: getApplyOrDeleteDescription(
 			"Apply Nobl9 resource definitions from one or more YAML or JSON sources.\n\n" +
 				"With `--replay`, Replay runs only for applied SLOs. Replay is skipped during `--dry-run`, " +
-				"and applied changes are not rolled back if Replay fails.",
+				"and applied changes are not rolled back if Replay fails.\n\n" +
+				"Organization administrators can apply manual UserGroups. Each spec.members list replaces " +
+				"the entire membership; use [] to remove all members. Members must be existing active users " +
+				"in the organization. SCIM and system groups cannot be changed. In a mixed request, " +
+				"UserGroups are applied before their RoleBindings, regardless of file order.",
 		),
 		Example: applyExample,
 		Args:    noPositionalArgsCondition,
