@@ -44,6 +44,25 @@ func TestAnnotationResponseToGenericObject(t *testing.T) {
 				"replay":      replayFacts,
 			},
 		},
+		"a key this build does not know is carried into spec, a null value is left out": {
+			response: v1alpha.GenericObject{
+				"name":        "future-annotation",
+				"project":     "default",
+				"labels":      map[string]any{"team": []any{"a"}},
+				"status":      map[string]any{"isSystem": true},
+				"slo":         "my-slo",
+				"description": "Future",
+				"startTime":   "2026-09-01T00:00:00Z",
+				"endTime":     nil,
+				"futureFacts": map[string]any{"key": "value"},
+			},
+			wantSpec: map[string]any{
+				"slo":         "my-slo",
+				"description": "Future",
+				"startTime":   "2026-09-01T00:00:00Z",
+				"futureFacts": map[string]any{"key": "value"},
+			},
+		},
 		"non-replay annotation has no replay key": {
 			response: v1alpha.GenericObject{
 				"name":        "comment-annotation",
