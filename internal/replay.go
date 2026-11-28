@@ -111,8 +111,14 @@ func (r *ReplayCmd) Run(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	_, err = r.RunReplays(cmd, replays)
-	return err
+	failedReplays, err := r.RunReplays(cmd, replays)
+	if err != nil {
+		return err
+	}
+	if failedReplays > 0 {
+		return errors.Errorf("%d of %d Replay requests failed", failedReplays, len(replays))
+	}
+	return nil
 }
 
 func (r *ReplayCmd) RunReplays(cmd *cobra.Command, replays []ReplayConfig) (failedReplays int, err error) {
